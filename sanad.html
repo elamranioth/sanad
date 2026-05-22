@@ -41,7 +41,7 @@
     <div class="nav-sec">
       <span class="nav-lbl">التصنيفات</span>
       <a class="ni on" href="#judgments" onclick="handleNav(event,'judgments',this)"><i class="ti ti-gavel"></i>أحكام قضائية<span class="ct">٢٢١</span></a>
-      <a class="ni" href="#laws" onclick="handleNav(event,'laws',this)"><i class="ti ti-file-certificate"></i>قوانين<span class="ct">١٨٣</span></a>
+      <a class="ni" href="#laws" onclick="handleNav(event,'laws',this)"><i class="ti ti-file-certificate"></i>قوانين<span class="ct">٠</span></a>
       <a class="ni" href="#decrees" onclick="handleNav(event,'decrees',this)"><i class="ti ti-stamp"></i>مراسيم<span class="ct">٩٤</span></a>
       <a class="ni" href="#regulations" onclick="handleNav(event,'regulations',this)"><i class="ti ti-clipboard-list"></i>لوائح<span class="ct">١٢٨</span></a>
       <a class="ni" href="#contracts" onclick="handleNav(event,'contracts',this)"><i class="ti ti-writing"></i>عقود نموذجية</a>
@@ -169,6 +169,12 @@
       <i class="ti ti-mood-empty"></i>
       <p>لم يتم العثور على أحكام مطابقة لبحثك</p>
     </div>
+
+    <section class="section-empty hidden" id="sectionEmpty" aria-live="polite">
+      <div class="section-empty-icon"><i class="ti ti-file-certificate"></i></div>
+      <h2>قوانين</h2>
+      <p>لم يتم رفع قوانين بعد.</p>
+    </section>
 
     <!-- DOC MODAL -->
     <div class="doc-modal hidden" id="docModal" onclick="closeDoc()">

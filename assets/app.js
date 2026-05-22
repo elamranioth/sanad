@@ -1,4 +1,10 @@
 ﻿const docs=window.SANAD_DATA?.judgments||[];
+const laws=window.SANAD_DATA?.laws||[];
+const defaultCatalog={
+  title:'أحكام قضائية',
+  subtitle:'تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عمالية، جنائية، إدارية وأسرية',
+  icon:'ti-gavel'
+};
 const icons={tijari:'ti-briefcase',madani:'ti-scale',omali:'ti-hammer',jinai:'ti-shield-lock',idari:'ti-building-bank',osri:'ti-heart'};
 const labels={tijari:'تجاري',madani:'مدني',omali:'عمالي',jinai:'جنائي',idari:'إداري',osri:'أسري'};
 const typeKeys=['tijari','madani','omali','jinai','idari','osri'];
@@ -170,7 +176,44 @@ function scrollPageTo(selector){
   if(!page||!target)return;
   page.scrollTo({top:Math.max(target.offsetTop-14,0),behavior:'smooth'});
 }
+function setCatalogHeader(title,subtitle,icon){
+  const heroTitle=document.querySelector('.hero-title');
+  const heroSub=document.querySelector('.hero-sub');
+  const heroIcon=document.querySelector('.hero-icon i');
+  const crumb=document.querySelector('.breadcrumb .cur');
+  if(heroTitle)heroTitle.textContent=title;
+  if(heroSub)heroSub.textContent=subtitle;
+  if(heroIcon)heroIcon.className=`ti ${icon}`;
+  if(crumb)crumb.textContent=title;
+}
+function setJudgmentWorkspaceVisible(visible){
+  ['.type-cards','.search-bar','.results-bar','#docGrid','.ai-section'].forEach(selector=>{
+    const el=document.querySelector(selector);
+    if(el)el.classList.toggle('hidden',!visible);
+  });
+  if(!visible)document.getElementById('noResults')?.classList.add('hidden');
+}
+function restoreJudgmentCatalog(){
+  document.querySelector('.page')?.classList.remove('empty-mode');
+  document.getElementById('sectionEmpty')?.classList.add('hidden');
+  setCatalogHeader(defaultCatalog.title,defaultCatalog.subtitle,defaultCatalog.icon);
+  setJudgmentWorkspaceVisible(true);
+}
+function showEmptyCatalog(title,message,icon){
+  const section=document.getElementById('sectionEmpty');
+  document.querySelector('.page')?.classList.add('empty-mode');
+  setCatalogHeader(title,message,icon);
+  setJudgmentWorkspaceVisible(false);
+  if(section){
+    section.querySelector('.section-empty-icon i').className=`ti ${icon}`;
+    section.querySelector('h2').textContent=title;
+    section.querySelector('p').textContent=message;
+    section.classList.remove('hidden');
+  }
+  scrollPageTo('#sectionEmpty');
+}
 function showAllJudgments(){
+  restoreJudgmentCatalog();
   currentView='documents';
   currentType='all';
   document.getElementById('typeSelect').value='all';
@@ -182,7 +225,6 @@ function handleNav(event,action,el){
   event.preventDefault();
   const search=document.getElementById('searchInput');
   const unavailable={
-    laws:'قسم القوانين غير مضاف بعد.',
     decrees:'قسم المراسيم غير مضاف بعد.',
     regulations:'قسم اللوائح غير مضاف بعد.',
     contracts:'قسم العقود النموذجية غير مضاف بعد.',
@@ -195,6 +237,16 @@ function handleNav(event,action,el){
     return;
   }
   setActiveNav(el);
+  if(action==='laws'){
+    currentView='laws';
+    currentType='all';
+    document.getElementById('typeSelect').value='all';
+    search.value='';
+    syncCards('all');
+    showEmptyCatalog('قوانين','لم يتم رفع قوانين بعد.','ti-file-certificate');
+    showToast('لا توجد قوانين مرفوعة بعد.');
+    return;
+  }
   if(action==='dashboard'){
     showAllJudgments();
     scrollPageTo('.hero');
@@ -208,6 +260,7 @@ function handleNav(event,action,el){
     return;
   }
   if(action==='saved'){
+    restoreJudgmentCatalog();
     currentView='saved';
     currentType='all';
     document.getElementById('typeSelect').value='all';
@@ -219,6 +272,7 @@ function handleNav(event,action,el){
     return;
   }
   if(action==='recent'){
+    restoreJudgmentCatalog();
     currentView='documents';
     currentType='all';
     document.getElementById('typeSelect').value='all';
@@ -232,6 +286,7 @@ function handleNav(event,action,el){
     return;
   }
   if(action==='search'){
+    showAllJudgments();
     scrollPageTo('.search-bar');
     setTimeout(()=>search.focus(),220);
     showToast('اكتب كلمات البحث أو رقم الطعن.');
@@ -246,9 +301,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSidebar();});
 
 function updateDisplayedCounts(){
   const heroTotal=document.querySelector('.hero-stats .hstat:first-child .hstat-num');
-  const navTotal=document.querySelector('.ni.on .ct');
   if(heroTotal) heroTotal.textContent=ar(counts.all);
-  if(navTotal) navTotal.textContent=ar(counts.all);
+  document.querySelectorAll('a[href="#documents"] .ct,a[href="#judgments"] .ct').forEach(el=>{el.textContent=ar(counts.all);});
+  const lawsCount=document.querySelector('a[href="#laws"] .ct');
+  if(lawsCount)lawsCount.textContent=ar(laws.length);
   const savedCount=document.querySelector('a[href="#saved"] .ct');
   if(savedCount)savedCount.textContent=ar(savedJudgmentIds.size);
   Object.entries(counts).forEach(([type,count])=>{
@@ -263,7 +319,7 @@ function renderDocs(list){
   if(!list.length){g.innerHTML='';nr.classList.remove('hidden');document.getElementById('shownCount').textContent=ar(0);return;}
   nr.classList.add('hidden');
   g.innerHTML=list.map(d=>`
-    <div class="doc-card" onclick="openDoc(${d.id})">
+    <button class="doc-card" type="button" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
       <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i></div>
       <div class="doc-body">
         <div class="doc-title">${escapeHtml(displayDocTitle(d))}</div>
@@ -272,14 +328,13 @@ function renderDocs(list){
           <span class="meta-chip"><i class="ti ti-building"></i>${escapeHtml(d.court)}</span>
           <span class="meta-chip"><i class="ti ti-hash"></i>${escapeHtml(d.num)}</span>
           ${isSaved(d.id)?`<span class="meta-chip"><i class="ti ti-bookmark-filled"></i>محفوظ</span>`:''}
-          <span class="meta-chip"><i class="ti ti-paperclip"></i>${ar(d.att)} مرفق</span>
         </div>
       </div>
       <div class="doc-badge">
         <span class="type-tag tt-${d.type}">${labels[d.type]}</span>
-        <i class="ti ti-chevron-left" style="font-size:14px;color:#2d5060"></i>
+        <i class="ti ti-chevron-left"></i>
       </div>
-    </div>`).join('');
+    </button>`).join('');
   document.getElementById('shownCount').textContent=ar(list.length);
 }
 
@@ -323,6 +378,11 @@ function closeDoc(){
   document.body.classList.remove('modal-open');
 }
 
+document.getElementById('docGrid')?.addEventListener('click',event=>{
+  const card=event.target.closest('.doc-card[data-doc-id]');
+  if(!card)return;
+  openDoc(Number(card.dataset.docId));
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
 window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
@@ -336,6 +396,7 @@ window.addEventListener('appinstalled',()=>{
 });
 
 function filterDocs(){
+  if(currentView==='laws')return;
   const q=document.getElementById('searchInput').value.trim();
   const sel=document.getElementById('typeSelect').value;
   if(sel!==currentType){currentType=sel;syncCards(sel);}
@@ -353,6 +414,8 @@ function syncCards(type){
 }
 
 function setType(type,el){
+  if(currentView==='laws')currentView='documents';
+  restoreJudgmentCatalog();
   currentType=type;
   document.querySelectorAll('.tc').forEach(c=>c.classList.remove('active'));
   if(el) el.classList.add('active');
