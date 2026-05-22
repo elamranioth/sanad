@@ -17,12 +17,21 @@ const counts=docs.reduce((acc,d)=>{
 let currentType='all';
 let currentView='documents';
 let currentDocId=null;
+let currentLawId=null;
+let readerMode='judgment';
 let deferredInstallPrompt=null;
 const savedStorageKey='sanadSavedJudgments';
 let savedJudgmentIds=loadSavedJudgments();
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function matchesDoc(d,q){return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.body].some(v=>String(v||'').includes(q))}
+function matchesLaw(law,q){return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>String(v||'').includes(q))}
+function lawStat(value,label,icon){return `<span class="law-stat"><i class="ti ${icon}"></i><strong>${escapeHtml(value)}</strong><small>${escapeHtml(label)}</small></span>`}
+function formatInlineMarkdown(text){
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>');
+}
 function displayDocTitle(d){
   const title=String(d.title||'').trim();
   const separator=' - ';
@@ -97,6 +106,90 @@ function formatJudgmentBody(body){
   const paragraphs=splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
   const rulingHtml=ruling?`<section class="judgment-ruling"><div class="judgment-ruling-label">منطوق الحكم</div>${escapeHtml(ruling)}</section>`:'';
   return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section>${rulingHtml}</div>`;
+}
+function renderLawMarkdown(markdown){
+  const lines=String(markdown||'').replace(/\r/g,'').split('\n');
+  let html='';
+  let paragraph=[];
+  let openArticle=false;
+  let skippingComment=false;
+  const flushParagraph=()=>{
+    const text=paragraph.join(' ').replace(/\s+/g,' ').trim();
+    if(text)html+=`<p>${formatInlineMarkdown(text)}</p>`;
+    paragraph=[];
+  };
+  const closeArticle=()=>{
+    flushParagraph();
+    if(openArticle){
+      html+='</article>';
+      openArticle=false;
+    }
+  };
+  for(const rawLine of lines){
+    const line=rawLine.trim();
+    if(skippingComment){
+      if(line.includes('-->'))skippingComment=false;
+      continue;
+    }
+    if(line.startsWith('<!--')){
+      const page=line.match(/صفحة\s+(\d+)/);
+      flushParagraph();
+      if(page)html+=`<div class="law-page-marker">صفحة ${ar(Number(page[1]))}</div>`;
+      if(!line.includes('-->'))skippingComment=true;
+      continue;
+    }
+    if(!line){
+      flushParagraph();
+      continue;
+    }
+    if(line.startsWith('>')){
+      flushParagraph();
+      html+=`<div class="law-source-note">${formatInlineMarkdown(line.replace(/^>\s?/,''))}</div>`;
+      continue;
+    }
+    const heading=line.match(/^(#{1,4})\s+(.+)$/);
+    if(heading){
+      const level=heading[1].length;
+      const text=heading[2].trim();
+      if(level===4&&text.startsWith('المادة')){
+        closeArticle();
+        openArticle=true;
+        html+=`<article class="law-article"><div class="law-article-head"><span>${escapeHtml(text)}</span></div>`;
+      }else{
+        closeArticle();
+        const cls=level===1?'law-title-main':level===2?'law-heading-two':'law-heading-three';
+        html+=`<h${Math.min(level+1,4)} class="${cls}">${escapeHtml(text)}</h${Math.min(level+1,4)}>`;
+      }
+      continue;
+    }
+    if(line.startsWith('- ')){
+      flushParagraph();
+      html+=`<p class="law-bullet"><span></span>${formatInlineMarkdown(line.slice(2).trim())}</p>`;
+      continue;
+    }
+    paragraph.push(line);
+  }
+  closeArticle();
+  return html;
+}
+function renderLawReader(law){
+  return `<div class="law-reader">
+    <section class="law-reader-cover">
+      <div class="law-reader-mark"><i class="ti ti-file-certificate"></i></div>
+      <div>
+        <div class="law-reader-label">${escapeHtml(law.legislation||law.category||'تشريع')}</div>
+        <h1>${escapeHtml(law.title)}</h1>
+        <p>${escapeHtml(law.subtitle||'')}</p>
+      </div>
+    </section>
+    <section class="law-reader-meta">
+      ${lawStat(law.status||'ساري','الحالة','ti-circle-check')}
+      ${lawStat(law.updated||'غير محدد','آخر تحديث','ti-calendar-event')}
+      ${lawStat(ar(law.articleCount||0),'مادة','ti-list-numbers')}
+      ${lawStat(ar(law.pageCount||0),'صفحة','ti-file-text')}
+    </section>
+    <section class="law-reader-body">${renderLawMarkdown(law.body)}</section>
+  </div>`;
 }
 function loadSavedJudgments(){
   try{
@@ -186,6 +279,23 @@ function setCatalogHeader(title,subtitle,icon){
   if(heroIcon)heroIcon.className=`ti ${icon}`;
   if(crumb)crumb.textContent=title;
 }
+function setHeroStats(items){
+  document.querySelectorAll('.hero-stats .hstat').forEach((stat,index)=>{
+    const item=items[index];
+    if(!item)return;
+    const num=stat.querySelector('.hstat-num');
+    const label=stat.querySelector('.hstat-lbl');
+    if(num)num.textContent=item.value;
+    if(label)label.textContent=item.label;
+  });
+}
+function setDefaultHeroStats(){
+  setHeroStats([
+    {value:ar(counts.all),label:'حكم'},
+    {value:ar(typeKeys.length),label:'تخصص'},
+    {value:ar(18),label:'هذا الشهر'}
+  ]);
+}
 function setJudgmentWorkspaceVisible(visible){
   ['.type-cards','.search-bar','.results-bar','#docGrid','.ai-section'].forEach(selector=>{
     const el=document.querySelector(selector);
@@ -196,12 +306,15 @@ function setJudgmentWorkspaceVisible(visible){
 function restoreJudgmentCatalog(){
   document.querySelector('.page')?.classList.remove('empty-mode');
   document.getElementById('sectionEmpty')?.classList.add('hidden');
+  document.getElementById('lawCatalog')?.classList.add('hidden');
   setCatalogHeader(defaultCatalog.title,defaultCatalog.subtitle,defaultCatalog.icon);
+  setDefaultHeroStats();
   setJudgmentWorkspaceVisible(true);
 }
 function showEmptyCatalog(title,message,icon){
   const section=document.getElementById('sectionEmpty');
   document.querySelector('.page')?.classList.add('empty-mode');
+  document.getElementById('lawCatalog')?.classList.add('hidden');
   setCatalogHeader(title,message,icon);
   setJudgmentWorkspaceVisible(false);
   if(section){
@@ -211,6 +324,63 @@ function showEmptyCatalog(title,message,icon){
     section.classList.remove('hidden');
   }
   scrollPageTo('#sectionEmpty');
+}
+function renderLaws(list){
+  const lawList=document.getElementById('lawList');
+  const lawEmpty=document.getElementById('lawNoResults');
+  const lawCount=document.getElementById('lawShownCount');
+  if(!lawList)return;
+  if(lawCount)lawCount.textContent=ar(list.length);
+  if(!list.length){
+    lawList.innerHTML='';
+    lawEmpty?.classList.remove('hidden');
+    return;
+  }
+  lawEmpty?.classList.add('hidden');
+  lawList.innerHTML=list.map(law=>`
+    <button class="law-card" type="button" data-law-id="${escapeHtml(law.id)}" aria-label="فتح ${escapeHtml(law.title)}">
+      <div class="law-card-mark"><i class="ti ti-file-certificate"></i></div>
+      <div class="law-card-body">
+        <div class="law-card-top">
+          <span>${escapeHtml(law.category||'قانون')}</span>
+          <span>${escapeHtml(law.status||'ساري')}</span>
+        </div>
+        <h3>${escapeHtml(law.title)}</h3>
+        <p>${escapeHtml(law.subtitle||law.legislation||'')}</p>
+        <div class="law-card-stats">
+          ${lawStat(ar(law.articleCount||0),'مادة','ti-list-numbers')}
+          ${lawStat(ar(law.pageCount||0),'صفحة','ti-file-text')}
+          ${lawStat(law.updated||'غير محدد','آخر تحديث','ti-calendar-event')}
+        </div>
+      </div>
+      <div class="law-card-open"><i class="ti ti-chevron-left"></i></div>
+    </button>`).join('');
+}
+function showLawCatalog(){
+  if(!laws.length){
+    showEmptyCatalog('قوانين','لم يتم رفع قوانين بعد.','ti-file-certificate');
+    return;
+  }
+  const articleTotal=laws.reduce((sum,law)=>sum+(law.articleCount||0),0);
+  currentView='laws';
+  document.querySelector('.page')?.classList.remove('empty-mode');
+  document.getElementById('sectionEmpty')?.classList.add('hidden');
+  setJudgmentWorkspaceVisible(false);
+  setCatalogHeader('قوانين','تصفح القوانين والتشريعات المحفوظة في سند بنص كامل ومنظم للقراءة والبحث.','ti-file-certificate');
+  setHeroStats([
+    {value:ar(laws.length),label:'قانون'},
+    {value:ar(articleTotal),label:'مادة'},
+    {value:laws[0]?.status||'ساري',label:'الحالة'}
+  ]);
+  document.getElementById('lawCatalog')?.classList.remove('hidden');
+  document.getElementById('lawSearchInput').value='';
+  renderLaws(laws);
+  scrollPageTo('#lawCatalog');
+}
+function filterLaws(){
+  const q=document.getElementById('lawSearchInput')?.value.trim()||'';
+  const list=q?laws.filter(law=>matchesLaw(law,q)):laws;
+  renderLaws(list);
 }
 function showAllJudgments(){
   restoreJudgmentCatalog();
@@ -243,8 +413,8 @@ function handleNav(event,action,el){
     document.getElementById('typeSelect').value='all';
     search.value='';
     syncCards('all');
-    showEmptyCatalog('قوانين','لم يتم رفع قوانين بعد.','ti-file-certificate');
-    showToast('لا توجد قوانين مرفوعة بعد.');
+    showLawCatalog();
+    showToast(laws.length?'تم عرض قسم القوانين.':'لا توجد قوانين مرفوعة بعد.');
     return;
   }
   if(action==='dashboard'){
@@ -341,12 +511,31 @@ function renderDocs(list){
 function openDoc(id){
   const d=docs.find(item=>item.id===id);
   if(!d)return;
+  readerMode='judgment';
   currentDocId=d.id;
+  currentLawId=null;
+  document.getElementById('docModal').classList.remove('law-modal');
+  document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
   document.getElementById('modalTitle').textContent=displayDocTitle(d);
   document.getElementById('modalBody').innerHTML=formatJudgmentBody(d.body);
   syncSaveButton();
   document.getElementById('docModal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+function openLaw(id){
+  const law=laws.find(item=>String(item.id)===String(id));
+  if(!law)return;
+  readerMode='law';
+  currentLawId=law.id;
+  currentDocId=null;
+  const modal=document.getElementById('docModal');
+  document.getElementById('saveJudgmentBtn')?.classList.add('hidden');
+  document.getElementById('modalType').textContent=law.category||'قانون';
+  document.getElementById('modalTitle').textContent=law.title;
+  document.getElementById('modalBody').innerHTML=renderLawReader(law);
+  modal.classList.add('law-modal');
+  modal.classList.remove('hidden');
   document.body.classList.add('modal-open');
 }
 function syncSaveButton(){
@@ -358,7 +547,7 @@ function syncSaveButton(){
   btn.innerHTML=`<i class="ti ${saved?'ti-bookmark-filled':'ti-bookmark'}"></i><span>${saved?'إزالة من المحفوظة':'حفظ الحكم'}</span>`;
 }
 function toggleSavedFromModal(){
-  if(currentDocId===null)return;
+  if(readerMode!=='judgment'||currentDocId===null)return;
   if(isSaved(currentDocId)){
     savedJudgmentIds.delete(Number(currentDocId));
     showToast('تمت إزالة الحكم من المحفوظة.');
@@ -374,7 +563,9 @@ function toggleSavedFromModal(){
 }
 
 function closeDoc(){
-  document.getElementById('docModal').classList.add('hidden');
+  const modal=document.getElementById('docModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('law-modal');
   document.body.classList.remove('modal-open');
 }
 
@@ -383,6 +574,12 @@ document.getElementById('docGrid')?.addEventListener('click',event=>{
   if(!card)return;
   openDoc(Number(card.dataset.docId));
 });
+document.getElementById('lawList')?.addEventListener('click',event=>{
+  const card=event.target.closest('.law-card[data-law-id]');
+  if(!card)return;
+  openLaw(card.dataset.lawId);
+});
+document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
 window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
@@ -473,6 +670,7 @@ syncSidebarToggle();
 updateDisplayedCounts();
 updateInstallButton();
 renderDocs(docs);
+renderLaws(laws);
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{});

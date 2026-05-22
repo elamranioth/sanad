@@ -1,4 +1,4 @@
-const CACHE_NAME = "sanad-pwa-v4";
+const CACHE_NAME = "sanad-pwa-v5";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const APP_ASSETS = [
   "./data/judgments.js",
   "./data/laws.js",
   "./data/legal-forms.js",
+  "./content/laws/qanoon_al_ijraat_al_madaniya_uae_42_2022.md",
   "./manifest.json",
   "./icons/favicon.svg",
   "./icons/apple-touch-icon.png",

@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./assets/styles.css?v=mobile-laws-20260523">
+<link rel="stylesheet" href="./assets/styles.css?v=law-reader-20260523">
 </head>
 <body>
 
@@ -170,6 +170,25 @@
       <p>لم يتم العثور على أحكام مطابقة لبحثك</p>
     </div>
 
+    <section class="law-catalog hidden" id="lawCatalog">
+      <div class="law-catalog-head">
+        <div>
+          <h2>مكتبة القوانين</h2>
+          <p>نصوص التشريعات محفوظة بصيغة منظمة للقراءة السريعة والرجوع إلى المواد.</p>
+        </div>
+        <div class="law-counter"><strong id="lawShownCount">٠</strong><span>قانون</span></div>
+      </div>
+      <div class="law-search">
+        <i class="ti ti-search"></i>
+        <input type="text" id="lawSearchInput" placeholder="ابحث في عنوان القانون أو نص المواد...">
+      </div>
+      <div class="law-list-grid" id="lawList"></div>
+      <div class="law-no-results hidden" id="lawNoResults">
+        <i class="ti ti-file-search"></i>
+        <p>لا توجد قوانين مطابقة لبحثك</p>
+      </div>
+    </section>
+
     <section class="section-empty hidden" id="sectionEmpty" aria-live="polite">
       <div class="section-empty-icon"><i class="ti ti-file-certificate"></i></div>
       <h2>قوانين</h2>
@@ -225,9 +244,9 @@
   </div><!-- end page -->
 </div><!-- end main -->
 
-<script src="./data/judgments.js?v=mobile-laws-20260523"></script>
-<script src="./data/laws.js?v=mobile-laws-20260523"></script>
-<script src="./data/legal-forms.js?v=mobile-laws-20260523"></script>
-<script src="./assets/app.js?v=mobile-laws-20260523"></script>
+<script src="./data/judgments.js?v=law-reader-20260523"></script>
+<script src="./data/laws.js?v=law-reader-20260523"></script>
+<script src="./data/legal-forms.js?v=law-reader-20260523"></script>
+<script src="./assets/app.js?v=law-reader-20260523"></script>
 </body>
 </html>
