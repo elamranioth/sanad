@@ -1,8 +1,13 @@
-const CACHE_NAME = "sanad-pwa-v1";
+const CACHE_NAME = "sanad-pwa-v2";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./sanad.html",
+  "./assets/styles.css",
+  "./assets/app.js",
+  "./data/judgments.js",
+  "./data/laws.js",
+  "./data/legal-forms.js",
   "./manifest.json",
   "./icons/favicon.svg",
   "./icons/apple-touch-icon.png",
