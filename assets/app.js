@@ -60,13 +60,14 @@ function splitJudgmentParagraphs(text){
     .filter(Boolean);
 }
 function classifyJudgmentParagraph(text){
+  if(text.includes('الوقائع')||text.includes('تتحصل في')||text.includes('تتحصل فى')||text.startsWith('بعد الاطلاع')||text.startsWith('بعد الإطلاع'))return 'facts';
   if(text.includes('من المقرر في قضاء هذه المحكمة')||text.startsWith('ومن المقرر')||text.startsWith('كما أنه من المقرر'))return 'principle';
   if(text.includes('النص في المادة')||text.includes('نص المادة')||text.includes('وفقاً لنص المادة')||text.includes('وفقًا لنص المادة')||text.includes('المادتين')||text.includes('المواد'))return 'article';
   if(text.startsWith('وحيث')||text.startsWith('لما كان ذلك'))return 'reasoning';
   return 'facts';
 }
 function paragraphLabel(type){
-  return {reasoning:'تسبيب المحكمة',principle:'مبدأ قضائي',article:'نص قانوني'}[type]||'';
+  return {facts:'وقائع وملخص القضية',reasoning:'تسبيب المحكمة',principle:'مبدأ قضائي',article:'نص قانوني'}[type]||'';
 }
 function renderJudgmentParagraph(text){
   const type=classifyJudgmentParagraph(text);
@@ -288,12 +289,6 @@ function openDoc(id){
   currentDocId=d.id;
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
   document.getElementById('modalTitle').textContent=displayDocTitle(d);
-  const meta=[
-    ['ti-calendar-event',d.date],
-    ['ti-building',d.court],
-    ['ti-hash',d.num]
-  ].filter(item=>item[1]);
-  document.getElementById('modalMeta').innerHTML=meta.map(([icon,text])=>`<span><i class="ti ${icon}"></i>${escapeHtml(text)}</span>`).join('');
   document.getElementById('modalBody').innerHTML=formatJudgmentBody(d.body);
   syncSaveButton();
   document.getElementById('docModal').classList.remove('hidden');

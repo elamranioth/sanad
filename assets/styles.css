@@ -230,9 +230,6 @@ body.modal-open{overflow:hidden}
 .doc-action:hover{border-color:#c8a84b55;color:#c8a84b;background:#121f2d}
 .doc-action i{font-size:19px}
 .doc-action.saved{background:#2a1f08;border-color:#c8a84b66;color:#c8a84b}
-.doc-dialog-meta{padding:12px max(24px,calc((100vw - 1080px)/2));border-bottom:1px solid #1e3a52;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#0d1b2a;flex-shrink:0}
-.doc-dialog-meta span{font-size:11px;color:#7a9ab0;border:1px solid #1e3a52;background:#0a1520;border-radius:6px;padding:5px 9px;display:flex;align-items:center;gap:5px}
-.doc-dialog-meta i{font-size:14px;color:#c8a84b}
 .doc-dialog-body{flex:1;padding:28px max(24px,calc((100vw - 980px)/2));overflow:auto;line-height:2;color:#c8d8e0;font-size:16px;font-family:'Tajawal',sans-serif;background:#0a1520}
 .judgment-reader{display:flex;flex-direction:column;gap:18px}
 .judgment-intro{background:#080f18;border:1px solid #2a4a68;border-radius:12px;padding:24px;text-align:center}
@@ -248,17 +245,18 @@ body.modal-open{overflow:hidden}
 .intro-issued{font-family:'Amiri',serif;color:#e8dcc8;font-size:20px;font-weight:700;margin-top:18px;padding-top:14px;border-top:1px solid #1e3a52}
 .judgment-content{display:flex;flex-direction:column;gap:12px}
 .judgment-para{margin:0;background:#0d1b2a;border:1px solid #183044;border-right:4px solid #2a4a68;border-radius:10px;padding:15px 18px;color:#b8cbd6;line-height:2.05}
-.judgment-para.facts{border-right-color:#2a4a68}
+.judgment-para.facts{background:#0d1b2a;border-color:#183044;border-right-color:#2a4a68;color:#b8cbd6}
 .judgment-para.reasoning{background:#0b1825;border-color:#21445d;border-right-color:#6aaccc;color:#c8d8e0}
 .judgment-para.principle{background:#101b18;border-color:#254634;border-right-color:#7aaa6a;color:#cbe2c5}
 .judgment-para.article{background:#19170f;border-color:#423719;border-right-color:#c8a84b;color:#dfd1aa}
 .judgment-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;font-size:10px;font-weight:700;padding:3px 9px;margin:0 0 8px 8px}
+.judgment-tag.facts{background:#102638;color:#9ab5c8;border:1px solid #2a4a6844}
 .judgment-tag.reasoning{background:#1a2e40;color:#8bd3ee;border:1px solid #6aaccc44}
 .judgment-tag.principle{background:#1a2a1a;color:#99cf84;border:1px solid #7aaa6a44}
 .judgment-tag.article{background:#2a1f08;color:#d8c06e;border:1px solid #c8a84b44}
 .judgment-ruling{background:#1c1308;border:1px solid #c8a84b66;border-right:5px solid #c8a84b;border-radius:12px;padding:20px 22px;color:#ead9a8;font-family:'Amiri',serif;font-size:19px;line-height:2.05;font-weight:700}
 .judgment-ruling-label{font-family:'Tajawal',sans-serif;font-size:11px;color:#c8a84b;letter-spacing:.5px;margin-bottom:8px}
-@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-meta{padding:10px 16px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-para{padding:13px 14px}.judgment-ruling{font-size:17px;padding:17px 16px}}
+@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-para{padding:13px 14px}.judgment-ruling{font-size:17px;padding:17px 16px}}
 @media(max-width:900px){
 body{display:block;min-height:100dvh}
 .sidebar{position:fixed;right:0;top:0;bottom:0;width:min(312px,88vw);z-index:60;transform:translateX(100%);box-shadow:-18px 0 48px #00000066}
@@ -342,7 +340,6 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .doc-dialog{width:100%;height:100dvh;max-height:none;border-radius:0}
 .doc-dialog-head{padding:calc(14px + env(safe-area-inset-top)) 16px 14px;gap:12px}
 .doc-dialog-head h2{font-size:17px}
-.doc-dialog-meta{padding:10px 14px;gap:6px}
 .doc-dialog-body{font-size:14px;line-height:2;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
 .judgment-reader{gap:14px}
 .judgment-content{gap:10px}
