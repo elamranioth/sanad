@@ -1,10 +1,11 @@
-const CACHE_NAME = "sanad-pwa-v14";
+const CACHE_NAME = "sanad-pwa-v15";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./sanad.html",
   "./assets/styles.css",
   "./assets/app.js",
+  "./assets/el-amrani-logo.png",
   "./assets/vendor/tabler/tabler-icons.min.css",
   "./assets/vendor/tabler/fonts/tabler-icons.woff2",
   "./assets/vendor/tabler/fonts/tabler-icons.woff",

@@ -272,6 +272,20 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .local-judgment-item p{font-size:12px;color:#6f91a8;line-height:1.7}
 .fee-result{margin-top:12px;background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:14px;color:#6f91a8;font-size:13px;line-height:1.7}
 .fee-result strong{display:block;color:#c8a84b;font-family:'Amiri',serif;font-size:24px;margin-bottom:3px}
+.receipt-panel{overflow:hidden}
+.receipt-workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:16px;align-items:start}
+.receipt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.receipt-preview{background:#081018;border:1px solid #2a4a68;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%}
+.receipt-brand{display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e3a52;padding-bottom:12px}
+.receipt-brand img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#04070a;border:1px solid #2a4a68}
+.receipt-brand strong{display:block;color:#e8dcc8;font-family:'Amiri',serif;font-size:19px;line-height:1.2}
+.receipt-brand span{color:#c8a84b;font-size:13px;font-weight:700}
+.receipt-total-hero{background:#1c1308;border:1px solid #c8a84b55;border-right:5px solid #c8a84b;border-radius:12px;padding:15px 16px}
+.receipt-total-hero span,.receipt-summary-grid span{display:block;color:#8aa6b8;font-size:12px;margin-bottom:6px}
+.receipt-total-hero strong{font-family:'Amiri',serif;color:#ead9a8;font-size:28px}
+.receipt-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.receipt-summary-grid div{background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:12px}
+.receipt-summary-grid strong{color:#c8d8e0;font-size:15px}
 .fee-list{display:flex;flex-direction:column;gap:9px}
 .fee-item{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:12px;align-items:center;background:#0d1b2a;border:1px solid #1e3a52;border-radius:12px;padding:14px}
 .fee-item-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
@@ -304,7 +318,7 @@ body.ink-mode .brand-sub,body.ink-mode .nav-lbl,body.ink-mode .breadcrumb,body.i
 body.ink-mode .ni{color:#111}
 body.ink-mode .ni:hover,body.ink-mode .ni.on,body.ink-mode .ni-ai,body.ink-mode .ni-ai:hover,body.ink-mode .ni-ai.on{background:#111;color:#fff;border-color:#111}
 body.ink-mode .ni .ct,body.ink-mode .ni.on .ct,body.ink-mode .ai-ct,body.ink-mode .ni-ai.on .ai-ct{background:#fff;color:#111;border:1px solid #111}
-body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
+body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item,body.ink-mode .receipt-preview,body.ink-mode .receipt-summary-grid div{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
 body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
@@ -312,6 +326,8 @@ body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-acti
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon{background:#f0ead8;color:#111;border:1px solid #111}
+body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
+body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{color:#fff}
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
 body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
 body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
@@ -534,6 +550,9 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .tool-page-head{flex-direction:column}
 .tool-counter{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
 .tool-counter strong{font-size:22px}
+.receipt-workspace{grid-template-columns:1fr}
+.receipt-summary-grid{grid-template-columns:1fr}
+.receipt-actions .tool-primary,.receipt-actions .tool-secondary{width:100%}
 .fee-item{grid-template-columns:minmax(0,1fr);gap:10px}
 .fee-delete{width:100%;height:42px}
 .setting-row{flex-direction:column;align-items:stretch}

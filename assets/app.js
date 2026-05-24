@@ -720,6 +720,7 @@ function showFeesManagerPage(){
     {value:'محلي',label:'الحفظ'}
   ]);
   renderFees();
+  syncReceiptPreview();
   scrollPageTo('#feesManager');
 }
 function showSettingsPage(){
@@ -734,7 +735,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v14',label:'الكاش'}
+    {value:'v15',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -889,6 +890,108 @@ function calculateFeeEstimate(){
   if(min>0)fee=Math.max(fee,min);
   if(max>0)fee=Math.min(fee,max);
   result.innerHTML=`<strong>${money(fee)}</strong><span>تقدير إداري حسب القيم المدخلة.</span>`;
+}
+function todayIsoDate(){
+  const date=new Date();
+  const offset=date.getTimezoneOffset()*60000;
+  return new Date(date.getTime()-offset).toISOString().slice(0,10);
+}
+function receiptDateDisplay(value){
+  const raw=String(value||todayIsoDate());
+  const match=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match?`${ar(match[3])}-${ar(match[2])}-${ar(match[1])}`:raw;
+}
+function readReceiptData(){
+  const dateInput=document.getElementById('receiptDateInput');
+  if(dateInput&&!dateInput.value)dateInput.value=todayIsoDate();
+  const total=Math.max(0,Number(document.getElementById('receiptTotalInput')?.value||0)||0);
+  const paid=Math.max(0,Number(document.getElementById('receiptPaidInput')?.value||0)||0);
+  return {
+    client:document.getElementById('receiptClientInput')?.value.trim()||'غير محدد',
+    matter:document.getElementById('receiptMatterInput')?.value.trim()||'خدمات استشارية',
+    total,
+    paid,
+    remaining:Math.max(total-paid,0),
+    overpaid:Math.max(paid-total,0),
+    method:document.getElementById('receiptMethodInput')?.value.trim()||'غير محدد',
+    date:dateInput?.value||todayIsoDate(),
+    note:document.getElementById('receiptNoteInput')?.value.trim()||''
+  };
+}
+function syncReceiptPreview(){
+  const data=readReceiptData();
+  const total=document.getElementById('receiptTotalDisplay');
+  const paid=document.getElementById('receiptPaidDisplay');
+  const remaining=document.getElementById('receiptRemainingDisplay');
+  const label=document.getElementById('receiptRemainingLabel');
+  if(total)total.textContent=money(data.total);
+  if(paid)paid.textContent=money(data.paid);
+  if(remaining)remaining.textContent=money(data.overpaid>0?data.overpaid:data.remaining);
+  if(label)label.textContent=data.overpaid>0?'زيادة مدفوعة':'المبلغ المتبقي';
+}
+function receiptRow(label,value){
+  return `<div class="receipt-print-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+function generateFeeReceipt(){
+  const data=readReceiptData();
+  syncReceiptPreview();
+  if(data.total<=0){
+    showToast('أدخل المبلغ الإجمالي المتفق عليه أولاً.');
+    return;
+  }
+  const receiptNo=`EAC-${Date.now().toString().slice(-6)}`;
+  const logoUrl=new URL('assets/el-amrani-logo.png',location.href).href;
+  const remainingLabel=data.overpaid>0?'زيادة مدفوعة':'المبلغ المتبقي';
+  const remainingValue=data.overpaid>0?data.overpaid:data.remaining;
+  const note=data.note?`<div class="receipt-print-note">${escapeHtml(data.note)}</div>`:'';
+  const html=`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>إيصال ${escapeHtml(receiptNo)}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f1e8;color:#111;font-family:Tahoma,Arial,sans-serif;direction:rtl}.receipt{width:min(840px,100%);margin:0 auto;padding:34px}.paper{background:#fff;border:1px solid #d7cda8;padding:34px;min-height:920px}.brand{display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:2px solid #c8a84b;padding-bottom:18px}.brand img{width:104px;height:104px;object-fit:contain}.brand h1{font-family:Georgia,serif;font-size:28px;letter-spacing:1px;margin:0;color:#1d1d1d}.brand p{margin:6px 0 0;color:#8a6a24;font-size:18px;font-weight:700}.receipt-title{text-align:center;margin:26px 0 18px}.receipt-title h2{margin:0;font-size:28px;color:#1d1d1d}.receipt-title span{display:inline-block;margin-top:8px;color:#777}.total{background:#111;color:#fff;border-right:7px solid #c8a84b;padding:18px 22px;margin:18px 0 22px}.total span{display:block;color:#d7cda8;font-size:14px;margin-bottom:8px}.total strong{font-size:34px;color:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.receipt-print-row{border:1px solid #ded6bb;padding:13px 15px;min-height:68px}.receipt-print-row span{display:block;color:#777;font-size:13px;margin-bottom:8px}.receipt-print-row strong{font-size:18px;color:#111}.amounts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.amounts .receipt-print-row{background:#fbf8ef}.receipt-print-note{border:1px dashed #c8a84b;background:#fffaf0;padding:14px 16px;margin-top:18px;color:#333;line-height:1.8}.footer{display:flex;justify-content:space-between;gap:24px;margin-top:58px}.signature{width:44%;border-top:1px solid #111;padding-top:10px;text-align:center;color:#555}.print-actions{display:flex;justify-content:center;gap:10px;margin:16px}.print-actions button{border:0;background:#111;color:#fff;padding:10px 18px;border-radius:6px;cursor:pointer}.print-actions button.secondary{background:#8a6a24}@media print{body{background:#fff}.receipt{padding:0}.paper{border:0;min-height:auto}.print-actions{display:none}}
+</style>
+</head>
+<body>
+<div class="receipt">
+  <div class="paper">
+    <div class="brand">
+      <div>
+        <h1>EL AMRANI CONSULTANCIES</h1>
+        <p>العمراني للاستشارات</p>
+      </div>
+      <img src="${escapeHtml(logoUrl)}" alt="El Amrani Consultancies">
+    </div>
+    <div class="receipt-title"><h2>إيصال استلام دفعة</h2><span>رقم الإيصال: ${escapeHtml(receiptNo)}</span></div>
+    <div class="total"><span>المبلغ الإجمالي المتفق عليه</span><strong>${money(data.total)}</strong></div>
+    <div class="grid">
+      ${receiptRow('اسم العميل',data.client)}
+      ${receiptRow('موضوع الخدمة',data.matter)}
+      ${receiptRow('تاريخ الإيصال',receiptDateDisplay(data.date))}
+      ${receiptRow('طريقة الدفع',data.method)}
+    </div>
+    <div class="amounts">
+      ${receiptRow('الدفعة الأولى',money(data.paid))}
+      ${receiptRow(remainingLabel,money(remainingValue))}
+    </div>
+    ${note}
+    <div class="footer"><div class="signature">توقيع المستلم</div><div class="signature">ختم الشركة</div></div>
+  </div>
+</div>
+<div class="print-actions"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="secondary" onclick="window.close()">إغلاق</button></div>
+</body>
+</html>`;
+  const popup=window.open('','_blank','width=900,height=1000');
+  if(!popup){
+    showToast('اسمح بفتح النوافذ المنبثقة لاستخراج الإيصال.');
+    return;
+  }
+  popup.document.open();
+  popup.document.write(html);
+  popup.document.close();
+  popup.focus();
+  setTimeout(()=>popup.print(),500);
 }
 function updateSettingsFromControls(){
   sanadSettings={
@@ -1168,6 +1271,11 @@ document.getElementById('feeList')?.addEventListener('click',event=>{
 document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('inkModeToggle')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
+['receiptClientInput','receiptMatterInput','receiptTotalInput','receiptPaidInput','receiptMethodInput','receiptDateInput','receiptNoteInput'].forEach(id=>{
+  const input=document.getElementById(id);
+  input?.addEventListener('input',syncReceiptPreview);
+  input?.addEventListener('change',syncReceiptPreview);
+});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
 window.addEventListener('hashchange',()=>{
   const route=window.location.hash.replace('#','');
