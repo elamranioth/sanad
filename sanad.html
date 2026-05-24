@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./assets/styles.css?v=fees-settings-20260524">
+<link rel="stylesheet" href="./assets/styles.css?v=all-pages-20260524">
 </head>
 <body>
 
@@ -42,9 +42,9 @@
       <span class="nav-lbl">التصنيفات</span>
       <a class="ni on" href="#judgments" onclick="handleNav(event,'judgments',this)"><i class="ti ti-gavel"></i>أحكام قضائية<span class="ct">٢٢١</span></a>
       <a class="ni" href="#laws" onclick="handleNav(event,'laws',this)"><i class="ti ti-file-certificate"></i>قوانين<span class="ct">٠</span></a>
-      <a class="ni" href="#decrees" onclick="handleNav(event,'decrees',this)"><i class="ti ti-stamp"></i>مراسيم<span class="ct">٩٤</span></a>
-      <a class="ni" href="#regulations" onclick="handleNav(event,'regulations',this)"><i class="ti ti-clipboard-list"></i>لوائح<span class="ct">١٢٨</span></a>
-      <a class="ni" href="#contracts" onclick="handleNav(event,'contracts',this)"><i class="ti ti-writing"></i>عقود نموذجية</a>
+      <a class="ni" href="#decrees" onclick="handleNav(event,'decrees',this)"><i class="ti ti-stamp"></i>مراسيم<span class="ct">٠</span></a>
+      <a class="ni" href="#regulations" onclick="handleNav(event,'regulations',this)"><i class="ti ti-clipboard-list"></i>لوائح<span class="ct">٠</span></a>
+      <a class="ni" href="#contracts" onclick="handleNav(event,'contracts',this)"><i class="ti ti-writing"></i>عقود نموذجية<span class="ct">٠</span></a>
     </div>
     <div class="divider"></div>
     <div class="nav-sec">
@@ -81,7 +81,7 @@
       <span class="cur">أحكام قضائية</span>
     </div>
     <button class="install-btn hidden" id="installAppBtn" type="button" onclick="installApp()" aria-label="تثبيت التطبيق"><i class="ti ti-device-mobile-down"></i><span>تثبيت</span></button>
-    <button class="btn-add" type="button" aria-label="إضافة حكم جديد"><i class="ti ti-plus"></i><span class="btn-text">إضافة حكم جديد</span></button>
+    <button class="btn-add" type="button" onclick="showImportPage()" aria-label="إضافة حكم جديد"><i class="ti ti-plus"></i><span class="btn-text">إضافة حكم جديد</span></button>
   </div>
 
   <div class="page">
@@ -161,7 +161,11 @@
     <!-- RESULTS BAR -->
     <div class="results-bar">
       <div class="rb-left">عرض <strong id="shownCount">١٢</strong> من <strong id="totalCount">٢٤٧</strong> حكم</div>
-      <select class="sort-sel"><option>الأحدث أولاً</option><option>الأقدم أولاً</option><option>حسب المحكمة</option></select>
+      <select class="sort-sel" id="sortSelect" onchange="filterDocs()">
+        <option value="newest">الأحدث أولاً</option>
+        <option value="oldest">الأقدم أولاً</option>
+        <option value="court">حسب المحكمة</option>
+      </select>
     </div>
 
     <!-- DOC GRID -->
@@ -170,6 +174,35 @@
       <i class="ti ti-mood-empty"></i>
       <p>لم يتم العثور على أحكام مطابقة لبحثك</p>
     </div>
+
+    <section class="dashboard-page hidden" id="dashboardPage">
+      <div class="tool-page-head">
+        <div>
+          <h2>لوحة التحكم</h2>
+          <p>نظرة واحدة على محتوى سند وروابط مباشرة لأهم الخدمات والصفحات.</p>
+        </div>
+        <div class="tool-counter"><strong id="dashboardTotalCount">٠</strong><span>وثيقة</span></div>
+      </div>
+      <div class="dashboard-grid">
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-chart-bar"></i><span>المحتوى</span></div>
+          <div class="dashboard-stats" id="dashboardStats"></div>
+        </div>
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-bolt"></i><span>خدمات سريعة</span></div>
+          <div class="quick-actions">
+            <button class="tool-secondary" type="button" onclick="showAllJudgments()"><i class="ti ti-gavel"></i>الأحكام</button>
+            <button class="tool-secondary" type="button" onclick="showLawCatalog()"><i class="ti ti-file-certificate"></i>القوانين</button>
+            <button class="tool-secondary" type="button" onclick="showImportPage()"><i class="ti ti-plus"></i>إضافة حكم</button>
+            <button class="tool-secondary" type="button" onclick="showFeesManagerPage()"><i class="ti ti-receipt"></i>الرسوم</button>
+          </div>
+        </div>
+        <div class="tool-panel wide">
+          <div class="tool-panel-head"><i class="ti ti-clock"></i><span>آخر الأحكام</span></div>
+          <div class="dashboard-recent" id="dashboardRecent"></div>
+        </div>
+      </div>
+    </section>
 
     <section class="law-catalog hidden" id="lawCatalog">
       <div class="law-catalog-head">
@@ -194,6 +227,53 @@
       <div class="section-empty-icon"><i class="ti ti-file-certificate"></i></div>
       <h2>قوانين</h2>
       <p>لم يتم رفع قوانين بعد.</p>
+    </section>
+
+    <section class="collection-page hidden" id="collectionPage">
+      <div class="tool-page-head">
+        <div>
+          <h2 id="collectionTitle">قسم</h2>
+          <p id="collectionSubtitle">محتوى القسم.</p>
+        </div>
+        <div class="tool-counter"><strong id="collectionCount">٠</strong><span id="collectionCountLabel">عنصر</span></div>
+      </div>
+      <div class="collection-list" id="collectionList"></div>
+      <div class="tool-empty hidden" id="collectionEmpty">
+        <i class="ti ti-folder-off"></i>
+        <p id="collectionEmptyText">لم يتم رفع محتوى بعد.</p>
+      </div>
+    </section>
+
+    <section class="import-page hidden" id="importPage">
+      <div class="tool-page-head">
+        <div>
+          <h2>إضافة حكم جديد</h2>
+          <p>أضف حكمًا إلى جهازك للبحث والقراءة والحفظ داخل سند. البيانات المحلية لا تُرفع إلى الخادم.</p>
+        </div>
+        <div class="tool-counter"><strong id="localJudgmentCount">٠</strong><span>محلي</span></div>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-file-plus"></i><span>بيانات الحكم</span></div>
+          <div class="form-grid">
+            <label class="field wide"><span>عنوان الحكم</span><input id="newJudgmentTitle" type="text" placeholder="مثال: الطعن رقم 27 لسنة 2025 طعن تجاري"></label>
+            <label class="field"><span>المحكمة</span><input id="newJudgmentCourt" type="text" placeholder="محكمة التمييز"></label>
+            <label class="field"><span>التصنيف</span><select id="newJudgmentType"><option value="tijari">تجاري</option><option value="madani">مدني</option><option value="omali">عمالي</option><option value="jinai">جنائي</option><option value="idari">إداري</option><option value="osri">أسري</option></select></label>
+            <label class="field"><span>رقم الحكم أو الطعن</span><input id="newJudgmentNumber" type="text" placeholder="2025/27"></label>
+            <label class="field"><span>التاريخ</span><input id="newJudgmentDate" type="date"></label>
+            <label class="field wide"><span>نص الحكم الكامل</span><textarea id="newJudgmentBody" rows="10" placeholder="ألصق نص الحكم الكامل هنا..."></textarea></label>
+          </div>
+          <div class="button-row">
+            <button class="tool-primary" type="button" onclick="saveLocalJudgment()"><i class="ti ti-device-floppy"></i>حفظ الحكم</button>
+            <button class="tool-secondary" type="button" onclick="resetLocalJudgmentForm()"><i class="ti ti-eraser"></i>تفريغ</button>
+          </div>
+        </div>
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-list-details"></i><span>الأحكام المضافة محليًا</span></div>
+          <div class="local-judgment-list" id="localJudgmentList"></div>
+          <div class="tool-empty hidden" id="localJudgmentEmpty"><i class="ti ti-file-off"></i><p>لا توجد أحكام مضافة محليًا بعد.</p></div>
+        </div>
+      </div>
     </section>
 
     <section class="fees-manager hidden" id="feesManager">
@@ -252,10 +332,12 @@
           <div class="tool-panel-head"><i class="ti ti-database"></i><span>البيانات المحلية</span></div>
           <div class="settings-stats">
             <span><strong id="settingsSavedCount">٠</strong> أحكام محفوظة</span>
+            <span><strong id="settingsLocalJudgmentCount">٠</strong> أحكام مضافة محليًا</span>
             <span><strong id="settingsFeeCount">٠</strong> رسوم محفوظة</span>
           </div>
           <div class="settings-actions">
             <button class="tool-secondary" type="button" onclick="clearSavedJudgments()"><i class="ti ti-bookmark-off"></i>مسح المحفوظات</button>
+            <button class="tool-secondary danger" type="button" onclick="clearLocalJudgments()"><i class="ti ti-file-x"></i>مسح الأحكام المحلية</button>
             <button class="tool-secondary danger" type="button" onclick="clearFeeItems()"><i class="ti ti-trash"></i>مسح الرسوم</button>
           </div>
         </div>
@@ -264,7 +346,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v8</strong></span>
+            <span>الكاش: <strong>v9</strong></span>
           </div>
         </div>
       </div>
@@ -322,6 +404,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=fees-settings-20260524"></script>
+<script src="./assets/app.js?v=all-pages-20260524"></script>
 </body>
 </html>

@@ -1,69 +1,64 @@
 # Sanad
 
-Static Arabic legal research web app for judgments, laws, and legal forms.
+Sanad is a static Arabic legal research web app for judgments, laws, decrees, regulations, legal forms, fees, settings, and a local legal analyzer.
 
-## Structure
+## App Structure
 
 ```text
-sanad.html              App markup only
-assets/styles.css       Visual design and responsive layout
-assets/app.js           UI behavior, search, filters, saved judgments, reader formatting
-data/judgments.js       Judgment records
-data/laws.js            Law records loaded by the law section
-data/legal-forms.js     Placeholder for legal form/template records
-content/laws/           Original Markdown law source files
-icons/                  PWA and home-screen icons
+sanad.html              Main HTML shell and page sections
+assets/styles.css       Responsive visual design
+assets/app.js           Navigation, routing, search, readers, local storage services
+data/judgments.js       Published judgment records
+data/laws.js            Published law records
+data/legal-forms.js     Legal form/template records
+content/laws/           Original Markdown law sources
+icons/                  PWA and phone install icons
 manifest.json           Installable web-app metadata
 sw.js                   Offline/cache service worker
 sanad-local-server.js   Local static server
 ```
 
+## Pages And Services
+
+- `#dashboard`: overview dashboard and quick service links.
+- `#judgments` / `#documents`: judgment catalog with search, filters, sorting, reader, and saved judgments.
+- `#laws`: law catalog and formatted law reader.
+- `#decrees`: independent decrees page, ready for future decree records.
+- `#regulations`: independent regulations page, ready for future regulation records.
+- `#contracts`: independent legal forms page, powered by `data/legal-forms.js`.
+- `#aiAnalysis`: local legal analyzer that matches the case description against app laws and judgments.
+- `#fees`: local fee manager and estimate calculator.
+- `#settings`: local settings and data controls.
+- `#add-judgment`: local judgment import service.
+
 ## Data Model
 
-Judgments are loaded from `data/judgments.js` into:
+Judgments are loaded into `window.SANAD_DATA.judgments`:
 
 ```js
-window.SANAD_DATA.judgments = [
-  {
-    id: 1,
-    type: "tijari",
-    title: "الطعن رقم ...",
-    court: "محكمة التمييز",
-    date: "١٢ مارس ٢٠٢٤",
-    num: "2024/3847",
-    att: 1,
-    source: "Commercial 1.docx",
-    appeal: "عن استئناف رقم ...",
-    body: "نص الحكم الكامل..."
-  }
-];
+{
+  id: 27,
+  type: "tijari",
+  title: "الطعن رقم 27 لسنة 2025 طعن تجاري",
+  court: "محكمة التمييز",
+  date: "2025-03-13",
+  num: "2025/27",
+  body: "النص الكامل للحكم..."
+}
 ```
 
-`source` and `appeal` stay in the data for import tracking and search, but they are not shown as extra boxes in the judgment cards or reader because that information already appears inside the judgment text.
+Laws are loaded into `window.SANAD_DATA.laws`; keep original Markdown in `content/laws/` and mirror searchable display data in `data/laws.js`.
 
-Laws are loaded from `data/laws.js` into:
+Local user data is stored in browser `localStorage`:
 
-```js
-window.SANAD_DATA.laws = [
-  {
-    id: "uae-civil-procedures-42-2022",
-    title: "مرسوم بقانون اتحادي رقم (42) لسنة 2022",
-    subtitle: "بإصدار قانون الإجراءات المدنية",
-    status: "ساري",
-    updated: "01 أكتوبر 2025",
-    articleCount: 344,
-    pageCount: 105,
-    markdownPath: "./content/laws/qanoon_al_ijraat_al_madaniya_uae_42_2022.md",
-    body: "Full Markdown text..."
-  }
-];
-```
-
-Keep original law Markdown files in `content/laws/`; mirror the display metadata and searchable full text in `data/laws.js` so the static app can render the law section without a server API.
+- `sanadSavedJudgments`
+- `sanadFeeItems`
+- `sanadSettings`
+- `sanadLocalJudgments`
 
 ## Scaling Plan
 
-For 100,000+ judgments, keep `sanad.html` small and add data by collection under `data/`. When the dataset grows too large for one file, split judgments by year/type, for example:
+For 100,000+ judgments, keep `sanad.html` small and split data by collection:
 
 ```text
 data/judgments/2025-commercial.js
@@ -71,11 +66,11 @@ data/judgments/2025-civil.js
 data/judgments/2024-commercial.js
 ```
 
-Then load only the collection needed for the current filter/search screen. The UI logic belongs in `assets/app.js`; data imports should not be added back into `sanad.html`.
+The UI logic should remain in `assets/app.js`; large datasets should be loaded by year/type/search scope instead of embedding everything in `sanad.html`.
 
 ## Local Preview
 
-Double-click `open-sanad-local.cmd`, or run:
+Run:
 
 ```powershell
 node sanad-local-server.js
