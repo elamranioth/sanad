@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=principles-only-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=civil-docx-20260525">
 </head>
 <body>
 
@@ -33,14 +33,14 @@
     <div class="nav-sec">
       <span class="nav-lbl">الرئيسية</span>
       <a class="ni" href="#dashboard" onclick="handleNav(event,'dashboard',this)"><i class="ti ti-layout-dashboard"></i>لوحة التحكم</a>
-      <a class="ni" href="#documents" onclick="handleNav(event,'documents',this)"><i class="ti ti-books"></i>جميع الوثائق<span class="ct">٢٢١</span></a>
+      <a class="ni" href="#documents" onclick="handleNav(event,'documents',this)"><i class="ti ti-books"></i>جميع الوثائق<span class="ct">٤٨٦</span></a>
       <a class="ni" href="#saved" onclick="handleNav(event,'saved',this)"><i class="ti ti-bookmark"></i>المحفوظة<span class="ct">٠</span></a>
       <a class="ni" href="#recent" onclick="handleNav(event,'recent',this)"><i class="ti ti-history"></i>آخر المضافة</a>
     </div>
     <div class="divider"></div>
     <div class="nav-sec">
       <span class="nav-lbl">التصنيفات</span>
-      <a class="ni on" href="#judgments" onclick="handleNav(event,'judgments',this)"><i class="ti ti-gavel"></i>أحكام قضائية<span class="ct">٢٢١</span></a>
+      <a class="ni on" href="#judgments" onclick="handleNav(event,'judgments',this)"><i class="ti ti-gavel"></i>أحكام قضائية<span class="ct">٤٨٦</span></a>
       <a class="ni" href="#laws" onclick="handleNav(event,'laws',this)"><i class="ti ti-file-certificate"></i>قوانين<span class="ct">٠</span></a>
       <a class="ni" href="#decrees" onclick="handleNav(event,'decrees',this)"><i class="ti ti-stamp"></i>مراسيم<span class="ct">٠</span></a>
       <a class="ni" href="#regulations" onclick="handleNav(event,'regulations',this)"><i class="ti ti-clipboard-list"></i>لوائح<span class="ct">٠</span></a>
@@ -108,32 +108,32 @@
       <div class="tc tc-all active" onclick="setType('all',this)">
         <div class="tc-icon"><i class="ti ti-layout-grid"></i></div>
         <div class="tc-label">جميع الأحكام</div>
-        <div class="tc-count">٢٤٧</div>
+        <div class="tc-count">٤٨٦</div>
       </div>
       <div class="tc tc-tijari" onclick="setType('tijari',this)">
         <div class="tc-icon"><i class="ti ti-briefcase"></i></div>
         <div class="tc-label">تجاري</div>
-        <div class="tc-count">٨٤</div>
+        <div class="tc-count">٢٠٩</div>
       </div>
       <div class="tc tc-madani" onclick="setType('madani',this)">
         <div class="tc-icon"><i class="ti ti-scale"></i></div>
         <div class="tc-label">مدني</div>
-        <div class="tc-count">٧١</div>
+        <div class="tc-count">٢٧٠</div>
       </div>
       <div class="tc tc-omali" onclick="setType('omali',this)">
         <div class="tc-icon"><i class="ti ti-hammer"></i></div>
         <div class="tc-label">عمالي</div>
-        <div class="tc-count">٣٨</div>
+        <div class="tc-count">٢</div>
       </div>
       <div class="tc tc-jinai" onclick="setType('jinai',this)">
         <div class="tc-icon"><i class="ti ti-shield-lock"></i></div>
         <div class="tc-label">جنائي</div>
-        <div class="tc-count">٢٩</div>
+        <div class="tc-count">٢</div>
       </div>
       <div class="tc tc-idari" onclick="setType('idari',this)">
         <div class="tc-icon"><i class="ti ti-building-bank"></i></div>
         <div class="tc-label">إداري</div>
-        <div class="tc-count">١٦</div>
+        <div class="tc-count">٢</div>
       </div>
     </div>
 
@@ -348,7 +348,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v12</strong></span>
+            <span>الكاش: <strong>v13</strong></span>
           </div>
         </div>
       </div>
@@ -406,6 +406,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=principles-only-20260525"></script>
+<script src="./assets/app.js?v=civil-docx-20260525"></script>
 </body>
 </html>

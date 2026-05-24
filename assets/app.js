@@ -160,7 +160,8 @@ function paragraphLabel(type){
 function renderJudgmentParagraph(text){
   const type=classifyJudgmentParagraph(text);
   const label=paragraphLabel(type);
-  return `<p class="judgment-para${type?` ${type}`:''}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${escapeHtml(text)}</p>`;
+  const content=type==='principle'?`<span class="judgment-quote">«${escapeHtml(text)}»</span>`:escapeHtml(text);
+  return `<p class="judgment-para${type?` ${type}`:''}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${content}</p>`;
 }
 function formatJudgmentBody(body,doc=null){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
@@ -771,7 +772,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v12',label:'الكاش'}
+    {value:'v13',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
