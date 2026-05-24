@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./assets/styles.css?v=law-reader-20260523">
+<link rel="stylesheet" href="./assets/styles.css?v=law-reader-20260524-ai">
 </head>
 <body>
 
@@ -50,6 +50,7 @@
     <div class="nav-sec">
       <span class="nav-lbl">الأدوات</span>
       <a class="ni" href="#search" onclick="handleNav(event,'search',this)"><i class="ti ti-zoom"></i>بحث متقدم</a>
+      <a class="ni ni-ai" href="#aiAnalysis" onclick="handleNav(event,'aiAnalysis',this)"><i class="ti ti-brain"></i>المحلل القانوني الذكي<span class="ct ai-ct">ذكي</span></a>
       <a class="ni" href="#tags" onclick="handleNav(event,'tags',this)"><i class="ti ti-tags"></i>إدارة الوسوم</a>
       <a class="ni" href="#settings" onclick="handleNav(event,'settings',this)"><i class="ti ti-adjustments-horizontal"></i>الإعدادات</a>
     </div>
@@ -214,7 +215,7 @@
 
 
     <!-- AI ANALYSIS -->
-    <div class="ai-section">
+    <div class="ai-section hidden" id="aiAnalysis">
       <div class="ai-header">
         <div class="ai-title-row">
           <div class="ai-glow-icon"><i class="ti ti-brain"></i></div>
@@ -247,6 +248,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=law-reader-20260523"></script>
+<script src="./assets/app.js?v=law-reader-20260524-ai"></script>
 </body>
 </html>

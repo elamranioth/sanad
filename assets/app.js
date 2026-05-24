@@ -263,6 +263,16 @@ function setActiveNav(el){
   if(el)el.classList.add('on');
   updateDisplayedCounts();
 }
+function setRouteHash(hash){
+  const target=window.location.pathname+window.location.search+hash;
+  if(window.location.pathname+window.location.search+window.location.hash!==target){
+    history.replaceState(null,'',target);
+  }
+}
+function activateNavByAction(action){
+  const link=document.querySelector(`.sidebar a[onclick*="'${action}'"]`);
+  setActiveNav(link);
+}
 function scrollPageTo(selector){
   const page=document.querySelector('.page');
   const target=document.querySelector(selector);
@@ -296,25 +306,32 @@ function setDefaultHeroStats(){
     {value:ar(18),label:'هذا الشهر'}
   ]);
 }
+function setAiAnalysisVisible(visible){
+  document.getElementById('aiAnalysis')?.classList.toggle('hidden',!visible);
+}
 function setJudgmentWorkspaceVisible(visible){
-  ['.type-cards','.search-bar','.results-bar','#docGrid','.ai-section'].forEach(selector=>{
+  ['.type-cards','.search-bar','.results-bar','#docGrid'].forEach(selector=>{
     const el=document.querySelector(selector);
     if(el)el.classList.toggle('hidden',!visible);
   });
   if(!visible)document.getElementById('noResults')?.classList.add('hidden');
 }
 function restoreJudgmentCatalog(){
-  document.querySelector('.page')?.classList.remove('empty-mode');
+  setRouteHash('');
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
   document.getElementById('sectionEmpty')?.classList.add('hidden');
   document.getElementById('lawCatalog')?.classList.add('hidden');
+  setAiAnalysisVisible(false);
   setCatalogHeader(defaultCatalog.title,defaultCatalog.subtitle,defaultCatalog.icon);
   setDefaultHeroStats();
   setJudgmentWorkspaceVisible(true);
 }
 function showEmptyCatalog(title,message,icon){
   const section=document.getElementById('sectionEmpty');
+  document.querySelector('.page')?.classList.remove('ai-mode');
   document.querySelector('.page')?.classList.add('empty-mode');
   document.getElementById('lawCatalog')?.classList.add('hidden');
+  setAiAnalysisVisible(false);
   setCatalogHeader(title,message,icon);
   setJudgmentWorkspaceVisible(false);
   if(section){
@@ -357,14 +374,16 @@ function renderLaws(list){
     </button>`).join('');
 }
 function showLawCatalog(){
+  setRouteHash('#laws');
   if(!laws.length){
     showEmptyCatalog('قوانين','لم يتم رفع قوانين بعد.','ti-file-certificate');
     return;
   }
   const articleTotal=laws.reduce((sum,law)=>sum+(law.articleCount||0),0);
   currentView='laws';
-  document.querySelector('.page')?.classList.remove('empty-mode');
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
   document.getElementById('sectionEmpty')?.classList.add('hidden');
+  setAiAnalysisVisible(false);
   setJudgmentWorkspaceVisible(false);
   setCatalogHeader('قوانين','تصفح القوانين والتشريعات المحفوظة في سند بنص كامل ومنظم للقراءة والبحث.','ti-file-certificate');
   setHeroStats([
@@ -376,6 +395,25 @@ function showLawCatalog(){
   document.getElementById('lawSearchInput').value='';
   renderLaws(laws);
   scrollPageTo('#lawCatalog');
+}
+function showAiAnalysisPage(){
+  setRouteHash('#aiAnalysis');
+  currentView='aiAnalysis';
+  currentType='all';
+  document.querySelector('.page')?.classList.remove('empty-mode');
+  document.querySelector('.page')?.classList.add('ai-mode');
+  document.getElementById('sectionEmpty')?.classList.add('hidden');
+  document.getElementById('lawCatalog')?.classList.add('hidden');
+  setJudgmentWorkspaceVisible(false);
+  setAiAnalysisVisible(true);
+  setCatalogHeader('المحلل القانوني الذكي','صف وقائع قضيتك ليقترح لك المواد القانونية والسوابق القضائية ونقاط الدفاع المحتملة.','ti-brain');
+  setHeroStats([
+    {value:ar(laws.length),label:'قانون'},
+    {value:ar(counts.all),label:'حكم'},
+    {value:'ذكي',label:'تحليل'}
+  ]);
+  scrollPageTo('#aiAnalysis');
+  setTimeout(()=>document.getElementById('caseInput')?.focus(),260);
 }
 function filterLaws(){
   const q=document.getElementById('lawSearchInput')?.value.trim()||'';
@@ -460,6 +498,11 @@ function handleNav(event,action,el){
     scrollPageTo('.search-bar');
     setTimeout(()=>search.focus(),220);
     showToast('اكتب كلمات البحث أو رقم الطعن.');
+    return;
+  }
+  if(action==='aiAnalysis'){
+    showAiAnalysisPage();
+    showToast('تم فتح المحلل القانوني الذكي.');
   }
 }
 window.addEventListener('resize',()=>{
@@ -581,6 +624,15 @@ document.getElementById('lawList')?.addEventListener('click',event=>{
 });
 document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
+window.addEventListener('hashchange',()=>{
+  if(window.location.hash==='#aiAnalysis'){
+    activateNavByAction('aiAnalysis');
+    showAiAnalysisPage();
+  }else if(window.location.hash==='#laws'){
+    activateNavByAction('laws');
+    showLawCatalog();
+  }
+});
 window.addEventListener('beforeinstallprompt',event=>{
   event.preventDefault();
   deferredInstallPrompt=event;
@@ -593,7 +645,7 @@ window.addEventListener('appinstalled',()=>{
 });
 
 function filterDocs(){
-  if(currentView==='laws')return;
+  if(currentView==='laws'||currentView==='aiAnalysis')return;
   const q=document.getElementById('searchInput').value.trim();
   const sel=document.getElementById('typeSelect').value;
   if(sel!==currentType){currentType=sel;syncCards(sel);}
@@ -611,7 +663,7 @@ function syncCards(type){
 }
 
 function setType(type,el){
-  if(currentView==='laws')currentView='documents';
+  if(currentView==='laws'||currentView==='aiAnalysis')currentView='documents';
   restoreJudgmentCatalog();
   currentType=type;
   document.querySelectorAll('.tc').forEach(c=>c.classList.remove('active'));
@@ -671,6 +723,13 @@ updateDisplayedCounts();
 updateInstallButton();
 renderDocs(docs);
 renderLaws(laws);
+if(window.location.hash==='#aiAnalysis'){
+  activateNavByAction('aiAnalysis');
+  showAiAnalysisPage();
+}else if(window.location.hash==='#laws'){
+  activateNavByAction('laws');
+  showLawCatalog();
+}
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
