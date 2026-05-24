@@ -21,7 +21,11 @@ let currentLawId=null;
 let readerMode='judgment';
 let deferredInstallPrompt=null;
 const savedStorageKey='sanadSavedJudgments';
+const feeStorageKey='sanadFeeItems';
+const settingsStorageKey='sanadSettings';
 let savedJudgmentIds=loadSavedJudgments();
+let feeItems=loadFeeItems();
+let sanadSettings=loadSanadSettings();
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function matchesDoc(d,q){return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.body].some(v=>String(v||'').includes(q))}
@@ -208,6 +212,54 @@ function saveSavedJudgments(){
   }
 }
 function isSaved(id){return savedJudgmentIds.has(Number(id))}
+function loadFeeItems(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(feeStorageKey)||'[]');
+    return Array.isArray(saved)?saved.filter(item=>item&&item.id&&item.title):[];
+  }catch(_){
+    return [];
+  }
+}
+function saveFeeItems(){
+  try{
+    localStorage.setItem(feeStorageKey,JSON.stringify(feeItems));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
+function loadSanadSettings(){
+  const defaults={readerSize:'normal',compactCards:false};
+  try{
+    const saved=JSON.parse(localStorage.getItem(settingsStorageKey)||'{}');
+    return {...defaults,...saved};
+  }catch(_){
+    return defaults;
+  }
+}
+function saveSanadSettings(){
+  try{
+    localStorage.setItem(settingsStorageKey,JSON.stringify(sanadSettings));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
+function money(value){
+  const number=Number(value)||0;
+  return `${new Intl.NumberFormat('ar-AE',{maximumFractionDigits:2}).format(number)} درهم`;
+}
+function applySettings(){
+  document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
+  document.body.classList.toggle('reader-xlarge',sanadSettings.readerSize==='xlarge');
+  document.body.classList.toggle('compact-cards',!!sanadSettings.compactCards);
+}
+function syncSettingsControls(){
+  const reader=document.getElementById('readerSizeSelect');
+  const compact=document.getElementById('compactCardsToggle');
+  if(reader)reader.value=sanadSettings.readerSize||'normal';
+  if(compact)compact.checked=!!sanadSettings.compactCards;
+}
 function isMobileSidebar(){return window.matchMedia('(max-width: 900px)').matches}
 function isStandaloneApp(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
 function isIOSDevice(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
@@ -309,6 +361,19 @@ function setDefaultHeroStats(){
 function setAiAnalysisVisible(visible){
   document.getElementById('aiAnalysis')?.classList.toggle('hidden',!visible);
 }
+function setFeesVisible(visible){
+  document.getElementById('feesManager')?.classList.toggle('hidden',!visible);
+}
+function setSettingsVisible(visible){
+  document.getElementById('settingsPage')?.classList.toggle('hidden',!visible);
+}
+function hideStandalonePages(){
+  document.getElementById('sectionEmpty')?.classList.add('hidden');
+  document.getElementById('lawCatalog')?.classList.add('hidden');
+  setAiAnalysisVisible(false);
+  setFeesVisible(false);
+  setSettingsVisible(false);
+}
 function setJudgmentWorkspaceVisible(visible){
   ['.type-cards','.search-bar','.results-bar','#docGrid'].forEach(selector=>{
     const el=document.querySelector(selector);
@@ -319,9 +384,7 @@ function setJudgmentWorkspaceVisible(visible){
 function restoreJudgmentCatalog(){
   setRouteHash('');
   document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
-  document.getElementById('sectionEmpty')?.classList.add('hidden');
-  document.getElementById('lawCatalog')?.classList.add('hidden');
-  setAiAnalysisVisible(false);
+  hideStandalonePages();
   setCatalogHeader(defaultCatalog.title,defaultCatalog.subtitle,defaultCatalog.icon);
   setDefaultHeroStats();
   setJudgmentWorkspaceVisible(true);
@@ -330,8 +393,7 @@ function showEmptyCatalog(title,message,icon){
   const section=document.getElementById('sectionEmpty');
   document.querySelector('.page')?.classList.remove('ai-mode');
   document.querySelector('.page')?.classList.add('empty-mode');
-  document.getElementById('lawCatalog')?.classList.add('hidden');
-  setAiAnalysisVisible(false);
+  hideStandalonePages();
   setCatalogHeader(title,message,icon);
   setJudgmentWorkspaceVisible(false);
   if(section){
@@ -382,8 +444,7 @@ function showLawCatalog(){
   const articleTotal=laws.reduce((sum,law)=>sum+(law.articleCount||0),0);
   currentView='laws';
   document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
-  document.getElementById('sectionEmpty')?.classList.add('hidden');
-  setAiAnalysisVisible(false);
+  hideStandalonePages();
   setJudgmentWorkspaceVisible(false);
   setCatalogHeader('قوانين','تصفح القوانين والتشريعات المحفوظة في سند بنص كامل ومنظم للقراءة والبحث.','ti-file-certificate');
   setHeroStats([
@@ -402,8 +463,7 @@ function showAiAnalysisPage(){
   currentType='all';
   document.querySelector('.page')?.classList.remove('empty-mode');
   document.querySelector('.page')?.classList.add('ai-mode');
-  document.getElementById('sectionEmpty')?.classList.add('hidden');
-  document.getElementById('lawCatalog')?.classList.add('hidden');
+  hideStandalonePages();
   setJudgmentWorkspaceVisible(false);
   setAiAnalysisVisible(true);
   setCatalogHeader('المحلل القانوني الذكي','صف وقائع قضيتك ليقترح لك المواد القانونية والسوابق القضائية ونقاط الدفاع المحتملة.','ti-brain');
@@ -415,10 +475,157 @@ function showAiAnalysisPage(){
   scrollPageTo('#aiAnalysis');
   setTimeout(()=>document.getElementById('caseInput')?.focus(),260);
 }
+function renderFees(){
+  const list=document.getElementById('feeList');
+  const empty=document.getElementById('feeEmpty');
+  const count=document.getElementById('feeItemCount');
+  if(count)count.textContent=ar(feeItems.length);
+  const navCount=document.querySelector('.fee-ct');
+  if(navCount)navCount.textContent=ar(feeItems.length);
+  if(!list)return;
+  if(!feeItems.length){
+    list.innerHTML='';
+    empty?.classList.remove('hidden');
+    return;
+  }
+  empty?.classList.add('hidden');
+  list.innerHTML=feeItems.map(item=>`
+    <div class="fee-item" data-fee-id="${escapeHtml(item.id)}">
+      <div class="fee-item-main">
+        <div class="fee-item-top">
+          <span>${escapeHtml(item.category||'عام')}</span>
+          <strong>${money(item.amount)}</strong>
+        </div>
+        <h3>${escapeHtml(item.title)}</h3>
+        ${item.note?`<p>${escapeHtml(item.note)}</p>`:''}
+      </div>
+      <button class="fee-delete" type="button" data-fee-delete="${escapeHtml(item.id)}" aria-label="حذف الرسم"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function updateSettingsStats(){
+  const saved=document.getElementById('settingsSavedCount');
+  const fee=document.getElementById('settingsFeeCount');
+  const judgment=document.getElementById('settingsJudgmentCount');
+  const law=document.getElementById('settingsLawCount');
+  if(saved)saved.textContent=ar(savedJudgmentIds.size);
+  if(fee)fee.textContent=ar(feeItems.length);
+  if(judgment)judgment.textContent=ar(counts.all);
+  if(law)law.textContent=ar(laws.length);
+}
+function showFeesManagerPage(){
+  setRouteHash('#fees');
+  currentView='fees';
+  currentType='all';
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
+  hideStandalonePages();
+  setJudgmentWorkspaceVisible(false);
+  setFeesVisible(true);
+  setCatalogHeader('إدارة الرسوم','أضف بنود الرسوم واحسب التقديرات الإدارية من صفحة واحدة محفوظة على جهازك.','ti-receipt');
+  setHeroStats([
+    {value:ar(feeItems.length),label:'بند رسوم'},
+    {value:ar(new Set(feeItems.map(item=>item.category||'عام')).size),label:'تصنيف'},
+    {value:'محلي',label:'الحفظ'}
+  ]);
+  renderFees();
+  scrollPageTo('#feesManager');
+}
+function showSettingsPage(){
+  setRouteHash('#settings');
+  currentView='settings';
+  currentType='all';
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
+  hideStandalonePages();
+  setJudgmentWorkspaceVisible(false);
+  setSettingsVisible(true);
+  setCatalogHeader('الإعدادات','اضبط تجربة القراءة والبيانات المحلية لتطبيق سند على هذا الجهاز.','ti-adjustments-horizontal');
+  setHeroStats([
+    {value:ar(savedJudgmentIds.size),label:'محفوظ'},
+    {value:ar(feeItems.length),label:'رسوم'},
+    {value:'v8',label:'الكاش'}
+  ]);
+  syncSettingsControls();
+  updateSettingsStats();
+  scrollPageTo('#settingsPage');
+}
 function filterLaws(){
   const q=document.getElementById('lawSearchInput')?.value.trim()||'';
   const list=q?laws.filter(law=>matchesLaw(law,q)):laws;
   renderLaws(list);
+}
+function addFeeItem(){
+  const title=document.getElementById('feeTitleInput')?.value.trim()||'';
+  const category=document.getElementById('feeCategoryInput')?.value.trim()||'عام';
+  const amount=Number(document.getElementById('feeAmountInput')?.value||0);
+  const note=document.getElementById('feeNoteInput')?.value.trim()||'';
+  if(!title){
+    showToast('اكتب اسم الرسم أولاً.');
+    return;
+  }
+  feeItems.unshift({
+    id:String(Date.now()),
+    title,
+    category,
+    amount:Number.isFinite(amount)?amount:0,
+    note,
+    updated:new Date().toISOString()
+  });
+  const persisted=saveFeeItems();
+  ['feeTitleInput','feeCategoryInput','feeAmountInput','feeNoteInput'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  renderFees();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  showFeesManagerPage();
+  showToast(persisted?'تمت إضافة الرسم.':'تمت الإضافة لهذه الجلسة فقط.');
+}
+function deleteFeeItem(id){
+  feeItems=feeItems.filter(item=>String(item.id)!==String(id));
+  saveFeeItems();
+  renderFees();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  showFeesManagerPage();
+  showToast('تم حذف بند الرسوم.');
+}
+function calculateFeeEstimate(){
+  const claim=Number(document.getElementById('feeClaimInput')?.value||0);
+  const rate=Number(document.getElementById('feeRateInput')?.value||0);
+  const min=Number(document.getElementById('feeMinInput')?.value||0);
+  const max=Number(document.getElementById('feeMaxInput')?.value||0);
+  const result=document.getElementById('feeCalcResult');
+  if(!result)return;
+  let fee=(Number.isFinite(claim)?claim:0)*(Number.isFinite(rate)?rate:0)/100;
+  if(min>0)fee=Math.max(fee,min);
+  if(max>0)fee=Math.min(fee,max);
+  result.innerHTML=`<strong>${money(fee)}</strong><span>تقدير إداري حسب القيم المدخلة.</span>`;
+}
+function updateSettingsFromControls(){
+  sanadSettings={
+    readerSize:document.getElementById('readerSizeSelect')?.value||'normal',
+    compactCards:!!document.getElementById('compactCardsToggle')?.checked
+  };
+  applySettings();
+  saveSanadSettings();
+  showToast('تم حفظ الإعدادات.');
+}
+function clearSavedJudgments(){
+  savedJudgmentIds.clear();
+  saveSavedJudgments();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  filterDocs();
+  showToast('تم مسح الأحكام المحفوظة.');
+}
+function clearFeeItems(){
+  feeItems=[];
+  saveFeeItems();
+  renderFees();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  showSettingsPage();
+  showToast('تم مسح الرسوم المحفوظة.');
 }
 function showAllJudgments(){
   restoreJudgmentCatalog();
@@ -435,9 +642,7 @@ function handleNav(event,action,el){
   const unavailable={
     decrees:'قسم المراسيم غير مضاف بعد.',
     regulations:'قسم اللوائح غير مضاف بعد.',
-    contracts:'قسم العقود النموذجية غير مضاف بعد.',
-    tags:'إدارة الوسوم غير مفعلة بعد.',
-    settings:'الإعدادات غير مفعلة بعد.'
+    contracts:'قسم العقود النموذجية غير مضاف بعد.'
   };
   closeSidebar();
   if(unavailable[action]){
@@ -503,6 +708,16 @@ function handleNav(event,action,el){
   if(action==='aiAnalysis'){
     showAiAnalysisPage();
     showToast('تم فتح المحلل القانوني الذكي.');
+    return;
+  }
+  if(action==='fees'){
+    showFeesManagerPage();
+    showToast('تم فتح إدارة الرسوم.');
+    return;
+  }
+  if(action==='settings'){
+    showSettingsPage();
+    showToast('تم فتح الإعدادات.');
   }
 }
 window.addEventListener('resize',()=>{
@@ -518,6 +733,8 @@ function updateDisplayedCounts(){
   document.querySelectorAll('a[href="#documents"] .ct,a[href="#judgments"] .ct').forEach(el=>{el.textContent=ar(counts.all);});
   const lawsCount=document.querySelector('a[href="#laws"] .ct');
   if(lawsCount)lawsCount.textContent=ar(laws.length);
+  const feeCount=document.querySelector('.fee-ct');
+  if(feeCount)feeCount.textContent=ar(feeItems.length);
   const savedCount=document.querySelector('a[href="#saved"] .ct');
   if(savedCount)savedCount.textContent=ar(savedJudgmentIds.size);
   Object.entries(counts).forEach(([type,count])=>{
@@ -623,6 +840,13 @@ document.getElementById('lawList')?.addEventListener('click',event=>{
   openLaw(card.dataset.lawId);
 });
 document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
+document.getElementById('feeList')?.addEventListener('click',event=>{
+  const button=event.target.closest('[data-fee-delete]');
+  if(!button)return;
+  deleteFeeItem(button.dataset.feeDelete);
+});
+document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
+document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
 window.addEventListener('hashchange',()=>{
   if(window.location.hash==='#aiAnalysis'){
@@ -631,6 +855,12 @@ window.addEventListener('hashchange',()=>{
   }else if(window.location.hash==='#laws'){
     activateNavByAction('laws');
     showLawCatalog();
+  }else if(window.location.hash==='#fees'){
+    activateNavByAction('fees');
+    showFeesManagerPage();
+  }else if(window.location.hash==='#settings'){
+    activateNavByAction('settings');
+    showSettingsPage();
   }
 });
 window.addEventListener('beforeinstallprompt',event=>{
@@ -645,7 +875,7 @@ window.addEventListener('appinstalled',()=>{
 });
 
 function filterDocs(){
-  if(currentView==='laws'||currentView==='aiAnalysis')return;
+  if(['laws','aiAnalysis','fees','settings'].includes(currentView))return;
   const q=document.getElementById('searchInput').value.trim();
   const sel=document.getElementById('typeSelect').value;
   if(sel!==currentType){currentType=sel;syncCards(sel);}
@@ -663,7 +893,7 @@ function syncCards(type){
 }
 
 function setType(type,el){
-  if(currentView==='laws'||currentView==='aiAnalysis')currentView='documents';
+  if(['laws','aiAnalysis','fees','settings'].includes(currentView))currentView='documents';
   restoreJudgmentCatalog();
   currentType=type;
   document.querySelectorAll('.tc').forEach(c=>c.classList.remove('active'));
@@ -721,14 +951,24 @@ async function analyzeCase(){
 syncSidebarToggle();
 updateDisplayedCounts();
 updateInstallButton();
+applySettings();
+syncSettingsControls();
 renderDocs(docs);
 renderLaws(laws);
+renderFees();
+updateSettingsStats();
 if(window.location.hash==='#aiAnalysis'){
   activateNavByAction('aiAnalysis');
   showAiAnalysisPage();
 }else if(window.location.hash==='#laws'){
   activateNavByAction('laws');
   showLawCatalog();
+}else if(window.location.hash==='#fees'){
+  activateNavByAction('fees');
+  showFeesManagerPage();
+}else if(window.location.hash==='#settings'){
+  activateNavByAction('settings');
+  showSettingsPage();
 }
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{

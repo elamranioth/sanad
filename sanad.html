@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./assets/styles.css?v=law-reader-20260524-ai">
+<link rel="stylesheet" href="./assets/styles.css?v=fees-settings-20260524">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       <span class="nav-lbl">الأدوات</span>
       <a class="ni" href="#search" onclick="handleNav(event,'search',this)"><i class="ti ti-zoom"></i>بحث متقدم</a>
       <a class="ni ni-ai" href="#aiAnalysis" onclick="handleNav(event,'aiAnalysis',this)"><i class="ti ti-brain"></i>المحلل القانوني الذكي<span class="ct ai-ct">ذكي</span></a>
-      <a class="ni" href="#tags" onclick="handleNav(event,'tags',this)"><i class="ti ti-tags"></i>إدارة الوسوم</a>
+      <a class="ni" href="#fees" onclick="handleNav(event,'fees',this)"><i class="ti ti-receipt"></i>إدارة الرسوم<span class="ct fee-ct">٠</span></a>
       <a class="ni" href="#settings" onclick="handleNav(event,'settings',this)"><i class="ti ti-adjustments-horizontal"></i>الإعدادات</a>
     </div>
   </div>
@@ -196,6 +196,80 @@
       <p>لم يتم رفع قوانين بعد.</p>
     </section>
 
+    <section class="fees-manager hidden" id="feesManager">
+      <div class="tool-page-head">
+        <div>
+          <h2>إدارة الرسوم</h2>
+          <p>سجّل رسومك الداخلية واحسب الرسوم التقديرية بسرعة. القيم هنا إدارية وقابلة للتعديل وليست جدولًا رسميًا.</p>
+        </div>
+        <div class="tool-counter"><strong id="feeItemCount">٠</strong><span>بند</span></div>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-receipt"></i><span>إضافة بند رسوم</span></div>
+          <div class="form-grid">
+            <label class="field"><span>اسم الرسم</span><input id="feeTitleInput" type="text" placeholder="مثال: رسم قيد دعوى تجارية"></label>
+            <label class="field"><span>التصنيف</span><input id="feeCategoryInput" type="text" placeholder="تجاري، مدني، تنفيذ..."></label>
+            <label class="field"><span>القيمة</span><input id="feeAmountInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field wide"><span>ملاحظة</span><input id="feeNoteInput" type="text" placeholder="مصدر الرسم أو شروط تطبيقه"></label>
+          </div>
+          <button class="tool-primary" type="button" onclick="addFeeItem()"><i class="ti ti-plus"></i>إضافة الرسم</button>
+        </div>
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-calculator"></i><span>حاسبة تقديرية</span></div>
+          <div class="form-grid">
+            <label class="field"><span>قيمة المطالبة</span><input id="feeClaimInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field"><span>النسبة %</span><input id="feeRateInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field"><span>الحد الأدنى</span><input id="feeMinInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field"><span>الحد الأقصى</span><input id="feeMaxInput" type="number" min="0" step="0.01" placeholder="0"></label>
+          </div>
+          <button class="tool-secondary" type="button" onclick="calculateFeeEstimate()"><i class="ti ti-equal"></i>احتساب</button>
+          <div class="fee-result" id="feeCalcResult">أدخل القيم ثم اضغط احتساب.</div>
+        </div>
+      </div>
+      <div class="tool-panel">
+        <div class="tool-panel-head"><i class="ti ti-list-details"></i><span>بنود الرسوم المحفوظة</span></div>
+        <div class="fee-list" id="feeList"></div>
+        <div class="tool-empty hidden" id="feeEmpty"><i class="ti ti-receipt-off"></i><p>لم تتم إضافة رسوم بعد.</p></div>
+      </div>
+    </section>
+
+    <section class="settings-page hidden" id="settingsPage">
+      <div class="tool-page-head">
+        <div>
+          <h2>الإعدادات</h2>
+          <p>إعدادات محلية محفوظة على هذا الجهاز لتحسين القراءة وإدارة البيانات.</p>
+        </div>
+        <div class="tool-counter"><strong>محلي</strong><span>حفظ</span></div>
+      </div>
+      <div class="settings-grid">
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-text-size"></i><span>مظهر القراءة</span></div>
+          <label class="setting-row"><span>حجم خط القارئ</span><select id="readerSizeSelect"><option value="normal">عادي</option><option value="large">كبير</option><option value="xlarge">كبير جدًا</option></select></label>
+          <label class="setting-row"><span>بطاقات أحكام أكثر اختصارًا</span><input id="compactCardsToggle" type="checkbox"></label>
+        </div>
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-database"></i><span>البيانات المحلية</span></div>
+          <div class="settings-stats">
+            <span><strong id="settingsSavedCount">٠</strong> أحكام محفوظة</span>
+            <span><strong id="settingsFeeCount">٠</strong> رسوم محفوظة</span>
+          </div>
+          <div class="settings-actions">
+            <button class="tool-secondary" type="button" onclick="clearSavedJudgments()"><i class="ti ti-bookmark-off"></i>مسح المحفوظات</button>
+            <button class="tool-secondary danger" type="button" onclick="clearFeeItems()"><i class="ti ti-trash"></i>مسح الرسوم</button>
+          </div>
+        </div>
+        <div class="tool-panel">
+          <div class="tool-panel-head"><i class="ti ti-info-circle"></i><span>معلومات التطبيق</span></div>
+          <div class="settings-info">
+            <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
+            <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
+            <span>الكاش: <strong>v8</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- DOC MODAL -->
     <div class="doc-modal hidden" id="docModal" onclick="closeDoc()">
       <div class="doc-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="event.stopPropagation()">
@@ -248,6 +322,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=law-reader-20260524-ai"></script>
+<script src="./assets/app.js?v=fees-settings-20260524"></script>
 </body>
 </html>
