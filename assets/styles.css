@@ -315,10 +315,8 @@ body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
 body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
 body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
-body.ink-mode .judgment-para,body.ink-mode .judgment-para.facts,body.ink-mode .judgment-para.reasoning,body.ink-mode .judgment-para.principle,body.ink-mode .judgment-para.article{background:#fff;border-color:#111;border-right-color:#111;color:#111}
+body.ink-mode .judgment-para{background:#fff;border-color:#111;border-right-color:#111;color:#111}
 body.ink-mode .judgment-tag,body.ink-mode .law-article-head span{background:#f7f2df;color:#111;border-color:#111}
-body.ink-mode .judgment-ruling{background:#111;color:#fff;border-color:#111}
-body.ink-mode .judgment-ruling-label{color:#f7f2df}
 body.ink-mode .hero::before{display:none}
 body.ink-mode .hero::after{color:#111;opacity:.06}
 
@@ -397,12 +395,7 @@ body.modal-open{overflow:hidden}
 .intro-issued{font-family:'Amiri',serif;color:#e8dcc8;font-size:20px;font-weight:700;margin-top:18px;padding-top:14px;border-top:1px solid #1e3a52}
 .judgment-content{display:flex;flex-direction:column;gap:12px}
 .judgment-para{margin:0;background:#0d1b2a;border:1px solid #183044;border-right:4px solid #2a4a68;border-radius:10px;padding:15px 18px;color:#b8cbd6;line-height:2.05}
-.judgment-para.principle{background:#101b18;border-color:#254634;border-right-color:#7aaa6a;color:#cbe2c5}
-.judgment-quote{display:block;font-family:'Amiri',serif;font-size:18px;line-height:2.1;color:#d8ead3}
 .judgment-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;font-size:10px;font-weight:700;padding:3px 9px;margin:0 0 8px 8px}
-.judgment-tag.principle{background:#1a2a1a;color:#99cf84;border:1px solid #7aaa6a44}
-.judgment-ruling{background:#1c1308;border:1px solid #c8a84b66;border-right:5px solid #c8a84b;border-radius:12px;padding:20px 22px;color:#ead9a8;font-family:'Amiri',serif;font-size:19px;line-height:2.05;font-weight:700}
-.judgment-ruling-label{font-family:'Tajawal',sans-serif;font-size:11px;color:#c8a84b;letter-spacing:.5px;margin-bottom:8px}
 .law-modal .doc-dialog-body{background:#08121d}
 .law-reader{display:flex;flex-direction:column;gap:16px}
 .law-reader-cover{background:linear-gradient(135deg,#0a1520,#102638);border:1px solid #2a4a68;border-radius:14px;padding:24px;display:flex;align-items:center;gap:18px}
@@ -426,7 +419,7 @@ body.modal-open{overflow:hidden}
 .law-bullet span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#c8a84b;margin-left:9px;vertical-align:middle}
 .law-reader strong{color:#e8dcc8}
 .law-reader code{font-family:'Tajawal',sans-serif;background:#122638;border:1px solid #2a4a68;border-radius:5px;padding:1px 5px;color:#8bd3ee}
-@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-para{padding:13px 14px}.judgment-ruling{font-size:17px;padding:17px 16px}}
+@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-para{padding:13px 14px}}
 @media(max-width:900px){
 body{display:block;min-height:100dvh}
 .sidebar{position:fixed;right:0;top:0;bottom:0;width:min(312px,88vw);z-index:60;transform:translateX(100%);box-shadow:-18px 0 48px #00000066}

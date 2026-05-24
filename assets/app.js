@@ -128,58 +128,20 @@ function renderJudgmentIntro(lines){
   return `<section class="judgment-intro">${top.join('')}${info.length?`<div class="intro-grid">${info.join('')}</div>`:''}${issued?`<div class="intro-issued">${escapeHtml(issued)}</div>`:''}</section>`;
 }
 function splitJudgmentParagraphs(text){
-  const markers=[
-    'وحيث\\s+(?:إن|أن|إنه)',
-    'ومن\\s+المقرر',
-    'والمقرر\\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)',
-    'المقرر\\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)',
-    'من\\s+المقرر(?:\\s+(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)?',
-    'كما\\s+أنه\\s+من\\s+المقرر',
-    'ذلك\\s+أن(?:ه)?\\s+من\\s+المقرر',
-    'لما كان ذلك',
-    'أولاً:',
-    'أولًا:',
-    'ثانياً:',
-    'ثانيًا:'
-  ].join('|');
-  return text
-    .replace(/\r/g,'')
-    .split(/\n+/)
-    .flatMap(line=>line.trim().split(new RegExp(`(?=(?:${markers}))`,'g')))
-    .map(part=>part.trim())
-    .filter(Boolean);
-}
-function classifyJudgmentParagraph(text){
-  const value=String(text||'').replace(/\s+/g,' ').trim();
-  if(/(?:^|[\s،.؛])(?:ومن\s+المقرر|والمقرر\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)|المقرر\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)|من\s+المقرر(?:\s+(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)?|كما\s+أنه\s+من\s+المقرر|ذلك\s+أن(?:ه)?\s+من\s+المقرر)/.test(value))return 'principle';
-  return '';
-}
-function paragraphLabel(type){
-  return type==='principle'?'مبدأ قضائي':'';
+  return String(text||'').replace(/\r/g,'').split(/\n+/).map(part=>part.trim()).filter(Boolean);
 }
 function renderJudgmentParagraph(text){
-  const type=classifyJudgmentParagraph(text);
-  const label=paragraphLabel(type);
-  const content=type==='principle'?`<span class="judgment-quote">«${escapeHtml(text)}»</span>`:escapeHtml(text);
-  return `<p class="judgment-para${type?` ${type}`:''}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${content}</p>`;
+  return `<p class="judgment-para">${escapeHtml(text)}</p>`;
 }
 function formatJudgmentBody(body,doc=null){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
   if(!lines.length)return '<div class="judgment-reader"><p class="judgment-para facts">لا يتوفر نص الحكم الكامل لهذا السجل.</p></div>';
   const introEnd=lines.findIndex(line=>line.includes('أصـدرت')||line.includes('أصدرت'));
   const introLines=introEnd>=0?lines.slice(0,introEnd+1):[];
-  let mainText=(introEnd>=0?lines.slice(introEnd+1):lines).join('\n');
-  const rulingMarker='فلهذه الأسباب حكمت المحكمة';
-  const rulingIndex=mainText.indexOf(rulingMarker);
-  let ruling='';
-  if(rulingIndex>=0){
-    ruling=mainText.slice(rulingIndex).trim();
-    mainText=mainText.slice(0,rulingIndex).trim();
-  }
+  const mainText=(introEnd>=0?lines.slice(introEnd+1):lines).join('\n');
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
   const paragraphs=splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
-  const rulingHtml=ruling?`<section class="judgment-ruling"><div class="judgment-ruling-label">منطوق الحكم</div>${escapeHtml(ruling)}</section>`:'';
-  return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section>${rulingHtml}</div>`;
+  return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
 }
 function renderLawMarkdown(markdown){
   const lines=String(markdown||'').replace(/\r/g,'').split('\n');
@@ -772,7 +734,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v13',label:'الكاش'}
+    {value:'v14',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
