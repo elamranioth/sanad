@@ -313,7 +313,7 @@ function saveFeeItems(){
   }
 }
 function loadSanadSettings(){
-  const defaults={readerSize:'normal',compactCards:false};
+  const defaults={readerSize:'normal',compactCards:false,inkMode:false};
   try{
     const saved=JSON.parse(localStorage.getItem(settingsStorageKey)||'{}');
     return {...defaults,...saved};
@@ -337,23 +337,31 @@ function applySettings(){
   document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
   document.body.classList.toggle('reader-xlarge',sanadSettings.readerSize==='xlarge');
   document.body.classList.toggle('compact-cards',!!sanadSettings.compactCards);
-}
-function ensureIconFallback(){
-  if(document.body.classList.contains('icons-fallback'))return;
-  const sample=document.querySelector('.ti');
-  if(!sample)return;
-  const fontMissing=document.fonts&&!document.fonts.check('16px "tabler-icons"');
-  const missingIcon=[...document.querySelectorAll('.ti')].some(icon=>{
-    const content=getComputedStyle(icon,'::before').content;
-    return !content||content==='none'||content==='normal'||content==='""';
-  });
-  if(fontMissing||missingIcon)document.body.classList.add('icons-fallback');
+  document.body.classList.toggle('ink-mode',!!sanadSettings.inkMode);
+  document.documentElement.classList.toggle('ink-mode',!!sanadSettings.inkMode);
+  syncInkButton();
 }
 function syncSettingsControls(){
   const reader=document.getElementById('readerSizeSelect');
   const compact=document.getElementById('compactCardsToggle');
+  const ink=document.getElementById('inkModeToggle');
   if(reader)reader.value=sanadSettings.readerSize||'normal';
   if(compact)compact.checked=!!sanadSettings.compactCards;
+  if(ink)ink.checked=!!sanadSettings.inkMode;
+}
+function syncInkButton(){
+  const btn=document.getElementById('inkModeBtn');
+  if(!btn)return;
+  const active=!!sanadSettings.inkMode;
+  btn.classList.toggle('active',active);
+  btn.setAttribute('aria-pressed',active?'true':'false');
+}
+function toggleInkMode(){
+  sanadSettings={...sanadSettings,inkMode:!sanadSettings.inkMode};
+  applySettings();
+  syncSettingsControls();
+  saveSanadSettings();
+  showToast(sanadSettings.inkMode?'تم تفعيل وضع Ink.':'تم إيقاف وضع Ink.');
 }
 function isMobileSidebar(){return window.matchMedia('(max-width: 900px)').matches}
 function isStandaloneApp(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
@@ -435,7 +443,6 @@ function setCatalogHeader(title,subtitle,icon){
   if(heroSub)heroSub.textContent=subtitle;
   if(heroIcon)heroIcon.className=`ti ${icon}`;
   if(crumb)crumb.textContent=title;
-  setTimeout(ensureIconFallback,0);
 }
 function setHeroStats(items){
   document.querySelectorAll('.hero-stats .hstat').forEach((stat,index)=>{
@@ -752,7 +759,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v9',label:'الكاش'}
+    {value:'v10',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -911,7 +918,8 @@ function calculateFeeEstimate(){
 function updateSettingsFromControls(){
   sanadSettings={
     readerSize:document.getElementById('readerSizeSelect')?.value||'normal',
-    compactCards:!!document.getElementById('compactCardsToggle')?.checked
+    compactCards:!!document.getElementById('compactCardsToggle')?.checked,
+    inkMode:!!document.getElementById('inkModeToggle')?.checked
   };
   applySettings();
   saveSanadSettings();
@@ -1183,6 +1191,7 @@ document.getElementById('feeList')?.addEventListener('click',event=>{
   deleteFeeItem(button.dataset.feeDelete);
 });
 document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
+document.getElementById('inkModeToggle')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
 window.addEventListener('hashchange',()=>{
@@ -1306,8 +1315,6 @@ renderLaws(laws);
 renderFees();
 renderLocalJudgments();
 updateSettingsStats();
-ensureIconFallback();
-window.addEventListener('load',ensureIconFallback);
 if(window.location.hash==='#dashboard'){
   activateNavByAction('dashboard');
   showDashboardPage();

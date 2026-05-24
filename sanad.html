@@ -15,8 +15,8 @@
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link rel="stylesheet" href="./assets/styles.css?v=all-pages-20260524">
+<link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
+<link rel="stylesheet" href="./assets/styles.css?v=ink-reader-20260524">
 </head>
 <body>
 
@@ -81,6 +81,7 @@
       <span class="cur">أحكام قضائية</span>
     </div>
     <button class="install-btn hidden" id="installAppBtn" type="button" onclick="installApp()" aria-label="تثبيت التطبيق"><i class="ti ti-device-mobile-down"></i><span>تثبيت</span></button>
+    <button class="ink-btn" id="inkModeBtn" type="button" onclick="toggleInkMode()" aria-pressed="false" aria-label="وضع Ink للقراءة"><i class="ti ti-article"></i><span>Ink</span></button>
     <button class="btn-add" type="button" onclick="showImportPage()" aria-label="إضافة حكم جديد"><i class="ti ti-plus"></i><span class="btn-text">إضافة حكم جديد</span></button>
   </div>
 
@@ -326,6 +327,7 @@
         <div class="tool-panel">
           <div class="tool-panel-head"><i class="ti ti-text-size"></i><span>مظهر القراءة</span></div>
           <label class="setting-row"><span>حجم خط القارئ</span><select id="readerSizeSelect"><option value="normal">عادي</option><option value="large">كبير</option><option value="xlarge">كبير جدًا</option></select></label>
+          <label class="setting-row"><span>وضع Ink للقراءة</span><input id="inkModeToggle" type="checkbox"></label>
           <label class="setting-row"><span>بطاقات أحكام أكثر اختصارًا</span><input id="compactCardsToggle" type="checkbox"></label>
         </div>
         <div class="tool-panel">
@@ -346,7 +348,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v9</strong></span>
+            <span>الكاش: <strong>v10</strong></span>
           </div>
         </div>
       </div>
@@ -404,6 +406,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=all-pages-20260524"></script>
+<script src="./assets/app.js?v=ink-reader-20260524"></script>
 </body>
 </html>

@@ -2,48 +2,6 @@
 html{background:#0d1b2a}
 body{direction:rtl;font-family:'Tajawal',sans-serif;background:#0d1b2a;color:#e8dcc8;min-height:100vh;display:flex;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 button,a,.tc,.doc-card,.law-card,.tool-primary,.tool-secondary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-body.icons-fallback .ti::before{content:'•';font-family:'Tajawal',sans-serif;font-weight:700;line-height:1}
-body.icons-fallback .ti-home::before{content:'⌂'}
-body.icons-fallback .ti-chevron-left::before{content:'‹'}
-body.icons-fallback .ti-arrow-right::before{content:'›'}
-body.icons-fallback .ti-menu-2::before{content:'☰'}
-body.icons-fallback .ti-x::before{content:'×'}
-body.icons-fallback .ti-plus::before,body.icons-fallback .ti-file-plus::before{content:'+'}
-body.icons-fallback .ti-device-floppy::before{content:'✓'}
-body.icons-fallback .ti-device-mobile-down::before{content:'▣'}
-body.icons-fallback .ti-layout-dashboard::before,body.icons-fallback .ti-layout-grid::before{content:'▦'}
-body.icons-fallback .ti-books::before,body.icons-fallback .ti-file-text::before{content:'▤'}
-body.icons-fallback .ti-bookmark::before,body.icons-fallback .ti-bookmark-filled::before,body.icons-fallback .ti-bookmark-off::before{content:'▮'}
-body.icons-fallback .ti-history::before,body.icons-fallback .ti-clock::before{content:'◷'}
-body.icons-fallback .ti-gavel::before,body.icons-fallback .ti-scale::before{content:'⚖'}
-body.icons-fallback .ti-briefcase::before{content:'▣'}
-body.icons-fallback .ti-hammer::before{content:'⌁'}
-body.icons-fallback .ti-shield-lock::before{content:'◇'}
-body.icons-fallback .ti-building-bank::before,body.icons-fallback .ti-building::before{content:'▥'}
-body.icons-fallback .ti-heart::before{content:'♡'}
-body.icons-fallback .ti-file-certificate::before,body.icons-fallback .ti-file-search::before,body.icons-fallback .ti-file-off::before,body.icons-fallback .ti-file-x::before{content:'▤'}
-body.icons-fallback .ti-stamp::before{content:'◉'}
-body.icons-fallback .ti-clipboard-list::before,body.icons-fallback .ti-list-details::before,body.icons-fallback .ti-list-numbers::before{content:'☷'}
-body.icons-fallback .ti-writing::before{content:'✎'}
-body.icons-fallback .ti-zoom::before,body.icons-fallback .ti-search::before{content:'⌕'}
-body.icons-fallback .ti-filter::before{content:'▽'}
-body.icons-fallback .ti-chevron-down::before{content:'⌄'}
-body.icons-fallback .ti-brain::before,body.icons-fallback .ti-sparkles::before{content:'✦'}
-body.icons-fallback .ti-receipt::before,body.icons-fallback .ti-receipt-off::before{content:'▧'}
-body.icons-fallback .ti-adjustments-horizontal::before{content:'☷'}
-body.icons-fallback .ti-calendar-event::before{content:'□'}
-body.icons-fallback .ti-hash::before{content:'#'}
-body.icons-fallback .ti-folder-off::before{content:'▱'}
-body.icons-fallback .ti-chart-bar::before,body.icons-fallback .ti-chart-line::before{content:'▴'}
-body.icons-fallback .ti-bolt::before{content:'↯'}
-body.icons-fallback .ti-eraser::before{content:'⌫'}
-body.icons-fallback .ti-calculator::before,body.icons-fallback .ti-equal::before{content:'='}
-body.icons-fallback .ti-trash::before{content:'×'}
-body.icons-fallback .ti-text-size::before{content:'T'}
-body.icons-fallback .ti-database::before{content:'▥'}
-body.icons-fallback .ti-info-circle::before,body.icons-fallback .ti-alert-circle::before{content:'!'}
-body.icons-fallback .ti-mood-empty::before{content:'○'}
-body.icons-fallback .ti-bulb::before{content:'•'}
 
 /* ─── SIDEBAR ─── */
 .sidebar{width:220px;background:#0a1520;border-left:1px solid #1e3a52;display:flex;flex-direction:column;flex-shrink:0;min-height:100vh;position:sticky;top:0;transition:width .22s ease,transform .22s ease}
@@ -89,6 +47,9 @@ body.icons-fallback .ti-bulb::before{content:'•'}
 .install-btn{background:#102638;color:#8bd3ee;border:1px solid #285577;border-radius:8px;padding:8px 12px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;box-shadow:0 2px 8px #00000022}
 .install-btn:hover{border-color:#6aaccc88;background:#14334a;color:#b7ebff;transform:translateY(-1px)}
 .install-btn i{font-size:16px}
+.ink-btn{background:#111b24;color:#d8c8a0;border:1px solid #c8a84b55;border-radius:8px;padding:8px 12px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s;box-shadow:0 2px 8px #00000022}
+.ink-btn:hover,.ink-btn.active{background:#f7f2df;color:#101010;border-color:#101010;transform:translateY(-1px)}
+.ink-btn i{font-size:16px}
 
 .page{flex:1;overflow-y:auto;padding:28px;display:flex;flex-direction:column;gap:0}
 .sidebar-overlay{display:none}
@@ -332,6 +293,34 @@ body.reader-xlarge .doc-dialog-body{font-size:20px}
 body.compact-cards .doc-card{padding:10px 12px}
 body.compact-cards .doc-card-icon{width:38px;height:38px;font-size:19px}
 body.compact-cards .doc-title{font-size:14px;margin-bottom:4px}
+html.ink-mode,body.ink-mode{background:#f7f2df;color:#111}
+body.ink-mode .sidebar,body.ink-mode .topbar,body.ink-mode .hero,body.ink-mode .search-bar,body.ink-mode .results-bar,body.ink-mode .law-catalog-head,body.ink-mode .law-search,body.ink-mode .tool-page-head,body.ink-mode .tool-panel,body.ink-mode .section-empty,body.ink-mode .ai-section,body.ink-mode .doc-dialog,body.ink-mode .doc-dialog-head,body.ink-mode .doc-dialog-body{background:#fbf8ec;border-color:#1b1b1b;color:#111}
+body.ink-mode .page,body.ink-mode .main{background:#f7f2df}
+body.ink-mode .brand,body.ink-mode .nav-footer,body.ink-mode .divider,body.ink-mode .doc-dialog-head{border-color:#1b1b1b}
+body.ink-mode .brand-icon,body.ink-mode .hero-icon,body.ink-mode .tool-primary,body.ink-mode .btn-add{background:#111;color:#fff;box-shadow:none}
+body.ink-mode .brand-name,body.ink-mode .breadcrumb .cur,body.ink-mode .hero-title,body.ink-mode .tool-page-head h2,body.ink-mode .law-catalog-head h2,body.ink-mode .doc-title,body.ink-mode .doc-dialog-head h2,body.ink-mode .ai-name,body.ink-mode .tool-panel-head,body.ink-mode .settings-stats strong,body.ink-mode .settings-info strong,body.ink-mode .hstat-num{color:#111}
+body.ink-mode .dashboard-recent-item span,body.ink-mode .collection-card h3,body.ink-mode .local-judgment-item h3,body.ink-mode .fee-item h3,body.ink-mode .law-card h3{color:#111}
+body.ink-mode .brand-sub,body.ink-mode .nav-lbl,body.ink-mode .breadcrumb,body.ink-mode .breadcrumb span,body.ink-mode .hero-sub,body.ink-mode .rb-left,body.ink-mode .tool-page-head p,body.ink-mode .law-catalog-head p,body.ink-mode .doc-num,body.ink-mode .meta-chip,body.ink-mode .settings-stats,body.ink-mode .settings-info,body.ink-mode .ai-sub,body.ink-mode .ai-desc,body.ink-mode .collection-card p,body.ink-mode .dashboard-recent-item small,body.ink-mode .local-judgment-item p{color:#333}
+body.ink-mode .ni{color:#111}
+body.ink-mode .ni:hover,body.ink-mode .ni.on,body.ink-mode .ni-ai,body.ink-mode .ni-ai:hover,body.ink-mode .ni-ai.on{background:#111;color:#fff;border-color:#111}
+body.ink-mode .ni .ct,body.ink-mode .ni.on .ct,body.ink-mode .ai-ct,body.ink-mode .ni-ai.on .ai-ct{background:#fff;color:#111;border:1px solid #111}
+body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
+body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
+body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea{background:#fff;border-color:#1b1b1b;color:#111}
+body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
+body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn{background:#fff;color:#111;border-color:#111;box-shadow:none}
+body.ink-mode .ink-btn.active{background:#111;color:#fff}
+body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
+body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon{background:#f0ead8;color:#111;border:1px solid #111}
+body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
+body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
+body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
+body.ink-mode .judgment-para,body.ink-mode .judgment-para.facts,body.ink-mode .judgment-para.reasoning,body.ink-mode .judgment-para.principle,body.ink-mode .judgment-para.article{background:#fff;border-color:#111;border-right-color:#111;color:#111}
+body.ink-mode .judgment-tag,body.ink-mode .law-article-head span{background:#f7f2df;color:#111;border-color:#111}
+body.ink-mode .judgment-ruling{background:#111;color:#fff;border-color:#111}
+body.ink-mode .judgment-ruling-label{color:#f7f2df}
+body.ink-mode .hero::before{display:none}
+body.ink-mode .hero::after{color:#111;opacity:.06}
 
 /* ─── AI BOX ─── */
 .ai-section{background:#0a1520;border:1px solid #2a4a68;border-radius:14px;overflow:hidden;scroll-margin-top:74px;transition:border-color .2s,box-shadow .2s;margin-bottom:24px}
@@ -459,9 +448,9 @@ body.sidebar-open .sidebar-overlay{opacity:1;pointer-events:auto}
 .main{min-height:100vh}
 .topbar{height:auto;min-height:58px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;gap:10px;z-index:55}
 .menu-toggle{width:42px;height:42px;border-radius:10px}
-.btn-add,.install-btn{min-height:42px;border-radius:10px;padding-inline:12px}
+.btn-add,.install-btn,.ink-btn{min-height:42px;border-radius:10px;padding-inline:12px}
 body.sidebar-open .topbar{background:transparent;border-bottom-color:transparent;pointer-events:none}
-body.sidebar-open .topbar .breadcrumb,body.sidebar-open .topbar .btn-add,body.sidebar-open .topbar .install-btn{visibility:hidden}
+body.sidebar-open .topbar .breadcrumb,body.sidebar-open .topbar .btn-add,body.sidebar-open .topbar .install-btn,body.sidebar-open .topbar .ink-btn{visibility:hidden}
 body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px + env(safe-area-inset-top));z-index:80;pointer-events:auto;background:#0a1520}
 .breadcrumb{font-size:12px;min-width:0}
 .breadcrumb span{white-space:nowrap}
@@ -580,8 +569,8 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .judgment-content{gap:10px}
 }
 @media(max-width:380px){
-.install-btn span,.btn-add .btn-text{display:none}
-.install-btn,.btn-add{width:42px;padding:0;justify-content:center}
+.install-btn span,.btn-add .btn-text,.ink-btn span{display:none}
+.install-btn,.btn-add,.ink-btn{width:42px;padding:0;justify-content:center}
 .hero-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hstat{padding:9px 5px}
 .doc-card{grid-template-columns:40px minmax(0,1fr);padding:12px}

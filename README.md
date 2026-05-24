@@ -8,6 +8,7 @@ Sanad is a static Arabic legal research web app for judgments, laws, decrees, re
 sanad.html              Main HTML shell and page sections
 assets/styles.css       Responsive visual design
 assets/app.js           Navigation, routing, search, readers, local storage services
+assets/vendor/tabler/   Local Tabler icon font used by the app UI
 data/judgments.js       Published judgment records
 data/laws.js            Published law records
 data/legal-forms.js     Legal form/template records
@@ -30,6 +31,8 @@ sanad-local-server.js   Local static server
 - `#fees`: local fee manager and estimate calculator.
 - `#settings`: local settings and data controls.
 - `#add-judgment`: local judgment import service.
+
+The top bar includes an `Ink` button that switches the app into a high-contrast reading mode.
 
 ## Data Model
 

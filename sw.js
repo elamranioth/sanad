@@ -1,10 +1,14 @@
-const CACHE_NAME = "sanad-pwa-v9";
+const CACHE_NAME = "sanad-pwa-v10";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./sanad.html",
   "./assets/styles.css",
   "./assets/app.js",
+  "./assets/vendor/tabler/tabler-icons.min.css",
+  "./assets/vendor/tabler/fonts/tabler-icons.woff2",
+  "./assets/vendor/tabler/fonts/tabler-icons.woff",
+  "./assets/vendor/tabler/fonts/tabler-icons.ttf",
   "./data/judgments.js",
   "./data/laws.js",
   "./data/legal-forms.js",
