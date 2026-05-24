@@ -128,83 +128,39 @@ function renderJudgmentIntro(lines){
   return `<section class="judgment-intro">${top.join('')}${info.length?`<div class="intro-grid">${info.join('')}</div>`:''}${issued?`<div class="intro-issued">${escapeHtml(issued)}</div>`:''}</section>`;
 }
 function splitJudgmentParagraphs(text){
+  const markers=[
+    'وحيث\\s+(?:إن|أن|إنه)',
+    'ومن\\s+المقرر',
+    'والمقرر\\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)',
+    'المقرر\\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)',
+    'من\\s+المقرر(?:\\s+(?:في|فى)\\s+قضاء\\s+هذه\\s+المحكمة)?',
+    'كما\\s+أنه\\s+من\\s+المقرر',
+    'ذلك\\s+أن(?:ه)?\\s+من\\s+المقرر',
+    'لما كان ذلك',
+    'أولاً:',
+    'أولًا:',
+    'ثانياً:',
+    'ثانيًا:'
+  ].join('|');
   return text
     .replace(/\r/g,'')
     .split(/\n+/)
-    .flatMap(line=>line.trim().split(/(?=(?:وحيث\s+(?:إن|أن|إنه)|ومن المقرر|كما أنه من المقرر|لما كان ذلك|أولاً:|أولًا:|ثانياً:|ثانيًا:))/g))
+    .flatMap(line=>line.trim().split(new RegExp(`(?=(?:${markers}))`,'g')))
     .map(part=>part.trim())
     .filter(Boolean);
 }
 function classifyJudgmentParagraph(text){
-  if(text.includes('الوقائع')||text.includes('تتحصل في')||text.includes('تتحصل فى')||text.startsWith('بعد الاطلاع')||text.startsWith('بعد الإطلاع'))return 'facts';
-  if(text.includes('من المقرر في قضاء هذه المحكمة')||text.startsWith('ومن المقرر')||text.startsWith('كما أنه من المقرر'))return 'principle';
-  if(text.includes('النص في المادة')||text.includes('نص المادة')||text.includes('وفقاً لنص المادة')||text.includes('وفقًا لنص المادة')||text.includes('المادتين')||text.includes('المواد'))return 'article';
-  if(text.startsWith('وحيث')||text.startsWith('لما كان ذلك'))return 'reasoning';
-  return 'facts';
+  const value=String(text||'').replace(/\s+/g,' ').trim();
+  if(/(?:^|[\s،.؛])(?:ومن\s+المقرر|والمقرر\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)|المقرر\s+(?:قضاء|قانون(?:ا|اً)?|(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)|من\s+المقرر(?:\s+(?:في|فى)\s+قضاء\s+هذه\s+المحكمة)?|كما\s+أنه\s+من\s+المقرر|ذلك\s+أن(?:ه)?\s+من\s+المقرر)/.test(value))return 'principle';
+  return '';
 }
 function paragraphLabel(type){
-  return {facts:'وقائع وملخص القضية',reasoning:'تسبيب المحكمة',principle:'مبدأ قضائي',article:'نص قانوني'}[type]||'';
+  return type==='principle'?'مبدأ قضائي':'';
 }
 function renderJudgmentParagraph(text){
   const type=classifyJudgmentParagraph(text);
   const label=paragraphLabel(type);
-  return `<p class="judgment-para ${type}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${escapeHtml(text)}</p>`;
-}
-function isStructuredJudgment(doc){
-  const num=normalizeDigits(doc?.num||'').trim();
-  const title=normalizeDigits(doc?.title||'').replace(/\s+/g,' ');
-  return ['2025/1','2025/2','2025/3'].includes(num)||/الطعن رقم\s*[123]\s*لسنة\s*2025/.test(title);
-}
-function splitStructuredJudgmentParagraphs(text){
-  return String(text||'')
-    .replace(/\r/g,'')
-    .split(/\n+/)
-    .flatMap(line=>line.trim().split(/(?=(?:وحيث\s+(?:إن|أن)\s+هذا\s+النعي|وحيث\s+(?:إن|أن)\s+النعي|وحيث\s+هذا\s+النعي|وحيث\s+(?:إن|أن)\s+الطعن|وحيث\s+استوفى|وحيث\s+(?:إن|أن)\s+مما\s+ينع|وحيث\s+(?:إن|أن)\s+مما\s+تنع|وحيث\s+ينعى|وحيث\s+تنعى|تنعى\s+الطاعنة|ينعى\s+الطاعن|ومن\s+المقرر|كما\s+أنه\s+من\s+المقرر|من\s+المقرر|المقرر\s+قضاء|المقرر\s+قانون|فإن\s+من\s+المقرر|فإن\s+المقرر|لما\s+كان\s+ذلك|لما\s+كان\s+ما\s+تقدم))/g))
-    .map(part=>part.trim())
-    .filter(Boolean);
-}
-function structuredParagraphType(text){
-  const value=String(text||'').replace(/\s+/g,' ').trim();
-  if(/(?:ومن\s+المقرر|كما\s+أنه\s+من\s+المقرر|من\s+المقرر|المقرر\s+قضاء|المقرر\s+قانون|فإن\s+من\s+المقرر|فإن\s+المقرر|النص\s+في\s+المادة|نص\s+المادة|وفق(?:اً|ًا)?\s+لنص\s+المادة)/.test(value))return 'principle';
-  if(/^(?:وحيث\s+(?:إن|أن)\s+هذا\s+النعي|وحيث\s+هذا\s+النعي|وحيث\s+(?:إن|أن)\s+النعي|لما\s+كان\s+ذلك|لما\s+كان\s+ما\s+تقدم)/.test(value))return 'reasoning';
-  return 'facts';
-}
-function structuredFactLabel(text){
-  const value=String(text||'').replace(/\s+/g,' ').trim();
-  if(/(?:تنعى|ينعى|النعي|أسباب\s+الطعن|الطعن\s+أقيم|أقيم\s+على\s+سبب)/.test(value))return 'أسباب الطعن';
-  if(/(?:استأنف|استأنفت|حكمت|قضت|طعنت|صحيفة|محكمة\s+أول\s+درجة|إذ\s+عرض\s+الطعن|استوفى\s+الطعن)/.test(value))return 'الإجراءات';
-  return 'الوقائع';
-}
-function renderStructuredParagraph(text,type){
-  const label=type==='facts'?structuredFactLabel(text):paragraphLabel(type);
-  return `<p class="judgment-para ${type}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${escapeHtml(text)}</p>`;
-}
-function renderJudgmentSection(key,paragraphs){
-  if(!paragraphs.length)return '';
-  const meta={
-    facts:{num:'١',title:'وقائع وملخص القضية',desc:'الوقائع والإجراءات السابقة على الطعن، مع أسباب الطعن التي بُني عليها.'},
-    principle:{num:'٢',title:'مبدأ قضائي',desc:'القواعد القانونية والمبادئ التي استندت إليها المحكمة.'},
-    reasoning:{num:'٣',title:'تسبيب المحكمة',desc:'رد المحكمة على أسباب الطعن وتطبيقها للمبادئ على الوقائع.'}
-  }[key];
-  return `<section class="judgment-section judgment-section-${key}">
-    <div class="judgment-section-head">
-      <span>${meta.num}</span>
-      <div><h3>${meta.title}</h3><p>${meta.desc}</p></div>
-    </div>
-    <div class="judgment-section-body">${paragraphs.join('')}</div>
-  </section>`;
-}
-function renderStructuredJudgmentContent(mainText){
-  const sections={facts:[],principle:[],reasoning:[]};
-  splitStructuredJudgmentParagraphs(mainText).forEach(part=>{
-    const type=structuredParagraphType(part);
-    sections[type].push(renderStructuredParagraph(part,type));
-  });
-  return [
-    renderJudgmentSection('facts',sections.facts),
-    renderJudgmentSection('principle',sections.principle),
-    renderJudgmentSection('reasoning',sections.reasoning)
-  ].join('');
+  return `<p class="judgment-para${type?` ${type}`:''}">${label?`<span class="judgment-tag ${type}">${label}</span>`:''}${escapeHtml(text)}</p>`;
 }
 function formatJudgmentBody(body,doc=null){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
@@ -220,10 +176,9 @@ function formatJudgmentBody(body,doc=null){
     mainText=mainText.slice(0,rulingIndex).trim();
   }
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
-  const isStructured=isStructuredJudgment(doc);
-  const paragraphs=isStructured?renderStructuredJudgmentContent(mainText):splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
+  const paragraphs=splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
   const rulingHtml=ruling?`<section class="judgment-ruling"><div class="judgment-ruling-label">منطوق الحكم</div>${escapeHtml(ruling)}</section>`:'';
-  return `<div class="judgment-reader ${isStructured?'judgment-reader-structured':''}">${introHtml}<section class="judgment-content">${paragraphs}</section>${rulingHtml}</div>`;
+  return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section>${rulingHtml}</div>`;
 }
 function renderLawMarkdown(markdown){
   const lines=String(markdown||'').replace(/\r/g,'').split('\n');
@@ -816,7 +771,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v11',label:'الكاش'}
+    {value:'v12',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
