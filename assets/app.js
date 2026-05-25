@@ -51,6 +51,7 @@ const settingsStorageKey='sanadSettings';
 let savedJudgmentIds=loadSavedJudgments();
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
+let expandedClientIds=new Set();
 let sanadSettings=loadSanadSettings();
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function calculateCounts(){
@@ -430,6 +431,42 @@ function showToast(message){
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>toast.classList.remove('show'),2600);
+}
+let confirmResolver=null;
+function confirmAction({title='Confirm delete',message='Are you sure you want to delete this item?',confirmLabel='Delete',cancelLabel='Cancel',icon='ti-trash'}={}){
+  const modal=document.getElementById('confirmModal');
+  if(!modal){
+    showToast('Confirmation dialog is not available.');
+    return Promise.resolve(false);
+  }
+  const titleEl=document.getElementById('confirmTitle');
+  const messageEl=document.getElementById('confirmMessage');
+  const accept=document.getElementById('confirmAcceptBtn');
+  const cancel=document.getElementById('confirmCancelBtn');
+  const iconEl=modal.querySelector('.confirm-icon i');
+  if(titleEl)titleEl.textContent=title;
+  if(messageEl)messageEl.textContent=message;
+  if(accept)accept.innerHTML=`<i class="ti ${escapeHtml(icon)}"></i>${escapeHtml(confirmLabel)}`;
+  if(cancel)cancel.innerHTML='<i class="ti ti-x"></i>'+escapeHtml(cancelLabel);
+  if(iconEl)iconEl.className=`ti ${icon}`;
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('modal-open');
+  return new Promise(resolve=>{
+    confirmResolver=resolve;
+    setTimeout(()=>cancel?.focus(),80);
+  });
+}
+function closeConfirm(result=false){
+  const modal=document.getElementById('confirmModal');
+  if(modal){
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden','true');
+  }
+  if(document.getElementById('docModal')?.classList.contains('hidden'))document.body.classList.remove('modal-open');
+  const resolver=confirmResolver;
+  confirmResolver=null;
+  if(resolver)resolver(!!result);
 }
 function setActiveNav(el){
   document.querySelectorAll('.ni').forEach(item=>item.classList.remove('on'));
@@ -830,6 +867,7 @@ function renderClientProfiles(){
   list.innerHTML=clientProfiles.map(client=>{
     const services=Array.isArray(client.services)?client.services:[];
     const serviceTotal=services.length;
+    const isOpen=expandedClientIds.has(String(client.id));
     const servicesHtml=services.length?services.map(service=>{
       const balance=serviceBalance(service);
       const balanceLabel=balance.overpaid>0?'Overpaid':'Balance';
@@ -852,8 +890,8 @@ function renderClientProfiles(){
         </div>
       </div>`;
     }).join(''):'<div class="client-service-empty">No services saved for this client yet.</div>';
-    return `<article class="client-card" data-client-id="${escapeHtml(client.id)}">
-      <div class="client-card-head">
+    return `<article class="client-card ${isOpen?'open':'collapsed'}" data-client-id="${escapeHtml(client.id)}">
+      <div class="client-card-head" data-client-toggle="${escapeHtml(client.id)}" role="button" tabindex="0" aria-expanded="${isOpen?'true':'false'}">
         <div class="client-avatar"><i class="ti ti-user"></i><small><i class="ti ti-scale"></i></small></div>
         <div class="client-identity">
           <span class="client-eyebrow">Client profile</span>
@@ -864,23 +902,33 @@ function renderClientProfiles(){
         <div class="client-card-meta">
           <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
         </div>
+        <button class="client-expand-toggle" type="button" data-client-toggle="${escapeHtml(client.id)}" aria-label="${isOpen?'Close client profile':'Open client profile'}"><i class="ti ${isOpen?'ti-chevron-up':'ti-chevron-down'}"></i></button>
         <button class="client-profile-delete" type="button" data-client-delete="${escapeHtml(client.id)}" aria-label="Delete client"><i class="ti ti-trash"></i></button>
       </div>
-      <div class="client-service-list">${servicesHtml}</div>
-      <details class="client-add-service">
-        <summary><span><i class="ti ti-plus"></i></span><strong>Add new service</strong></summary>
-        <div class="client-service-form">
-          <label><span>Service type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
-          <label><span>Total amount</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
-          <label><span>Amount paid</span><input data-service-field="paid" type="number" min="0" step="0.01" placeholder="0"></label>
-          <label><span>Balance</span><input data-service-field="balance" type="text" value="0 AED" readonly></label>
-          <label class="wide"><span>Notes</span><input data-service-field="note" type="text" placeholder="Internal service note"></label>
-        </div>
-        <button class="tool-secondary" type="button" data-client-add-service="${escapeHtml(client.id)}"><i class="ti ti-device-floppy"></i>Save service</button>
-      </details>
+      <div class="client-card-body">
+        <div class="client-service-list">${servicesHtml}</div>
+        <details class="client-add-service">
+          <summary><span><i class="ti ti-plus"></i></span><strong>Add new service</strong></summary>
+          <div class="client-service-form">
+            <label><span>Service type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
+            <label><span>Total amount</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label><span>Amount paid</span><input data-service-field="paid" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label><span>Balance</span><input data-service-field="balance" type="text" value="0 AED" readonly></label>
+            <label class="wide"><span>Notes</span><input data-service-field="note" type="text" placeholder="Internal service note"></label>
+          </div>
+          <button class="tool-secondary" type="button" data-client-add-service="${escapeHtml(client.id)}"><i class="ti ti-device-floppy"></i>Save service</button>
+        </details>
+      </div>
     </article>`;
   }).join('');
   syncClientBalanceInputs(list);
+}
+function toggleClientCard(clientId,force){
+  const id=String(clientId);
+  const shouldOpen=typeof force==='boolean'?force:!expandedClientIds.has(id);
+  if(shouldOpen)expandedClientIds.add(id);
+  else expandedClientIds.delete(id);
+  renderClientProfiles();
 }
 function toggleClientForm(force){
   const composer=document.getElementById('clientProfileComposer');
@@ -914,7 +962,7 @@ function addClientProfile(){
     return;
   }
   const hasService=!!(type||title||amount||paid||note);
-  clientProfiles.unshift({
+  const newClient={
     id:newLocalId('client'),
     name,
     email,
@@ -922,7 +970,9 @@ function addClientProfile(){
     contact,
     createdAt:new Date().toISOString(),
     services:hasService?[createClientService({type,title,amount,paid,note})]:[]
-  });
+  };
+  clientProfiles.unshift(newClient);
+  expandedClientIds.add(String(newClient.id));
   const persisted=saveClientProfiles();
   clearClientProfileInputs();
   renderClientProfiles();
@@ -954,13 +1004,20 @@ function addServiceToClient(clientId){
     note:fieldValue('note')
   });
   client.services=[service,...(Array.isArray(client.services)?client.services:[])];
+  expandedClientIds.add(String(clientId));
   saveClientProfiles();
   renderClientProfiles();
   updateSettingsStats();
   showToast('Service added to client profile.');
 }
-function deleteClientProfile(clientId){
-  if(!confirm('Delete this client profile and all its services?'))return;
+async function deleteClientProfile(clientId){
+  const ok=await confirmAction({
+    title:'Delete client profile?',
+    message:'Are you sure you want to delete this client profile and all services saved inside it? This cannot be undone.',
+    confirmLabel:'Delete client'
+  });
+  if(!ok)return;
+  expandedClientIds.delete(String(clientId));
   clientProfiles=clientProfiles.filter(client=>String(client.id)!==String(clientId));
   saveClientProfiles();
   renderClientProfiles();
@@ -969,9 +1026,15 @@ function deleteClientProfile(clientId){
   showClientsPage();
   showToast('Client profile deleted.');
 }
-function deleteClientService(clientId,serviceId){
+async function deleteClientService(clientId,serviceId){
   const client=clientProfiles.find(item=>String(item.id)===String(clientId));
   if(!client)return;
+  const ok=await confirmAction({
+    title:'Delete service?',
+    message:'Are you sure you want to delete this service and its financial details from the client profile?',
+    confirmLabel:'Delete service'
+  });
+  if(!ok)return;
   client.services=(client.services||[]).filter(service=>String(service.id)!==String(serviceId));
   saveClientProfiles();
   renderClientProfiles();
@@ -1064,7 +1127,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v18',label:'الكاش'}
+    {value:'v19',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -1154,7 +1217,14 @@ function saveLocalJudgment(){
   showImportPage();
   showToast(persisted?'تم حفظ الحكم محليًا.':'تمت الإضافة لهذه الجلسة فقط.');
 }
-function deleteLocalJudgment(id){
+async function deleteLocalJudgment(id){
+  const ok=await confirmAction({
+    title:'Delete local judgment?',
+    message:'Are you sure you want to delete this locally added judgment from this device?',
+    confirmLabel:'Delete judgment',
+    icon:'ti-file-x'
+  });
+  if(!ok)return;
   localJudgments=localJudgments.filter(doc=>Number(doc.id)!==Number(id));
   saveLocalJudgmentsToStorage();
   savedJudgmentIds.delete(Number(id));
@@ -1199,7 +1269,13 @@ function addFeeItem(){
   showFeesManagerPage();
   showToast(persisted?'تمت إضافة الرسم.':'تمت الإضافة لهذه الجلسة فقط.');
 }
-function deleteFeeItem(id){
+async function deleteFeeItem(id){
+  const ok=await confirmAction({
+    title:'Delete fee item?',
+    message:'Are you sure you want to delete this saved fee item?',
+    confirmLabel:'Delete fee'
+  });
+  if(!ok)return;
   feeItems=feeItems.filter(item=>String(item.id)!==String(id));
   saveFeeItems();
   renderFees();
@@ -1334,7 +1410,14 @@ function updateSettingsFromControls(){
   saveSanadSettings();
   showToast('تم حفظ الإعدادات.');
 }
-function clearSavedJudgments(){
+async function clearSavedJudgments(){
+  const ok=await confirmAction({
+    title:'Clear saved judgments?',
+    message:'Are you sure you want to remove all saved judgment bookmarks from this device?',
+    confirmLabel:'Clear saved',
+    icon:'ti-bookmark-off'
+  });
+  if(!ok)return;
   savedJudgmentIds.clear();
   saveSavedJudgments();
   updateDisplayedCounts();
@@ -1342,8 +1425,16 @@ function clearSavedJudgments(){
   filterDocs();
   showToast('تم مسح الأحكام المحفوظة.');
 }
-function clearLocalJudgments(){
-  if(localJudgments.length&&!confirm('سيتم حذف الأحكام المضافة محليًا من هذا الجهاز. هل تريد المتابعة؟'))return;
+async function clearLocalJudgments(){
+  if(localJudgments.length){
+    const ok=await confirmAction({
+      title:'Clear local judgments?',
+      message:'Are you sure you want to delete all locally added judgments from this device?',
+      confirmLabel:'Clear judgments',
+      icon:'ti-file-x'
+    });
+    if(!ok)return;
+  }
   localJudgments=[];
   localStorage.removeItem(localJudgmentsStorageKey);
   savedJudgmentIds=new Set([...savedJudgmentIds].filter(id=>baseDocs.some(doc=>Number(doc.id)===Number(id))));
@@ -1355,7 +1446,15 @@ function clearLocalJudgments(){
   showSettingsPage();
   showToast('تم مسح الأحكام المحلية.');
 }
-function clearFeeItems(){
+async function clearFeeItems(){
+  if(feeItems.length){
+    const ok=await confirmAction({
+      title:'Clear saved fees?',
+      message:'Are you sure you want to delete all saved fee items from this device?',
+      confirmLabel:'Clear fees'
+    });
+    if(!ok)return;
+  }
   feeItems=[];
   saveFeeItems();
   renderFees();
@@ -1364,9 +1463,18 @@ function clearFeeItems(){
   showSettingsPage();
   showToast('تم مسح الرسوم المحفوظة.');
 }
-function clearClientProfiles(){
-  if(clientProfiles.length&&!confirm('Delete all saved client profiles from this device?'))return;
+async function clearClientProfiles(){
+  if(clientProfiles.length){
+    const ok=await confirmAction({
+      title:'Clear client profiles?',
+      message:'Are you sure you want to delete all client profiles and their services from this device?',
+      confirmLabel:'Clear clients',
+      icon:'ti-users-off'
+    });
+    if(!ok)return;
+  }
   clientProfiles=[];
+  expandedClientIds.clear();
   saveClientProfiles();
   renderClientProfiles();
   updateSettingsStats();
@@ -1615,6 +1723,11 @@ document.getElementById('feeList')?.addEventListener('click',event=>{
   if(!button)return;
   deleteFeeItem(button.dataset.feeDelete);
 });
+document.getElementById('confirmCancelBtn')?.addEventListener('click',()=>closeConfirm(false));
+document.getElementById('confirmAcceptBtn')?.addEventListener('click',()=>closeConfirm(true));
+document.getElementById('confirmModal')?.addEventListener('click',event=>{
+  if(event.target.id==='confirmModal')closeConfirm(false);
+});
 document.getElementById('clientProfileList')?.addEventListener('click',event=>{
   const card=event.target.closest('.client-card[data-client-id]');
   if(!card)return;
@@ -1635,7 +1748,20 @@ document.getElementById('clientProfileList')?.addEventListener('click',event=>{
     return;
   }
   const invoice=event.target.closest('[data-client-invoice]');
-  if(invoice)useClientServiceForInvoice(clientId,invoice.dataset.clientInvoice);
+  if(invoice){
+    useClientServiceForInvoice(clientId,invoice.dataset.clientInvoice);
+    return;
+  }
+  const toggle=event.target.closest('[data-client-toggle]');
+  if(toggle)toggleClientCard(clientId);
+});
+document.getElementById('clientProfileList')?.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'&&event.key!==' ')return;
+  const toggle=event.target.closest('[data-client-toggle]');
+  if(!toggle)return;
+  event.preventDefault();
+  const card=event.target.closest('.client-card[data-client-id]');
+  if(card)toggleClientCard(card.dataset.clientId);
 });
 document.getElementById('clientProfileList')?.addEventListener('input',event=>{
   if(event.target.matches('[data-service-field="amount"],[data-service-field="paid"]')){
@@ -1653,7 +1779,12 @@ document.getElementById('compactCardsToggle')?.addEventListener('change',updateS
   input?.addEventListener('input',syncReceiptPreview);
   input?.addEventListener('change',syncReceiptPreview);
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDoc();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeConfirm(false);
+    closeDoc();
+  }
+});
 window.addEventListener('hashchange',()=>{
   const route=window.location.hash.replace('#','');
   if(route==='dashboard'){

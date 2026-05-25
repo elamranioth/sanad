@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=client-profile-ui-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=client-collapse-confirm-20260525">
 </head>
 <body>
 
@@ -68,6 +68,19 @@
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="confirm-modal hidden" id="confirmModal" role="presentation" aria-hidden="true" dir="ltr">
+  <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="confirm-icon"><i class="ti ti-trash"></i></div>
+    <div class="confirm-copy">
+      <h2 id="confirmTitle">Confirm delete</h2>
+      <p id="confirmMessage">Are you sure you want to delete this item?</p>
+    </div>
+    <div class="confirm-actions">
+      <button class="tool-secondary" id="confirmCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
+      <button class="tool-secondary danger" id="confirmAcceptBtn" type="button"><i class="ti ti-trash"></i>Delete</button>
+    </div>
+  </div>
+</div>
 
 <!-- MAIN -->
 <div class="main">
@@ -431,7 +444,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v18</strong></span>
+            <span>الكاش: <strong>v19</strong></span>
           </div>
         </div>
       </div>
@@ -489,6 +502,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=client-profile-ui-20260525"></script>
+<script src="./assets/app.js?v=client-collapse-confirm-20260525"></script>
 </body>
 </html>
