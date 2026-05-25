@@ -12,7 +12,7 @@ const labels={tijari:'تجاري',madani:'مدني',omali:'عمالي',jinai:'ج
 const typeKeys=['tijari','madani','omali','jinai','idari','osri'];
 let localJudgments=loadLocalJudgments();
 let docs=[...localJudgments,...baseDocs];
-const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','fees','settings','import']);
+const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','clients','fees','settings','import']);
 const collections={
   decrees:{
     title:'مراسيم',
@@ -483,6 +483,9 @@ function setAiAnalysisVisible(visible){
 function setFeesVisible(visible){
   document.getElementById('feesManager')?.classList.toggle('hidden',!visible);
 }
+function setClientsVisible(visible){
+  document.getElementById('clientsPage')?.classList.toggle('hidden',!visible);
+}
 function setSettingsVisible(visible){
   document.getElementById('settingsPage')?.classList.toggle('hidden',!visible);
 }
@@ -502,6 +505,7 @@ function hideStandalonePages(){
   setCollectionVisible(false);
   setImportVisible(false);
   setAiAnalysisVisible(false);
+  setClientsVisible(false);
   setFeesVisible(false);
   setSettingsVisible(false);
 }
@@ -741,6 +745,25 @@ function readNumberInput(id){
   const value=Number(document.getElementById(id)?.value||0);
   return Math.max(0,Number.isFinite(value)?value:0);
 }
+function clientBalanceValue(amount,paid){
+  return Math.max((Number(amount)||0)-(Number(paid)||0),0);
+}
+function syncClientBalanceInputs(scope=document){
+  const mainAmount=document.getElementById('clientServiceAmountInput');
+  const mainPaid=document.getElementById('clientServicePaidInput');
+  const mainBalance=document.getElementById('clientServiceBalanceInput');
+  if(mainBalance)mainBalance.value=moneyEn(clientBalanceValue(mainAmount?.value,mainPaid?.value));
+  const serviceForms=[
+    ...(scope.matches?.('.client-add-service')?[scope]:[]),
+    ...(scope.querySelectorAll?.('.client-add-service')||[])
+  ];
+  serviceForms.forEach(details=>{
+    const amount=details.querySelector('[data-service-field="amount"]')?.value||0;
+    const paid=details.querySelector('[data-service-field="paid"]')?.value||0;
+    const balance=details.querySelector('[data-service-field="balance"]');
+    if(balance)balance.value=moneyEn(clientBalanceValue(amount,paid));
+  });
+}
 function createClientService({type,title,amount,paid,note}){
   const serviceType=String(type||'General service').trim()||'General service';
   const serviceTitle=String(title||serviceType).trim()||serviceType;
@@ -768,7 +791,11 @@ function renderClientProfiles(){
   const list=document.getElementById('clientProfileList');
   const empty=document.getElementById('clientProfileEmpty');
   const count=document.getElementById('clientProfileCount');
+  const pageCount=document.getElementById('clientPageCount');
   if(count)count.textContent=String(clientProfiles.length);
+  if(pageCount)pageCount.textContent=String(clientProfiles.length);
+  const navCount=document.querySelector('.client-ct');
+  if(navCount)navCount.textContent=ar(clientProfiles.length);
   if(!list)return;
   if(!clientProfiles.length){
     list.innerHTML='';
@@ -795,13 +822,14 @@ function renderClientProfiles(){
           <span><small>${balanceLabel}</small><strong>${moneyEn(balanceValue)}</strong></span>
         </div>
         <div class="client-service-actions">
-          <button class="client-action" type="button" data-client-invoice="${escapeHtml(service.id)}"><i class="ti ti-file-invoice"></i>Use invoice</button>
+          <button class="client-action" type="button" data-client-invoice="${escapeHtml(service.id)}"><i class="ti ti-file-invoice"></i>Use Invoice</button>
           <button class="client-action danger" type="button" data-client-service-delete="${escapeHtml(service.id)}" aria-label="Delete service"><i class="ti ti-trash"></i></button>
         </div>
       </div>`;
     }).join(''):'<div class="client-service-empty">No services saved for this client yet.</div>';
     return `<article class="client-card" data-client-id="${escapeHtml(client.id)}">
       <div class="client-card-head">
+        <div class="client-avatar"><i class="ti ti-user-circle"></i></div>
         <div>
           <span class="client-eyebrow">Client profile</span>
           <h3>${escapeHtml(client.name)}</h3>
@@ -816,22 +844,34 @@ function renderClientProfiles(){
       <details class="client-add-service">
         <summary><i class="ti ti-plus"></i>Add new service</summary>
         <div class="client-service-form">
-          <label><span>Type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
-          <label><span>Title</span><input data-service-field="title" type="text" placeholder="Matter description"></label>
-          <label><span>Total</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
-          <label><span>Paid</span><input data-service-field="paid" type="number" min="0" step="0.01" placeholder="0"></label>
+          <label><span>Service type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
+          <label><span>Total amount</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
+          <label><span>Amount paid</span><input data-service-field="paid" type="number" min="0" step="0.01" placeholder="0"></label>
+          <label><span>Balance</span><input data-service-field="balance" type="text" value="0 AED" readonly></label>
           <label class="wide"><span>Notes</span><input data-service-field="note" type="text" placeholder="Internal service note"></label>
         </div>
         <button class="tool-secondary" type="button" data-client-add-service="${escapeHtml(client.id)}"><i class="ti ti-device-floppy"></i>Save service</button>
       </details>
     </article>`;
   }).join('');
+  syncClientBalanceInputs(list);
+}
+function toggleClientForm(force){
+  const composer=document.getElementById('clientProfileComposer');
+  if(!composer)return;
+  const shouldOpen=typeof force==='boolean'?force:composer.classList.contains('hidden');
+  composer.classList.toggle('hidden',!shouldOpen);
+  if(shouldOpen){
+    syncClientBalanceInputs();
+    setTimeout(()=>document.getElementById('clientNameInput')?.focus(),120);
+  }
 }
 function clearClientProfileInputs(){
   ['clientNameInput','clientContactInput','clientServiceTypeInput','clientServiceTitleInput','clientServiceAmountInput','clientServicePaidInput','clientServiceNoteInput'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.value='';
   });
+  syncClientBalanceInputs();
 }
 function addClientProfile(){
   const name=document.getElementById('clientNameInput')?.value.trim()||'';
@@ -857,7 +897,9 @@ function addClientProfile(){
   clearClientProfileInputs();
   renderClientProfiles();
   updateSettingsStats();
-  showFeesManagerPage();
+  updateDisplayedCounts();
+  toggleClientForm(false);
+  showClientsPage();
   showToast(persisted?'Client profile saved.':'Client profile added for this session only.');
 }
 function findClientCard(clientId){
@@ -893,7 +935,8 @@ function deleteClientProfile(clientId){
   saveClientProfiles();
   renderClientProfiles();
   updateSettingsStats();
-  showFeesManagerPage();
+  updateDisplayedCounts();
+  showClientsPage();
   showToast('Client profile deleted.');
 }
 function deleteClientService(clientId,serviceId){
@@ -925,8 +968,8 @@ function useClientServiceForInvoice(clientId,serviceId){
   if(methodInput&&!methodInput.value)methodInput.value='Bank transfer';
   if(dateInput&&!dateInput.value)dateInput.value=todayIsoDate();
   syncReceiptPreview();
-  scrollPageTo('.receipt-panel');
-  showToast('Invoice fields filled from client profile.');
+  generateFeeReceipt();
+  showToast('Invoice prepared from the selected service.');
 }
 function updateSettingsStats(){
   const saved=document.getElementById('settingsSavedCount');
@@ -961,6 +1004,24 @@ function showFeesManagerPage(){
   syncReceiptPreview();
   scrollPageTo('#feesManager');
 }
+function showClientsPage(){
+  setRouteHash('#clients');
+  currentView='clients';
+  currentType='all';
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
+  hideStandalonePages();
+  setJudgmentWorkspaceVisible(false);
+  setClientsVisible(true);
+  setCatalogHeader('الموكلين','Client profiles, services, balances, and invoice actions in one dedicated page.','ti-users');
+  setHeroStats([
+    {value:ar(clientProfiles.length),label:'موكل'},
+    {value:ar(clientProfiles.reduce((sum,client)=>sum+(client.services?.length||0),0)),label:'خدمة'},
+    {value:'Invoice',label:'Use'}
+  ]);
+  renderClientProfiles();
+  syncClientBalanceInputs();
+  scrollPageTo('#clientsPage');
+}
 function showSettingsPage(){
   setRouteHash('#settings');
   currentView='settings';
@@ -973,7 +1034,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v16',label:'الكاش'}
+    {value:'v17',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -1360,6 +1421,11 @@ function handleNav(event,action,el){
     showToast('تم فتح المحلل القانوني الذكي.');
     return;
   }
+  if(action==='clients'){
+    showClientsPage();
+    showToast('تم فتح قسم الموكلين.');
+    return;
+  }
   if(action==='fees'){
     showFeesManagerPage();
     showToast('تم فتح إدارة الرسوم.');
@@ -1391,6 +1457,8 @@ function updateDisplayedCounts(){
   if(contractsCount)contractsCount.textContent=ar(legalForms.length);
   const feeCount=document.querySelector('.fee-ct');
   if(feeCount)feeCount.textContent=ar(feeItems.length);
+  const clientCount=document.querySelector('.client-ct');
+  if(clientCount)clientCount.textContent=ar(clientProfiles.length);
   const savedCount=document.querySelector('a[href="#saved"] .ct');
   if(savedCount)savedCount.textContent=ar(savedJudgmentIds.size);
   Object.entries(counts).forEach(([type,count])=>{
@@ -1539,6 +1607,14 @@ document.getElementById('clientProfileList')?.addEventListener('click',event=>{
   const invoice=event.target.closest('[data-client-invoice]');
   if(invoice)useClientServiceForInvoice(clientId,invoice.dataset.clientInvoice);
 });
+document.getElementById('clientProfileList')?.addEventListener('input',event=>{
+  if(event.target.matches('[data-service-field="amount"],[data-service-field="paid"]')){
+    syncClientBalanceInputs(event.target.closest('.client-add-service')||document);
+  }
+});
+['clientServiceAmountInput','clientServicePaidInput'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',()=>syncClientBalanceInputs());
+});
 document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('inkModeToggle')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
@@ -1567,6 +1643,9 @@ window.addEventListener('hashchange',()=>{
   }else if(route==='fees'){
     activateNavByAction('fees');
     showFeesManagerPage();
+  }else if(route==='clients'){
+    activateNavByAction('clients');
+    showClientsPage();
   }else if(route==='settings'){
     activateNavByAction('settings');
     showSettingsPage();
@@ -1688,6 +1767,9 @@ if(window.location.hash==='#dashboard'){
 }else if(window.location.hash==='#fees'){
   activateNavByAction('fees');
   showFeesManagerPage();
+}else if(window.location.hash==='#clients'){
+  activateNavByAction('clients');
+  showClientsPage();
 }else if(window.location.hash==='#settings'){
   activateNavByAction('settings');
   showSettingsPage();

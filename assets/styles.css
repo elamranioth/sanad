@@ -291,6 +291,9 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .receipt-summary-grid div{background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:12px}
 .receipt-summary-grid strong{color:#c8d8e0;font-size:15px}
 .client-manager-panel{overflow:hidden}
+.clients-page-head{align-items:stretch}
+.clients-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.client-plus-btn{min-height:48px}
 .client-manager-layout{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.15fr);gap:16px;align-items:start}
 .client-profile-composer{background:linear-gradient(180deg,#0d1b2a,#0a1520);border:1px solid #1e3a52;border-radius:12px;padding:14px}
 .client-form-title{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
@@ -301,7 +304,8 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .client-list-toolbar strong{font-size:24px;color:#c8a84b}
 .client-profile-list{display:flex;flex-direction:column;gap:12px}
 .client-card{background:#081018;border:1px solid #2a4a68;border-radius:12px;padding:14px;box-shadow:0 12px 30px #0000001f}
-.client-card-head{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:12px;align-items:start}
+.client-card-head{display:grid;grid-template-columns:50px minmax(0,1fr) 40px;gap:12px;align-items:start}
+.client-avatar{width:50px;height:50px;border-radius:14px;background:#2a1f08;border:1px solid #c8a84b55;color:#c8a84b;display:flex;align-items:center;justify-content:center;font-size:28px}
 .client-eyebrow{display:block;color:#8aa6b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
 .client-card h3{color:#e8dcc8;font-size:24px;line-height:1.2;margin-bottom:4px}
 .client-card p{color:#6f91a8;font-size:13px;line-height:1.55}
@@ -369,7 +373,7 @@ body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
 body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
-body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
+body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
 body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
 body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{color:#fff}
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
@@ -594,12 +598,15 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .tool-page-head{flex-direction:column}
 .tool-counter{width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
 .tool-counter strong{font-size:22px}
+.clients-head-actions{width:100%;justify-content:stretch}
+.clients-head-actions .tool-counter,.clients-head-actions .client-plus-btn{flex:1}
 .receipt-workspace{grid-template-columns:1fr}
 .receipt-summary-grid{grid-template-columns:1fr}
 .receipt-actions .tool-primary,.receipt-actions .tool-secondary{width:100%}
 .client-manager-layout{grid-template-columns:1fr}
 .client-profile-composer{padding:12px;border-radius:10px}
 .client-card-head,.client-service{grid-template-columns:1fr}
+.client-avatar{width:46px;height:46px;border-radius:12px}
 .client-card-head .fee-delete{width:100%;height:42px}
 .client-service-money{grid-template-columns:1fr}
 .client-service-actions{justify-content:stretch;flex-wrap:wrap}

@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=client-invoices-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=clients-section-20260525">
 </head>
 <body>
 
@@ -51,6 +51,7 @@
       <span class="nav-lbl">الأدوات</span>
       <a class="ni" href="#search" onclick="handleNav(event,'search',this)"><i class="ti ti-zoom"></i>بحث متقدم</a>
       <a class="ni ni-ai" href="#aiAnalysis" onclick="handleNav(event,'aiAnalysis',this)"><i class="ti ti-brain"></i>المحلل القانوني الذكي<span class="ct ai-ct">ذكي</span></a>
+      <a class="ni" href="#clients" onclick="handleNav(event,'clients',this)"><i class="ti ti-users"></i>الموكلين<span class="ct client-ct">٠</span></a>
       <a class="ni" href="#fees" onclick="handleNav(event,'fees',this)"><i class="ti ti-receipt"></i>إدارة الرسوم<span class="ct fee-ct">٠</span></a>
       <a class="ni" href="#settings" onclick="handleNav(event,'settings',this)"><i class="ti ti-adjustments-horizontal"></i>الإعدادات</a>
     </div>
@@ -345,39 +346,52 @@
           </div>
         </div>
       </div>
-      <div class="tool-panel client-manager-panel english-panel" dir="ltr">
-        <div class="tool-panel-head"><i class="ti ti-users"></i><span>Client Profiles</span></div>
-        <div class="client-manager-layout">
-          <div class="client-profile-composer">
-            <div class="client-form-title">
-              <strong>Register a client</strong>
-              <span>Each profile can hold more than one service or case.</span>
-            </div>
-            <div class="form-grid">
-              <label class="field"><span>Client name</span><input id="clientNameInput" type="text" placeholder="Client or company name"></label>
-              <label class="field"><span>Contact</span><input id="clientContactInput" type="text" placeholder="Phone, email, or reference"></label>
-              <label class="field"><span>Case / service type</span><input id="clientServiceTypeInput" type="text" placeholder="Civil case, consultation, drafting..."></label>
-              <label class="field"><span>Service title</span><input id="clientServiceTitleInput" type="text" placeholder="Short matter description"></label>
-              <label class="field"><span>Total agreed amount</span><input id="clientServiceAmountInput" type="number" min="0" step="0.01" placeholder="0"></label>
-              <label class="field"><span>First payment</span><input id="clientServicePaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
-              <label class="field wide"><span>Notes</span><input id="clientServiceNoteInput" type="text" placeholder="Internal note for this service"></label>
-            </div>
-            <button class="tool-primary" type="button" onclick="addClientProfile()"><i class="ti ti-user-plus"></i>Save client profile</button>
-          </div>
-          <div class="client-profile-browser">
-            <div class="client-list-toolbar">
-              <span>Saved clients</span>
-              <strong id="clientProfileCount">0</strong>
-            </div>
-            <div class="client-profile-list" id="clientProfileList"></div>
-            <div class="tool-empty hidden" id="clientProfileEmpty"><i class="ti ti-users-off"></i><p>No client profiles saved yet.</p></div>
-          </div>
-        </div>
-      </div>
       <div class="tool-panel">
         <div class="tool-panel-head"><i class="ti ti-list-details"></i><span>بنود الرسوم المحفوظة</span></div>
         <div class="fee-list" id="feeList"></div>
         <div class="tool-empty hidden" id="feeEmpty"><i class="ti ti-receipt-off"></i><p>لم تتم إضافة رسوم بعد.</p></div>
+      </div>
+    </section>
+
+    <section class="clients-page hidden" id="clientsPage">
+      <div class="tool-page-head clients-page-head">
+        <div>
+          <h2>الموكلين</h2>
+          <p>Client profiles, services, and invoice-ready financial records saved locally on this device.</p>
+        </div>
+        <div class="clients-head-actions">
+          <div class="tool-counter"><strong id="clientPageCount">0</strong><span>clients</span></div>
+          <button class="tool-primary client-plus-btn" type="button" onclick="toggleClientForm()"><i class="ti ti-plus"></i>New Client</button>
+        </div>
+      </div>
+      <div class="tool-panel client-manager-panel english-panel" dir="ltr">
+        <div class="client-profile-composer hidden" id="clientProfileComposer">
+          <div class="client-form-title">
+            <strong>Register a client</strong>
+            <span>Create the client profile and the first service attached to it.</span>
+          </div>
+          <div class="form-grid">
+            <label class="field"><span>Name</span><input id="clientNameInput" type="text" placeholder="Client or company name"></label>
+            <label class="field"><span>Email or phone</span><input id="clientContactInput" type="text" placeholder="Email, phone, or reference"></label>
+            <label class="field"><span>Service type</span><input id="clientServiceTypeInput" type="text" placeholder="Civil case, consultation, drafting..."></label>
+            <label class="field"><span>Total amount</span><input id="clientServiceAmountInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field"><span>Amount paid</span><input id="clientServicePaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
+            <label class="field"><span>Balance</span><input id="clientServiceBalanceInput" type="text" value="0 AED" readonly></label>
+            <label class="field wide"><span>Notes</span><input id="clientServiceNoteInput" type="text" placeholder="Internal note for this service"></label>
+          </div>
+          <div class="receipt-actions">
+            <button class="tool-primary" type="button" onclick="addClientProfile()"><i class="ti ti-user-plus"></i>Save client profile</button>
+            <button class="tool-secondary" type="button" onclick="toggleClientForm(false)"><i class="ti ti-x"></i>Cancel</button>
+          </div>
+        </div>
+        <div class="client-profile-browser">
+          <div class="client-list-toolbar">
+            <span>Existing clients</span>
+            <strong id="clientProfileCount">0</strong>
+          </div>
+          <div class="client-profile-list" id="clientProfileList"></div>
+          <div class="tool-empty hidden" id="clientProfileEmpty"><i class="ti ti-users-off"></i><p>No client profiles saved yet.</p></div>
+        </div>
       </div>
     </section>
 
@@ -416,7 +430,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v16</strong></span>
+            <span>الكاش: <strong>v17</strong></span>
           </div>
         </div>
       </div>
@@ -474,6 +488,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=client-invoices-20260525"></script>
+<script src="./assets/app.js?v=clients-section-20260525"></script>
 </body>
 </html>
