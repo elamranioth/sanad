@@ -298,6 +298,8 @@ function loadClientProfiles(){
       .map(client=>({
         id:String(client.id),
         name:String(client.name||'').trim(),
+        email:String(client.email||(String(client.contact||'').includes('@')?client.contact:'')).trim(),
+        phone:String(client.phone||(String(client.contact||'').includes('@')?'':client.contact)).trim(),
         contact:String(client.contact||'').trim(),
         createdAt:client.createdAt||new Date().toISOString(),
         services:Array.isArray(client.services)?client.services
@@ -787,6 +789,28 @@ function serviceBalance(service){
     overpaid:Math.max(paid-amount,0)
   };
 }
+function clientContactHtml(client){
+  const email=String(client.email||'').trim();
+  const phone=String(client.phone||'').trim();
+  const contact=String(client.contact||'').trim();
+  const fallbackEmail=!email&&contact.includes('@')?contact:'';
+  const fallbackPhone=!phone&&contact&&!contact.includes('@')?contact:'';
+  const shownEmail=email||fallbackEmail||'No email saved';
+  const shownPhone=phone||fallbackPhone||'No phone saved';
+  return `<div class="client-contact-row">
+    <span><i class="ti ti-mail"></i>${escapeHtml(shownEmail)}</span>
+    <b></b>
+    <span><i class="ti ti-phone"></i>${escapeHtml(shownPhone)}</span>
+  </div>`;
+}
+function serviceIcon(type){
+  const value=String(type||'').toLowerCase();
+  if(/criminal|جنائي|crime|penal/.test(value))return 'ti-gavel';
+  if(/civil|مدني|memorandum|court/.test(value))return 'ti-building-bank';
+  if(/trade|commercial|corporate|company|تجاري/.test(value))return 'ti-briefcase';
+  if(/trademark|brand|ip|intellectual/.test(value))return 'ti-certificate';
+  return 'ti-scale';
+}
 function renderClientProfiles(){
   const list=document.getElementById('clientProfileList');
   const empty=document.getElementById('clientProfileEmpty');
@@ -811,15 +835,16 @@ function renderClientProfiles(){
       const balanceLabel=balance.overpaid>0?'Overpaid':'Balance';
       const balanceValue=balance.overpaid>0?balance.overpaid:balance.remaining;
       return `<div class="client-service" data-service-id="${escapeHtml(service.id)}">
+        <div class="client-service-symbol"><i class="ti ${serviceIcon(service.type||service.title)}"></i></div>
         <div class="client-service-main">
-          <span class="client-service-type">${escapeHtml(service.type||'Service')}</span>
-          <strong>${escapeHtml(service.title||'Service')}</strong>
+          <span class="client-service-type"><em></em>${escapeHtml(service.type||'Service')}</span>
+          <strong>${escapeHtml(service.title||service.type||'Service')}</strong>
           ${service.note?`<p>${escapeHtml(service.note)}</p>`:''}
         </div>
         <div class="client-service-money">
-          <span><small>Total</small><strong>${moneyEn(balance.amount)}</strong></span>
-          <span><small>Paid</small><strong>${moneyEn(balance.paid)}</strong></span>
-          <span><small>${balanceLabel}</small><strong>${moneyEn(balanceValue)}</strong></span>
+          <span><i class="ti ti-file-invoice"></i><small>Total</small><strong>${moneyEn(balance.amount)}</strong></span>
+          <span><i class="ti ti-credit-card"></i><small>Paid</small><strong>${moneyEn(balance.paid)}</strong></span>
+          <span><i class="ti ti-scale"></i><small>${balanceLabel}</small><strong>${moneyEn(balanceValue)}</strong></span>
         </div>
         <div class="client-service-actions">
           <button class="client-action" type="button" data-client-invoice="${escapeHtml(service.id)}"><i class="ti ti-file-invoice"></i>Use Invoice</button>
@@ -829,20 +854,21 @@ function renderClientProfiles(){
     }).join(''):'<div class="client-service-empty">No services saved for this client yet.</div>';
     return `<article class="client-card" data-client-id="${escapeHtml(client.id)}">
       <div class="client-card-head">
-        <div class="client-avatar"><i class="ti ti-user-circle"></i></div>
-        <div>
+        <div class="client-avatar"><i class="ti ti-user"></i><small><i class="ti ti-scale"></i></small></div>
+        <div class="client-identity">
           <span class="client-eyebrow">Client profile</span>
           <h3>${escapeHtml(client.name)}</h3>
-          <p>${escapeHtml(client.contact||'No contact saved')}</p>
+          <div class="client-name-rule"></div>
+          ${clientContactHtml(client)}
         </div>
-        <button class="fee-delete" type="button" data-client-delete="${escapeHtml(client.id)}" aria-label="Delete client"><i class="ti ti-trash"></i></button>
-      </div>
-      <div class="client-card-meta">
-        <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
+        <div class="client-card-meta">
+          <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
+        </div>
+        <button class="client-profile-delete" type="button" data-client-delete="${escapeHtml(client.id)}" aria-label="Delete client"><i class="ti ti-trash"></i></button>
       </div>
       <div class="client-service-list">${servicesHtml}</div>
       <details class="client-add-service">
-        <summary><i class="ti ti-plus"></i>Add new service</summary>
+        <summary><span><i class="ti ti-plus"></i></span><strong>Add new service</strong></summary>
         <div class="client-service-form">
           <label><span>Service type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
           <label><span>Total amount</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
@@ -867,7 +893,7 @@ function toggleClientForm(force){
   }
 }
 function clearClientProfileInputs(){
-  ['clientNameInput','clientContactInput','clientServiceTypeInput','clientServiceTitleInput','clientServiceAmountInput','clientServicePaidInput','clientServiceNoteInput'].forEach(id=>{
+  ['clientNameInput','clientEmailInput','clientPhoneInput','clientContactInput','clientServiceTypeInput','clientServiceTitleInput','clientServiceAmountInput','clientServicePaidInput','clientServiceNoteInput'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.value='';
   });
@@ -875,7 +901,9 @@ function clearClientProfileInputs(){
 }
 function addClientProfile(){
   const name=document.getElementById('clientNameInput')?.value.trim()||'';
-  const contact=document.getElementById('clientContactInput')?.value.trim()||'';
+  const email=document.getElementById('clientEmailInput')?.value.trim()||'';
+  const phone=document.getElementById('clientPhoneInput')?.value.trim()||'';
+  const contact=[email,phone].filter(Boolean).join(' | ')||document.getElementById('clientContactInput')?.value.trim()||'';
   const type=document.getElementById('clientServiceTypeInput')?.value.trim()||'';
   const title=document.getElementById('clientServiceTitleInput')?.value.trim()||'';
   const amount=readNumberInput('clientServiceAmountInput');
@@ -889,6 +917,8 @@ function addClientProfile(){
   clientProfiles.unshift({
     id:newLocalId('client'),
     name,
+    email,
+    phone,
     contact,
     createdAt:new Date().toISOString(),
     services:hasService?[createClientService({type,title,amount,paid,note})]:[]
@@ -1034,7 +1064,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v17',label:'الكاش'}
+    {value:'v18',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();

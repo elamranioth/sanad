@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=clients-section-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=client-profile-ui-20260525">
 </head>
 <body>
 
@@ -372,7 +372,8 @@
           </div>
           <div class="form-grid">
             <label class="field"><span>Name</span><input id="clientNameInput" type="text" placeholder="Client or company name"></label>
-            <label class="field"><span>Email or phone</span><input id="clientContactInput" type="text" placeholder="Email, phone, or reference"></label>
+            <label class="field"><span>Email</span><input id="clientEmailInput" type="email" placeholder="client@example.com"></label>
+            <label class="field"><span>Phone</span><input id="clientPhoneInput" type="tel" placeholder="0525720490"></label>
             <label class="field"><span>Service type</span><input id="clientServiceTypeInput" type="text" placeholder="Civil case, consultation, drafting..."></label>
             <label class="field"><span>Total amount</span><input id="clientServiceAmountInput" type="number" min="0" step="0.01" placeholder="0"></label>
             <label class="field"><span>Amount paid</span><input id="clientServicePaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
@@ -386,7 +387,7 @@
         </div>
         <div class="client-profile-browser">
           <div class="client-list-toolbar">
-            <span>Existing clients</span>
+            <span>Client Profile</span>
             <strong id="clientProfileCount">0</strong>
           </div>
           <div class="client-profile-list" id="clientProfileList"></div>
@@ -430,7 +431,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v17</strong></span>
+            <span>الكاش: <strong>v18</strong></span>
           </div>
         </div>
       </div>
@@ -488,6 +489,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=clients-section-20260525"></script>
+<script src="./assets/app.js?v=client-profile-ui-20260525"></script>
 </body>
 </html>
