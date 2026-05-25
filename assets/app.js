@@ -52,6 +52,7 @@ let savedJudgmentIds=loadSavedJudgments();
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
 let expandedClientIds=new Set();
+let clientEditContext=null;
 let sanadSettings=loadSanadSettings();
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function calculateCounts(){
@@ -803,6 +804,123 @@ function syncClientBalanceInputs(scope=document){
     if(balance)balance.value=moneyEn(clientBalanceValue(amount,paid));
   });
 }
+function clientEditField({id,label,value='',type='text',wide=false,readonly=false,textarea=false,placeholder=''}) {
+  const attrs=[
+    `id="${escapeHtml(id)}"`,
+    `placeholder="${escapeHtml(placeholder)}"`,
+    readonly?'readonly':'',
+    type==='number'?'min="0" step="0.01"':''
+  ].filter(Boolean).join(' ');
+  const control=textarea
+    ?`<textarea ${attrs}>${escapeHtml(value)}</textarea>`
+    :`<input type="${escapeHtml(type)}" value="${escapeHtml(value)}" ${attrs}>`;
+  return `<label class="client-edit-field ${wide?'wide':''}"><span>${escapeHtml(label)}</span>${control}</label>`;
+}
+function setClientEditModalOpen(open){
+  const modal=document.getElementById('clientEditModal');
+  if(!modal)return;
+  modal.classList.toggle('hidden',!open);
+  modal.setAttribute('aria-hidden',open?'false':'true');
+  document.body.classList.toggle('modal-open',open);
+}
+function syncClientEditBalance(){
+  const balance=document.getElementById('clientEditServiceBalanceInput');
+  if(!balance)return;
+  const amount=document.getElementById('clientEditServiceAmountInput')?.value||0;
+  const paid=document.getElementById('clientEditServicePaidInput')?.value||0;
+  balance.value=moneyEn(clientBalanceValue(amount,paid));
+}
+function openClientEdit(clientId){
+  const client=clientProfiles.find(item=>String(item.id)===String(clientId));
+  const form=document.getElementById('clientEditForm');
+  if(!client||!form)return;
+  clientEditContext={type:'client',clientId:String(client.id)};
+  const kicker=document.getElementById('clientEditKicker');
+  const title=document.getElementById('clientEditTitle');
+  if(kicker)kicker.textContent='Client profile';
+  if(title)title.textContent='Edit client profile';
+  form.innerHTML=[
+    clientEditField({id:'clientEditNameInput',label:'Name',value:client.name,placeholder:'Client or company name',wide:true}),
+    clientEditField({id:'clientEditEmailInput',label:'Email',type:'email',value:client.email,placeholder:'client@example.com'}),
+    clientEditField({id:'clientEditPhoneInput',label:'Phone',type:'tel',value:client.phone,placeholder:'0525720490'})
+  ].join('');
+  setClientEditModalOpen(true);
+  setTimeout(()=>document.getElementById('clientEditNameInput')?.focus(),80);
+}
+function openClientServiceEdit(clientId,serviceId){
+  const client=clientProfiles.find(item=>String(item.id)===String(clientId));
+  const service=client?.services?.find(item=>String(item.id)===String(serviceId));
+  const form=document.getElementById('clientEditForm');
+  if(!client||!service||!form)return;
+  const balance=serviceBalance(service);
+  clientEditContext={type:'service',clientId:String(client.id),serviceId:String(service.id)};
+  const kicker=document.getElementById('clientEditKicker');
+  const title=document.getElementById('clientEditTitle');
+  if(kicker)kicker.textContent=client.name;
+  if(title)title.textContent='Edit service details';
+  form.innerHTML=[
+    clientEditField({id:'clientEditServiceTypeInput',label:'Service type',value:service.type||service.title||'',placeholder:'Civil case, consultation, drafting...',wide:true}),
+    clientEditField({id:'clientEditServiceAmountInput',label:'Total amount',type:'number',value:balance.amount}),
+    clientEditField({id:'clientEditServicePaidInput',label:'Amount paid',type:'number',value:balance.paid}),
+    clientEditField({id:'clientEditServiceBalanceInput',label:'Balance',value:moneyEn(balance.remaining),readonly:true}),
+    clientEditField({id:'clientEditServiceNoteInput',label:'Notes',value:service.note||'',placeholder:'Internal service note',wide:true,textarea:true})
+  ].join('');
+  syncClientEditBalance();
+  setClientEditModalOpen(true);
+  setTimeout(()=>document.getElementById('clientEditServiceTypeInput')?.focus(),80);
+}
+function closeClientEdit(){
+  clientEditContext=null;
+  setClientEditModalOpen(false);
+}
+function saveClientEdit(){
+  if(!clientEditContext)return;
+  const client=clientProfiles.find(item=>String(item.id)===String(clientEditContext.clientId));
+  if(!client)return;
+  if(clientEditContext.type==='client'){
+    const name=document.getElementById('clientEditNameInput')?.value.trim()||'';
+    const email=document.getElementById('clientEditEmailInput')?.value.trim()||'';
+    const phone=document.getElementById('clientEditPhoneInput')?.value.trim()||'';
+    if(!name){
+      showToast('Enter the client name first.');
+      return;
+    }
+    client.name=name;
+    client.email=email;
+    client.phone=phone;
+    client.contact=[email,phone].filter(Boolean).join(' | ');
+    client.updated=new Date().toISOString();
+    const persisted=saveClientProfiles();
+    renderClientProfiles();
+    updateSettingsStats();
+    closeClientEdit();
+    showToast(persisted?'Client profile updated.':'Client profile updated for this session only.');
+    return;
+  }
+  const service=client.services?.find(item=>String(item.id)===String(clientEditContext.serviceId));
+  if(!service)return;
+  const type=document.getElementById('clientEditServiceTypeInput')?.value.trim()||'';
+  const amount=Number(document.getElementById('clientEditServiceAmountInput')?.value||0);
+  const paid=Number(document.getElementById('clientEditServicePaidInput')?.value||0);
+  const note=document.getElementById('clientEditServiceNoteInput')?.value.trim()||'';
+  if(!type&&!amount&&!paid&&!note){
+    showToast('Enter service details first.');
+    return;
+  }
+  const serviceType=type||'General service';
+  service.type=serviceType;
+  service.title=serviceType;
+  service.amount=Math.max(0,Number.isFinite(amount)?amount:0);
+  service.paid=Math.max(0,Number.isFinite(paid)?paid:0);
+  service.note=note;
+  service.updated=new Date().toISOString();
+  expandedClientIds.add(String(client.id));
+  const persisted=saveClientProfiles();
+  renderClientProfiles();
+  updateSettingsStats();
+  closeClientEdit();
+  showToast(persisted?'Service details updated.':'Service details updated for this session only.');
+}
 function createClientService({type,title,amount,paid,note}){
   const serviceType=String(type||'General service').trim()||'General service';
   const serviceTitle=String(title||serviceType).trim()||serviceType;
@@ -886,6 +1004,7 @@ function renderClientProfiles(){
         </div>
         <div class="client-service-actions">
           <button class="client-action" type="button" data-client-invoice="${escapeHtml(service.id)}"><i class="ti ti-file-invoice"></i>Use Invoice</button>
+          <button class="client-action edit" type="button" data-client-service-edit="${escapeHtml(service.id)}"><i class="ti ti-pencil"></i>Edit</button>
           <button class="client-action danger" type="button" data-client-service-delete="${escapeHtml(service.id)}" aria-label="Delete service"><i class="ti ti-trash"></i></button>
         </div>
       </div>`;
@@ -903,6 +1022,7 @@ function renderClientProfiles(){
           <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
         </div>
         <button class="client-expand-toggle" type="button" data-client-toggle="${escapeHtml(client.id)}" aria-label="${isOpen?'Close client profile':'Open client profile'}"><i class="ti ${isOpen?'ti-chevron-up':'ti-chevron-down'}"></i></button>
+        <button class="client-profile-edit" type="button" data-client-edit="${escapeHtml(client.id)}" aria-label="Edit client profile"><i class="ti ti-pencil"></i></button>
         <button class="client-profile-delete" type="button" data-client-delete="${escapeHtml(client.id)}" aria-label="Delete client"><i class="ti ti-trash"></i></button>
       </div>
       <div class="client-card-body">
@@ -1127,7 +1247,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v19',label:'الكاش'}
+    {value:'v20',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -1728,6 +1848,15 @@ document.getElementById('confirmAcceptBtn')?.addEventListener('click',()=>closeC
 document.getElementById('confirmModal')?.addEventListener('click',event=>{
   if(event.target.id==='confirmModal')closeConfirm(false);
 });
+document.getElementById('clientEditCloseBtn')?.addEventListener('click',closeClientEdit);
+document.getElementById('clientEditCancelBtn')?.addEventListener('click',closeClientEdit);
+document.getElementById('clientEditSaveBtn')?.addEventListener('click',saveClientEdit);
+document.getElementById('clientEditModal')?.addEventListener('click',event=>{
+  if(event.target.id==='clientEditModal')closeClientEdit();
+});
+document.getElementById('clientEditForm')?.addEventListener('input',event=>{
+  if(event.target.matches('#clientEditServiceAmountInput,#clientEditServicePaidInput'))syncClientEditBalance();
+});
 document.getElementById('clientProfileList')?.addEventListener('click',event=>{
   const card=event.target.closest('.client-card[data-client-id]');
   if(!card)return;
@@ -1735,6 +1864,11 @@ document.getElementById('clientProfileList')?.addEventListener('click',event=>{
   const deleteClient=event.target.closest('[data-client-delete]');
   if(deleteClient){
     deleteClientProfile(clientId);
+    return;
+  }
+  const editClient=event.target.closest('[data-client-edit]');
+  if(editClient){
+    openClientEdit(clientId);
     return;
   }
   const addService=event.target.closest('[data-client-add-service]');
@@ -1745,6 +1879,11 @@ document.getElementById('clientProfileList')?.addEventListener('click',event=>{
   const deleteService=event.target.closest('[data-client-service-delete]');
   if(deleteService){
     deleteClientService(clientId,deleteService.dataset.clientServiceDelete);
+    return;
+  }
+  const editService=event.target.closest('[data-client-service-edit]');
+  if(editService){
+    openClientServiceEdit(clientId,editService.dataset.clientServiceEdit);
     return;
   }
   const invoice=event.target.closest('[data-client-invoice]');
@@ -1782,6 +1921,7 @@ document.getElementById('compactCardsToggle')?.addEventListener('change',updateS
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     closeConfirm(false);
+    closeClientEdit();
     closeDoc();
   }
 });

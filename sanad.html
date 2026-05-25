@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=client-collapse-confirm-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=client-edit-profile-20260525">
 </head>
 <body>
 
@@ -78,6 +78,22 @@
     <div class="confirm-actions">
       <button class="tool-secondary" id="confirmCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
       <button class="tool-secondary danger" id="confirmAcceptBtn" type="button"><i class="ti ti-trash"></i>Delete</button>
+    </div>
+  </div>
+</div>
+<div class="client-edit-modal hidden" id="clientEditModal" role="presentation" aria-hidden="true" dir="ltr">
+  <div class="client-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="clientEditTitle">
+    <div class="client-edit-head">
+      <div>
+        <span id="clientEditKicker">Client profile</span>
+        <h2 id="clientEditTitle">Edit client</h2>
+      </div>
+      <button class="client-edit-close" id="clientEditCloseBtn" type="button" aria-label="Close edit form"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="client-edit-form" id="clientEditForm"></div>
+    <div class="client-edit-actions">
+      <button class="tool-secondary" id="clientEditCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
+      <button class="tool-primary" id="clientEditSaveBtn" type="button"><i class="ti ti-device-floppy"></i>Save changes</button>
     </div>
   </div>
 </div>
@@ -444,7 +460,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v19</strong></span>
+            <span>الكاش: <strong>v20</strong></span>
           </div>
         </div>
       </div>
@@ -502,6 +518,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=client-collapse-confirm-20260525"></script>
+<script src="./assets/app.js?v=client-edit-profile-20260525"></script>
 </body>
 </html>

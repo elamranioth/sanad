@@ -63,6 +63,22 @@ button,a,.tc,.doc-card,.law-card,.tool-primary,.tool-secondary{touch-action:mani
 .confirm-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:8px}
 .confirm-actions .tool-secondary{min-height:42px}
 .confirm-actions .danger{background:#35141b;color:#ff8a80;border-color:#9b3434}
+.client-edit-modal{position:fixed;inset:0;z-index:132;background:#02070de6;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(8px)}
+.client-edit-dialog{width:min(680px,100%);max-height:min(88dvh,760px);overflow:auto;background:linear-gradient(160deg,#071321,#10233a);border:1px solid #31577f;border-radius:20px;padding:24px;box-shadow:0 30px 90px #000000a3,inset 0 1px 0 #ffffff0c}
+.client-edit-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;border-bottom:1px solid #1f3d5d;padding-bottom:16px;margin-bottom:18px}
+.client-edit-head span{display:block;color:#c8a84b;font-size:12px;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.client-edit-head h2{font-family:'Brookley','Georgia','Times New Roman',serif;color:#f6f1e9;font-size:30px;line-height:1.15}
+.client-edit-close{width:42px;height:42px;border-radius:12px;border:1px solid #2f557f;background:#102845;color:#d8edf8;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.client-edit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.client-edit-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.client-edit-field.wide{grid-column:1/-1}
+.client-edit-field span{color:#9fb7c9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.7px}
+.client-edit-field input,.client-edit-field textarea{width:100%;background:#081018;border:1px solid #254763;border-radius:12px;color:#dbe8ef;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:16px;padding:12px 14px;outline:none}
+.client-edit-field textarea{min-height:96px;resize:vertical;line-height:1.5}
+.client-edit-field input:focus,.client-edit-field textarea:focus{border-color:#c8a84b88;box-shadow:0 0 0 3px #c8a84b17}
+.client-edit-field input[readonly]{color:#f0be4b;background:#0f1f31}
+.client-edit-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;border-top:1px solid #1f3d5d;padding-top:16px;margin-top:18px}
+.client-edit-actions .tool-primary,.client-edit-actions .tool-secondary{min-height:44px;font-family:'Brookley','Georgia','Times New Roman',serif}
 body.sidebar-collapsed .sidebar{width:72px}
 body.sidebar-collapsed .brand{justify-content:center;padding-inline:10px}
 body.sidebar-collapsed .brand>div:not(.brand-icon),body.sidebar-collapsed .nav-lbl,body.sidebar-collapsed .ni .ct,body.sidebar-collapsed .user-row>div:not(.avatar){display:none}
@@ -328,7 +344,9 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .client-contact-row span{display:inline-flex;align-items:center;gap:9px}
 .client-contact-row i{font-size:19px;color:#c6dcf5}
 .client-contact-row b{width:1px;height:24px;background:#314860}
-.client-profile-delete{position:absolute;top:-68px;right:0;width:54px;height:54px;border-radius:13px;border:1px solid #9b3434;background:#2c1219;color:#ef6f65;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.client-profile-edit,.client-profile-delete{position:absolute;top:-68px;width:54px;height:54px;border-radius:13px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.client-profile-edit{right:66px;border:1px solid #2f5b8c;background:#102845;color:#8bd3ee}
+.client-profile-delete{right:0;border:1px solid #9b3434;background:#2c1219;color:#ef6f65}
 .client-card-meta{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0}
 .client-card-meta span{display:inline-flex;align-items:center;gap:14px;background:#102845;border:1px solid #2e537d;color:#d8e8f6;border-radius:18px;font-size:18px;padding:13px 22px;box-shadow:inset 0 1px 0 #ffffff08}
 .client-card-meta i{color:#8bd3ee;font-size:22px}
@@ -355,6 +373,8 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .client-service-actions{grid-column:1/-1;border-top:1px dashed #233c5b;padding-top:18px;display:flex;align-items:center;gap:12px;justify-content:space-between}
 .client-action{border:1px solid #2f5b8c;background:#102845;color:#d8edf8;border-radius:11px;min-height:48px;padding:10px 24px;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:17px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap}
 .client-action i{color:#8bd3ee;font-size:20px}
+.client-action.edit{background:#0f2538;border-color:#c8a84b55;color:#f0d37d}
+.client-action.edit i{color:#f0be4b}
 .client-action.danger{width:54px;min-height:54px;padding:0;background:#2c1219;color:#ef6f65;border-color:#9b3434;font-size:18px}
 .client-action.danger i{color:#ef6f65}
 .client-service-empty{border:1px dashed #2a4a68;border-radius:13px;color:#6f91a8;padding:26px;text-align:center;font-size:16px}
@@ -390,11 +410,11 @@ body.compact-cards .doc-card{padding:10px 12px}
 body.compact-cards .doc-card-icon{width:38px;height:38px;font-size:19px}
 body.compact-cards .doc-title{font-size:14px;margin-bottom:4px}
 html.ink-mode,body.ink-mode{background:#f7f2df;color:#111}
-body.ink-mode .sidebar,body.ink-mode .topbar,body.ink-mode .hero,body.ink-mode .search-bar,body.ink-mode .results-bar,body.ink-mode .law-catalog-head,body.ink-mode .law-search,body.ink-mode .tool-page-head,body.ink-mode .tool-panel,body.ink-mode .section-empty,body.ink-mode .ai-section,body.ink-mode .doc-dialog,body.ink-mode .doc-dialog-head,body.ink-mode .doc-dialog-body{background:#fbf8ec;border-color:#1b1b1b;color:#111}
+body.ink-mode .sidebar,body.ink-mode .topbar,body.ink-mode .hero,body.ink-mode .search-bar,body.ink-mode .results-bar,body.ink-mode .law-catalog-head,body.ink-mode .law-search,body.ink-mode .tool-page-head,body.ink-mode .tool-panel,body.ink-mode .section-empty,body.ink-mode .ai-section,body.ink-mode .doc-dialog,body.ink-mode .doc-dialog-head,body.ink-mode .doc-dialog-body,body.ink-mode .client-edit-dialog{background:#fbf8ec;border-color:#1b1b1b;color:#111}
 body.ink-mode .page,body.ink-mode .main{background:#f7f2df}
 body.ink-mode .brand,body.ink-mode .nav-footer,body.ink-mode .divider,body.ink-mode .doc-dialog-head{border-color:#1b1b1b}
 body.ink-mode .brand-icon,body.ink-mode .hero-icon,body.ink-mode .tool-primary,body.ink-mode .btn-add{background:#111;color:#fff;box-shadow:none}
-body.ink-mode .brand-name,body.ink-mode .breadcrumb .cur,body.ink-mode .hero-title,body.ink-mode .tool-page-head h2,body.ink-mode .law-catalog-head h2,body.ink-mode .doc-title,body.ink-mode .doc-dialog-head h2,body.ink-mode .ai-name,body.ink-mode .tool-panel-head,body.ink-mode .settings-stats strong,body.ink-mode .settings-info strong,body.ink-mode .hstat-num{color:#111}
+body.ink-mode .brand-name,body.ink-mode .breadcrumb .cur,body.ink-mode .hero-title,body.ink-mode .tool-page-head h2,body.ink-mode .law-catalog-head h2,body.ink-mode .doc-title,body.ink-mode .doc-dialog-head h2,body.ink-mode .client-edit-head h2,body.ink-mode .ai-name,body.ink-mode .tool-panel-head,body.ink-mode .settings-stats strong,body.ink-mode .settings-info strong,body.ink-mode .hstat-num{color:#111}
 body.ink-mode .dashboard-recent-item span,body.ink-mode .collection-card h3,body.ink-mode .local-judgment-item h3,body.ink-mode .fee-item h3,body.ink-mode .law-card h3,body.ink-mode .client-card h3,body.ink-mode .client-service-main strong,body.ink-mode .client-service-money strong{color:#111}
 body.ink-mode .brand-sub,body.ink-mode .nav-lbl,body.ink-mode .breadcrumb,body.ink-mode .breadcrumb span,body.ink-mode .hero-sub,body.ink-mode .rb-left,body.ink-mode .tool-page-head p,body.ink-mode .law-catalog-head p,body.ink-mode .doc-num,body.ink-mode .meta-chip,body.ink-mode .settings-stats,body.ink-mode .settings-info,body.ink-mode .ai-sub,body.ink-mode .ai-desc,body.ink-mode .collection-card p,body.ink-mode .dashboard-recent-item small,body.ink-mode .local-judgment-item p,body.ink-mode .client-card p,body.ink-mode .client-form-title span,body.ink-mode .client-eyebrow,body.ink-mode .client-service-money small{color:#333}
 body.ink-mode .ni{color:#111}
@@ -402,15 +422,15 @@ body.ink-mode .ni:hover,body.ink-mode .ni.on,body.ink-mode .ni-ai,body.ink-mode 
 body.ink-mode .ni .ct,body.ink-mode .ni.on .ct,body.ink-mode .ai-ct,body.ink-mode .ni-ai.on .ai-ct{background:#fff;color:#111;border:1px solid #111}
 body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item,body.ink-mode .receipt-preview,body.ink-mode .receipt-summary-grid div,body.ink-mode .client-profile-composer,body.ink-mode .client-list-toolbar,body.ink-mode .client-card,body.ink-mode .client-service,body.ink-mode .client-service-money span{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
-body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input{background:#fff;border-color:#1b1b1b;color:#111}
+body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input,body.ink-mode .client-edit-field input,body.ink-mode .client-edit-field textarea{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
-body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn{background:#fff;color:#111;border-color:#111;box-shadow:none}
+body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
 body.ink-mode .confirm-dialog{background:#fff;border-color:#111;color:#111}
 body.ink-mode .confirm-copy h2,body.ink-mode .confirm-copy p{color:#111}
-body.ink-mode .client-expand-toggle{background:#fff;color:#111;border-color:#111}
+body.ink-mode .client-expand-toggle,body.ink-mode .client-action.edit{background:#fff;color:#111;border-color:#111}
 body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
 body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{color:#fff}
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
@@ -525,7 +545,7 @@ body.modal-open{overflow:hidden}
 .client-card{padding:24px}
 .client-card-head{grid-template-columns:112px minmax(0,1fr) 48px;padding-right:0}
 .client-card-meta{grid-column:2;justify-content:flex-start}
-.client-profile-delete{top:-60px}
+.client-profile-edit,.client-profile-delete{top:-60px}
 .client-avatar{width:108px;height:108px;font-size:58px}
 .client-service{grid-template-columns:76px minmax(0,1fr);gap:18px}
 .client-service-money{grid-column:1/-1}
@@ -654,7 +674,7 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .client-profile-composer{padding:12px;border-radius:10px}
 .client-card-head,.client-service{grid-template-columns:1fr}
 .client-avatar{width:46px;height:46px;border-radius:12px}
-.client-profile-delete{position:static;width:100%;height:42px}
+.client-profile-edit,.client-profile-delete{position:static;width:100%;height:42px}
 .client-expand-toggle{width:100%;height:42px}
 .client-card-meta{grid-column:auto}
 .client-service-money{grid-template-columns:1fr}
@@ -687,6 +707,11 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .confirm-dialog{grid-template-columns:1fr;text-align:center}
 .confirm-icon{margin:0 auto}
 .confirm-actions .tool-secondary{flex:1}
+.client-edit-dialog{max-height:94dvh;padding:18px;border-radius:16px}
+.client-edit-head{gap:12px}
+.client-edit-head h2{font-size:24px}
+.client-edit-form{grid-template-columns:1fr}
+.client-edit-actions .tool-primary,.client-edit-actions .tool-secondary{flex:1}
 }
 @media(max-width:380px){
 .install-btn span,.btn-add .btn-text,.ink-btn span{display:none}
