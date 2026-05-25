@@ -46,9 +46,11 @@ let readerMode='judgment';
 let deferredInstallPrompt=null;
 const savedStorageKey='sanadSavedJudgments';
 const feeStorageKey='sanadFeeItems';
+const clientStorageKey='sanadClientProfiles';
 const settingsStorageKey='sanadSettings';
 let savedJudgmentIds=loadSavedJudgments();
 let feeItems=loadFeeItems();
+let clientProfiles=loadClientProfiles();
 let sanadSettings=loadSanadSettings();
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function calculateCounts(){
@@ -287,6 +289,41 @@ function saveFeeItems(){
     return false;
   }
 }
+function loadClientProfiles(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(clientStorageKey)||'[]');
+    if(!Array.isArray(saved))return [];
+    return saved
+      .filter(client=>client&&client.id&&client.name)
+      .map(client=>({
+        id:String(client.id),
+        name:String(client.name||'').trim(),
+        contact:String(client.contact||'').trim(),
+        createdAt:client.createdAt||new Date().toISOString(),
+        services:Array.isArray(client.services)?client.services
+          .filter(service=>service&&service.id)
+          .map(service=>({
+            id:String(service.id),
+            type:String(service.type||'General service').trim(),
+            title:String(service.title||service.type||'Service').trim(),
+            amount:Math.max(0,Number(service.amount)||0),
+            paid:Math.max(0,Number(service.paid)||0),
+            note:String(service.note||'').trim(),
+            updated:service.updated||new Date().toISOString()
+          })):[]
+      }));
+  }catch(_){
+    return [];
+  }
+}
+function saveClientProfiles(){
+  try{
+    localStorage.setItem(clientStorageKey,JSON.stringify(clientProfiles));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
 function loadSanadSettings(){
   const defaults={readerSize:'normal',compactCards:false,inkMode:false};
   try{
@@ -307,6 +344,10 @@ function saveSanadSettings(){
 function money(value){
   const number=Number(value)||0;
   return `${new Intl.NumberFormat('ar-AE',{maximumFractionDigits:2}).format(number)} درهم`;
+}
+function moneyEn(value){
+  const number=Number(value)||0;
+  return `${new Intl.NumberFormat('en-AE',{maximumFractionDigits:2}).format(number)} AED`;
 }
 function applySettings(){
   document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
@@ -693,15 +734,211 @@ function renderFees(){
       <button class="fee-delete" type="button" data-fee-delete="${escapeHtml(item.id)}" aria-label="حذف الرسم"><i class="ti ti-trash"></i></button>
     </div>`).join('');
 }
+function newLocalId(prefix){
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+}
+function readNumberInput(id){
+  const value=Number(document.getElementById(id)?.value||0);
+  return Math.max(0,Number.isFinite(value)?value:0);
+}
+function createClientService({type,title,amount,paid,note}){
+  const serviceType=String(type||'General service').trim()||'General service';
+  const serviceTitle=String(title||serviceType).trim()||serviceType;
+  return {
+    id:newLocalId('service'),
+    type:serviceType,
+    title:serviceTitle,
+    amount:Math.max(0,Number(amount)||0),
+    paid:Math.max(0,Number(paid)||0),
+    note:String(note||'').trim(),
+    updated:new Date().toISOString()
+  };
+}
+function serviceBalance(service){
+  const amount=Math.max(0,Number(service?.amount)||0);
+  const paid=Math.max(0,Number(service?.paid)||0);
+  return {
+    amount,
+    paid,
+    remaining:Math.max(amount-paid,0),
+    overpaid:Math.max(paid-amount,0)
+  };
+}
+function renderClientProfiles(){
+  const list=document.getElementById('clientProfileList');
+  const empty=document.getElementById('clientProfileEmpty');
+  const count=document.getElementById('clientProfileCount');
+  if(count)count.textContent=String(clientProfiles.length);
+  if(!list)return;
+  if(!clientProfiles.length){
+    list.innerHTML='';
+    empty?.classList.remove('hidden');
+    return;
+  }
+  empty?.classList.add('hidden');
+  list.innerHTML=clientProfiles.map(client=>{
+    const services=Array.isArray(client.services)?client.services:[];
+    const serviceTotal=services.length;
+    const servicesHtml=services.length?services.map(service=>{
+      const balance=serviceBalance(service);
+      const balanceLabel=balance.overpaid>0?'Overpaid':'Balance';
+      const balanceValue=balance.overpaid>0?balance.overpaid:balance.remaining;
+      return `<div class="client-service" data-service-id="${escapeHtml(service.id)}">
+        <div class="client-service-main">
+          <span class="client-service-type">${escapeHtml(service.type||'Service')}</span>
+          <strong>${escapeHtml(service.title||'Service')}</strong>
+          ${service.note?`<p>${escapeHtml(service.note)}</p>`:''}
+        </div>
+        <div class="client-service-money">
+          <span><small>Total</small><strong>${moneyEn(balance.amount)}</strong></span>
+          <span><small>Paid</small><strong>${moneyEn(balance.paid)}</strong></span>
+          <span><small>${balanceLabel}</small><strong>${moneyEn(balanceValue)}</strong></span>
+        </div>
+        <div class="client-service-actions">
+          <button class="client-action" type="button" data-client-invoice="${escapeHtml(service.id)}"><i class="ti ti-file-invoice"></i>Use invoice</button>
+          <button class="client-action danger" type="button" data-client-service-delete="${escapeHtml(service.id)}" aria-label="Delete service"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`;
+    }).join(''):'<div class="client-service-empty">No services saved for this client yet.</div>';
+    return `<article class="client-card" data-client-id="${escapeHtml(client.id)}">
+      <div class="client-card-head">
+        <div>
+          <span class="client-eyebrow">Client profile</span>
+          <h3>${escapeHtml(client.name)}</h3>
+          <p>${escapeHtml(client.contact||'No contact saved')}</p>
+        </div>
+        <button class="fee-delete" type="button" data-client-delete="${escapeHtml(client.id)}" aria-label="Delete client"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="client-card-meta">
+        <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
+      </div>
+      <div class="client-service-list">${servicesHtml}</div>
+      <details class="client-add-service">
+        <summary><i class="ti ti-plus"></i>Add new service</summary>
+        <div class="client-service-form">
+          <label><span>Type</span><input data-service-field="type" type="text" placeholder="Case or service type"></label>
+          <label><span>Title</span><input data-service-field="title" type="text" placeholder="Matter description"></label>
+          <label><span>Total</span><input data-service-field="amount" type="number" min="0" step="0.01" placeholder="0"></label>
+          <label><span>Paid</span><input data-service-field="paid" type="number" min="0" step="0.01" placeholder="0"></label>
+          <label class="wide"><span>Notes</span><input data-service-field="note" type="text" placeholder="Internal service note"></label>
+        </div>
+        <button class="tool-secondary" type="button" data-client-add-service="${escapeHtml(client.id)}"><i class="ti ti-device-floppy"></i>Save service</button>
+      </details>
+    </article>`;
+  }).join('');
+}
+function clearClientProfileInputs(){
+  ['clientNameInput','clientContactInput','clientServiceTypeInput','clientServiceTitleInput','clientServiceAmountInput','clientServicePaidInput','clientServiceNoteInput'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+}
+function addClientProfile(){
+  const name=document.getElementById('clientNameInput')?.value.trim()||'';
+  const contact=document.getElementById('clientContactInput')?.value.trim()||'';
+  const type=document.getElementById('clientServiceTypeInput')?.value.trim()||'';
+  const title=document.getElementById('clientServiceTitleInput')?.value.trim()||'';
+  const amount=readNumberInput('clientServiceAmountInput');
+  const paid=readNumberInput('clientServicePaidInput');
+  const note=document.getElementById('clientServiceNoteInput')?.value.trim()||'';
+  if(!name){
+    showToast('Enter the client name first.');
+    return;
+  }
+  const hasService=!!(type||title||amount||paid||note);
+  clientProfiles.unshift({
+    id:newLocalId('client'),
+    name,
+    contact,
+    createdAt:new Date().toISOString(),
+    services:hasService?[createClientService({type,title,amount,paid,note})]:[]
+  });
+  const persisted=saveClientProfiles();
+  clearClientProfileInputs();
+  renderClientProfiles();
+  updateSettingsStats();
+  showFeesManagerPage();
+  showToast(persisted?'Client profile saved.':'Client profile added for this session only.');
+}
+function findClientCard(clientId){
+  return [...document.querySelectorAll('.client-card')].find(card=>card.dataset.clientId===String(clientId));
+}
+function addServiceToClient(clientId){
+  const client=clientProfiles.find(item=>String(item.id)===String(clientId));
+  const card=findClientCard(clientId);
+  if(!client||!card)return;
+  const fieldValue=name=>card.querySelector(`[data-service-field="${name}"]`)?.value.trim()||'';
+  const amount=Number(card.querySelector('[data-service-field="amount"]')?.value||0);
+  const paid=Number(card.querySelector('[data-service-field="paid"]')?.value||0);
+  if(!fieldValue('type')&&!fieldValue('title')&&!amount&&!paid&&!fieldValue('note')){
+    showToast('Add a service type, title, amount, or note first.');
+    return;
+  }
+  const service=createClientService({
+    type:fieldValue('type'),
+    title:fieldValue('title'),
+    amount:Number.isFinite(amount)?amount:0,
+    paid:Number.isFinite(paid)?paid:0,
+    note:fieldValue('note')
+  });
+  client.services=[service,...(Array.isArray(client.services)?client.services:[])];
+  saveClientProfiles();
+  renderClientProfiles();
+  updateSettingsStats();
+  showToast('Service added to client profile.');
+}
+function deleteClientProfile(clientId){
+  if(!confirm('Delete this client profile and all its services?'))return;
+  clientProfiles=clientProfiles.filter(client=>String(client.id)!==String(clientId));
+  saveClientProfiles();
+  renderClientProfiles();
+  updateSettingsStats();
+  showFeesManagerPage();
+  showToast('Client profile deleted.');
+}
+function deleteClientService(clientId,serviceId){
+  const client=clientProfiles.find(item=>String(item.id)===String(clientId));
+  if(!client)return;
+  client.services=(client.services||[]).filter(service=>String(service.id)!==String(serviceId));
+  saveClientProfiles();
+  renderClientProfiles();
+  updateSettingsStats();
+  showToast('Service deleted.');
+}
+function useClientServiceForInvoice(clientId,serviceId){
+  const client=clientProfiles.find(item=>String(item.id)===String(clientId));
+  const service=client?.services?.find(item=>String(item.id)===String(serviceId));
+  if(!client||!service)return;
+  const balance=serviceBalance(service);
+  const clientInput=document.getElementById('receiptClientInput');
+  const matterInput=document.getElementById('receiptMatterInput');
+  const totalInput=document.getElementById('receiptTotalInput');
+  const paidInput=document.getElementById('receiptPaidInput');
+  const noteInput=document.getElementById('receiptNoteInput');
+  const methodInput=document.getElementById('receiptMethodInput');
+  const dateInput=document.getElementById('receiptDateInput');
+  if(clientInput)clientInput.value=client.name;
+  if(matterInput)matterInput.value=service.title||service.type||'Service';
+  if(totalInput)totalInput.value=balance.amount?String(balance.amount):'';
+  if(paidInput)paidInput.value=balance.paid?String(balance.paid):'';
+  if(noteInput)noteInput.value=service.note||'';
+  if(methodInput&&!methodInput.value)methodInput.value='Bank transfer';
+  if(dateInput&&!dateInput.value)dateInput.value=todayIsoDate();
+  syncReceiptPreview();
+  scrollPageTo('.receipt-panel');
+  showToast('Invoice fields filled from client profile.');
+}
 function updateSettingsStats(){
   const saved=document.getElementById('settingsSavedCount');
   const local=document.getElementById('settingsLocalJudgmentCount');
   const fee=document.getElementById('settingsFeeCount');
+  const client=document.getElementById('settingsClientCount');
   const judgment=document.getElementById('settingsJudgmentCount');
   const law=document.getElementById('settingsLawCount');
   if(saved)saved.textContent=ar(savedJudgmentIds.size);
   if(local)local.textContent=ar(localJudgments.length);
   if(fee)fee.textContent=ar(feeItems.length);
+  if(client)client.textContent=ar(clientProfiles.length);
   if(judgment)judgment.textContent=ar(counts.all);
   if(law)law.textContent=ar(laws.length);
 }
@@ -715,11 +952,12 @@ function showFeesManagerPage(){
   setFeesVisible(true);
   setCatalogHeader('إدارة الرسوم','أضف بنود الرسوم واحسب التقديرات الإدارية من صفحة واحدة محفوظة على جهازك.','ti-receipt');
   setHeroStats([
+    {value:ar(clientProfiles.length),label:'عميل'},
     {value:ar(feeItems.length),label:'بند رسوم'},
-    {value:ar(new Set(feeItems.map(item=>item.category||'عام')).size),label:'تصنيف'},
     {value:'محلي',label:'الحفظ'}
   ]);
   renderFees();
+  renderClientProfiles();
   syncReceiptPreview();
   scrollPageTo('#feesManager');
 }
@@ -735,7 +973,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v15',label:'الكاش'}
+    {value:'v16',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -898,8 +1136,10 @@ function todayIsoDate(){
 }
 function receiptDateDisplay(value){
   const raw=String(value||todayIsoDate());
-  const match=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return match?`${ar(match[3])}-${ar(match[2])}-${ar(match[1])}`:raw;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+    return new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(`${raw}T00:00:00`));
+  }
+  return raw;
 }
 function readReceiptData(){
   const dateInput=document.getElementById('receiptDateInput');
@@ -907,13 +1147,13 @@ function readReceiptData(){
   const total=Math.max(0,Number(document.getElementById('receiptTotalInput')?.value||0)||0);
   const paid=Math.max(0,Number(document.getElementById('receiptPaidInput')?.value||0)||0);
   return {
-    client:document.getElementById('receiptClientInput')?.value.trim()||'غير محدد',
-    matter:document.getElementById('receiptMatterInput')?.value.trim()||'خدمات استشارية',
+    client:document.getElementById('receiptClientInput')?.value.trim()||'Not specified',
+    matter:document.getElementById('receiptMatterInput')?.value.trim()||'Consultancy services',
     total,
     paid,
     remaining:Math.max(total-paid,0),
     overpaid:Math.max(paid-total,0),
-    method:document.getElementById('receiptMethodInput')?.value.trim()||'غير محدد',
+    method:document.getElementById('receiptMethodInput')?.value.trim()||'Not specified',
     date:dateInput?.value||todayIsoDate(),
     note:document.getElementById('receiptNoteInput')?.value.trim()||''
   };
@@ -924,10 +1164,10 @@ function syncReceiptPreview(){
   const paid=document.getElementById('receiptPaidDisplay');
   const remaining=document.getElementById('receiptRemainingDisplay');
   const label=document.getElementById('receiptRemainingLabel');
-  if(total)total.textContent=money(data.total);
-  if(paid)paid.textContent=money(data.paid);
-  if(remaining)remaining.textContent=money(data.overpaid>0?data.overpaid:data.remaining);
-  if(label)label.textContent=data.overpaid>0?'زيادة مدفوعة':'المبلغ المتبقي';
+  if(total)total.textContent=moneyEn(data.total);
+  if(paid)paid.textContent=moneyEn(data.paid);
+  if(remaining)remaining.textContent=moneyEn(data.overpaid>0?data.overpaid:data.remaining);
+  if(label)label.textContent=data.overpaid>0?'Overpayment':'Remaining balance';
 }
 function receiptRow(label,value){
   return `<div class="receipt-print-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
@@ -936,21 +1176,21 @@ function generateFeeReceipt(){
   const data=readReceiptData();
   syncReceiptPreview();
   if(data.total<=0){
-    showToast('أدخل المبلغ الإجمالي المتفق عليه أولاً.');
+    showToast('Enter the total agreed amount first.');
     return;
   }
-  const receiptNo=`EAC-${Date.now().toString().slice(-6)}`;
+  const receiptNo=`INV-${Date.now().toString().slice(-6)}`;
   const logoUrl=new URL('assets/el-amrani-logo.png',location.href).href;
-  const remainingLabel=data.overpaid>0?'زيادة مدفوعة':'المبلغ المتبقي';
+  const remainingLabel=data.overpaid>0?'Overpayment':'Remaining balance';
   const remainingValue=data.overpaid>0?data.overpaid:data.remaining;
   const note=data.note?`<div class="receipt-print-note">${escapeHtml(data.note)}</div>`:'';
   const html=`<!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
-<title>إيصال ${escapeHtml(receiptNo)}</title>
+<title>Invoice ${escapeHtml(receiptNo)}</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f4f1e8;color:#111;font-family:Tahoma,Arial,sans-serif;direction:rtl}.receipt{width:min(840px,100%);margin:0 auto;padding:34px}.paper{background:#fff;border:1px solid #d7cda8;padding:34px;min-height:920px}.brand{display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:2px solid #c8a84b;padding-bottom:18px}.brand img{width:104px;height:104px;object-fit:contain}.brand h1{font-family:Georgia,serif;font-size:28px;letter-spacing:1px;margin:0;color:#1d1d1d}.brand p{margin:6px 0 0;color:#8a6a24;font-size:18px;font-weight:700}.receipt-title{text-align:center;margin:26px 0 18px}.receipt-title h2{margin:0;font-size:28px;color:#1d1d1d}.receipt-title span{display:inline-block;margin-top:8px;color:#777}.total{background:#111;color:#fff;border-right:7px solid #c8a84b;padding:18px 22px;margin:18px 0 22px}.total span{display:block;color:#d7cda8;font-size:14px;margin-bottom:8px}.total strong{font-size:34px;color:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.receipt-print-row{border:1px solid #ded6bb;padding:13px 15px;min-height:68px}.receipt-print-row span{display:block;color:#777;font-size:13px;margin-bottom:8px}.receipt-print-row strong{font-size:18px;color:#111}.amounts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.amounts .receipt-print-row{background:#fbf8ef}.receipt-print-note{border:1px dashed #c8a84b;background:#fffaf0;padding:14px 16px;margin-top:18px;color:#333;line-height:1.8}.footer{display:flex;justify-content:space-between;gap:24px;margin-top:58px}.signature{width:44%;border-top:1px solid #111;padding-top:10px;text-align:center;color:#555}.print-actions{display:flex;justify-content:center;gap:10px;margin:16px}.print-actions button{border:0;background:#111;color:#fff;padding:10px 18px;border-radius:6px;cursor:pointer}.print-actions button.secondary{background:#8a6a24}@media print{body{background:#fff}.receipt{padding:0}.paper{border:0;min-height:auto}.print-actions{display:none}}
+*{box-sizing:border-box}body{margin:0;background:#f4f1e8;color:#151515;font-family:'Brookley','Georgia','Times New Roman',serif}.receipt{width:min(860px,100%);margin:0 auto;padding:34px}.paper{background:#fff;border:1px solid #d7cda8;padding:34px;min-height:920px;box-shadow:0 18px 50px #00000018}.brand{display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:2px solid #c8a84b;padding-bottom:18px}.brand img{width:108px;height:108px;object-fit:contain}.brand h1{font-size:30px;letter-spacing:1.4px;margin:0;color:#141414}.brand p{margin:8px 0 0;color:#8a6a24;font-size:14px;letter-spacing:2.4px;text-transform:uppercase}.receipt-title{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:28px 0 18px}.receipt-title h2{margin:0;font-size:38px;color:#141414}.receipt-title span{display:block;color:#777;font-size:14px}.total{background:#111;color:#fff;border-left:7px solid #c8a84b;padding:20px 24px;margin:18px 0 22px}.total span{display:block;color:#d7cda8;font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}.total strong{font-size:38px;color:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}.receipt-print-row{border:1px solid #ded6bb;padding:14px 16px;min-height:72px;background:#fff}.receipt-print-row span{display:block;color:#777;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px}.receipt-print-row strong{font-size:19px;color:#111;line-height:1.35}.amounts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}.amounts .receipt-print-row{background:#fbf8ef}.receipt-print-note{border:1px dashed #c8a84b;background:#fffaf0;padding:14px 16px;margin-top:18px;color:#333;line-height:1.65}.footer{display:flex;justify-content:space-between;gap:24px;margin-top:64px}.signature{width:44%;border-top:1px solid #111;padding-top:10px;text-align:center;color:#555}.print-actions{display:flex;justify-content:center;gap:10px;margin:16px}.print-actions button{border:0;background:#111;color:#fff;padding:10px 18px;border-radius:6px;cursor:pointer;font-family:inherit}.print-actions button.secondary{background:#8a6a24}@media(max-width:640px){.receipt{padding:12px}.paper{padding:20px}.brand,.receipt-title,.footer{flex-direction:column;align-items:flex-start}.grid,.amounts{grid-template-columns:1fr}.signature{width:100%;margin-top:24px}}@media print{body{background:#fff}.receipt{padding:0}.paper{border:0;min-height:auto;box-shadow:none}.print-actions{display:none}}
 </style>
 </head>
 <body>
@@ -963,28 +1203,28 @@ function generateFeeReceipt(){
       </div>
       <img src="${escapeHtml(logoUrl)}" alt="El Amrani Consultancies">
     </div>
-    <div class="receipt-title"><h2>إيصال استلام دفعة</h2><span>رقم الإيصال: ${escapeHtml(receiptNo)}</span></div>
-    <div class="total"><span>المبلغ الإجمالي المتفق عليه</span><strong>${money(data.total)}</strong></div>
+    <div class="receipt-title"><h2>Invoice</h2><span>Invoice No. ${escapeHtml(receiptNo)}<br>${escapeHtml(receiptDateDisplay(data.date))}</span></div>
+    <div class="total"><span>Total agreed amount</span><strong>${moneyEn(data.total)}</strong></div>
     <div class="grid">
-      ${receiptRow('اسم العميل',data.client)}
-      ${receiptRow('موضوع الخدمة',data.matter)}
-      ${receiptRow('تاريخ الإيصال',receiptDateDisplay(data.date))}
-      ${receiptRow('طريقة الدفع',data.method)}
+      ${receiptRow('Client name',data.client)}
+      ${receiptRow('Service / case',data.matter)}
+      ${receiptRow('Invoice date',receiptDateDisplay(data.date))}
+      ${receiptRow('Payment method',data.method)}
     </div>
     <div class="amounts">
-      ${receiptRow('الدفعة الأولى',money(data.paid))}
-      ${receiptRow(remainingLabel,money(remainingValue))}
+      ${receiptRow('First payment',moneyEn(data.paid))}
+      ${receiptRow(remainingLabel,moneyEn(remainingValue))}
     </div>
     ${note}
-    <div class="footer"><div class="signature">توقيع المستلم</div><div class="signature">ختم الشركة</div></div>
+    <div class="footer"><div class="signature">Authorized signature</div><div class="signature">Company stamp</div></div>
   </div>
 </div>
-<div class="print-actions"><button onclick="window.print()">طباعة / حفظ PDF</button><button class="secondary" onclick="window.close()">إغلاق</button></div>
+<div class="print-actions"><button onclick="window.print()">Print / Save PDF</button><button class="secondary" onclick="window.close()">Close</button></div>
 </body>
 </html>`;
   const popup=window.open('','_blank','width=900,height=1000');
   if(!popup){
-    showToast('اسمح بفتح النوافذ المنبثقة لاستخراج الإيصال.');
+    showToast('Allow pop-ups to create the invoice.');
     return;
   }
   popup.document.open();
@@ -1032,6 +1272,15 @@ function clearFeeItems(){
   updateSettingsStats();
   showSettingsPage();
   showToast('تم مسح الرسوم المحفوظة.');
+}
+function clearClientProfiles(){
+  if(clientProfiles.length&&!confirm('Delete all saved client profiles from this device?'))return;
+  clientProfiles=[];
+  saveClientProfiles();
+  renderClientProfiles();
+  updateSettingsStats();
+  showSettingsPage();
+  showToast('Client profiles cleared.');
 }
 function showAllJudgments(){
   restoreJudgmentCatalog();
@@ -1268,6 +1517,28 @@ document.getElementById('feeList')?.addEventListener('click',event=>{
   if(!button)return;
   deleteFeeItem(button.dataset.feeDelete);
 });
+document.getElementById('clientProfileList')?.addEventListener('click',event=>{
+  const card=event.target.closest('.client-card[data-client-id]');
+  if(!card)return;
+  const clientId=card.dataset.clientId;
+  const deleteClient=event.target.closest('[data-client-delete]');
+  if(deleteClient){
+    deleteClientProfile(clientId);
+    return;
+  }
+  const addService=event.target.closest('[data-client-add-service]');
+  if(addService){
+    addServiceToClient(clientId);
+    return;
+  }
+  const deleteService=event.target.closest('[data-client-service-delete]');
+  if(deleteService){
+    deleteClientService(clientId,deleteService.dataset.clientServiceDelete);
+    return;
+  }
+  const invoice=event.target.closest('[data-client-invoice]');
+  if(invoice)useClientServiceForInvoice(clientId,invoice.dataset.clientInvoice);
+});
 document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('inkModeToggle')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
@@ -1396,6 +1667,7 @@ syncSettingsControls();
 renderDocs(sortDocuments(docs));
 renderLaws(laws);
 renderFees();
+renderClientProfiles();
 renderLocalJudgments();
 updateSettingsStats();
 if(window.location.hash==='#dashboard'){

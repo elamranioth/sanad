@@ -273,19 +273,63 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .fee-result{margin-top:12px;background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:14px;color:#6f91a8;font-size:13px;line-height:1.7}
 .fee-result strong{display:block;color:#c8a84b;font-family:'Amiri',serif;font-size:24px;margin-bottom:3px}
 .receipt-panel{overflow:hidden}
+.english-panel{direction:ltr;text-align:left;font-family:'Brookley','Georgia','Times New Roman',serif}
+.english-panel .tool-panel-head{justify-content:flex-start;font-family:'Brookley','Georgia','Times New Roman',serif;letter-spacing:.2px}
+.english-panel .field input,.english-panel .field select,.english-panel .field textarea{direction:ltr;text-align:left;font-family:'Brookley','Georgia','Times New Roman',serif}
+.english-panel .tool-primary,.english-panel .tool-secondary{font-family:'Brookley','Georgia','Times New Roman',serif;letter-spacing:.1px}
 .receipt-workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:16px;align-items:start}
 .receipt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.receipt-preview{background:#081018;border:1px solid #2a4a68;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%}
+.receipt-preview{background:#081018;border:1px solid #2a4a68;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100%;font-family:'Brookley','Georgia','Times New Roman',serif}
 .receipt-brand{display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e3a52;padding-bottom:12px}
 .receipt-brand img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#04070a;border:1px solid #2a4a68}
-.receipt-brand strong{display:block;color:#e8dcc8;font-family:'Amiri',serif;font-size:19px;line-height:1.2}
+.receipt-brand strong{display:block;color:#e8dcc8;font-size:19px;line-height:1.2;letter-spacing:.8px}
 .receipt-brand span{color:#c8a84b;font-size:13px;font-weight:700}
-.receipt-total-hero{background:#1c1308;border:1px solid #c8a84b55;border-right:5px solid #c8a84b;border-radius:12px;padding:15px 16px}
+.receipt-total-hero{background:#1c1308;border:1px solid #c8a84b55;border-left:5px solid #c8a84b;border-radius:12px;padding:15px 16px}
 .receipt-total-hero span,.receipt-summary-grid span{display:block;color:#8aa6b8;font-size:12px;margin-bottom:6px}
-.receipt-total-hero strong{font-family:'Amiri',serif;color:#ead9a8;font-size:28px}
+.receipt-total-hero strong{color:#ead9a8;font-size:28px}
 .receipt-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .receipt-summary-grid div{background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:12px}
 .receipt-summary-grid strong{color:#c8d8e0;font-size:15px}
+.client-manager-panel{overflow:hidden}
+.client-manager-layout{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.client-profile-composer{background:linear-gradient(180deg,#0d1b2a,#0a1520);border:1px solid #1e3a52;border-radius:12px;padding:14px}
+.client-form-title{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.client-form-title strong{color:#e8dcc8;font-size:22px;line-height:1.2}
+.client-form-title span{color:#6f91a8;font-size:12px;line-height:1.5}
+.client-profile-browser{min-width:0}
+.client-list-toolbar{display:flex;align-items:center;justify-content:space-between;background:#0d1b2a;border:1px solid #1e3a52;border-radius:12px;padding:12px 14px;margin-bottom:10px;color:#8aa6b8;font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+.client-list-toolbar strong{font-size:24px;color:#c8a84b}
+.client-profile-list{display:flex;flex-direction:column;gap:12px}
+.client-card{background:#081018;border:1px solid #2a4a68;border-radius:12px;padding:14px;box-shadow:0 12px 30px #0000001f}
+.client-card-head{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:12px;align-items:start}
+.client-eyebrow{display:block;color:#8aa6b8;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.client-card h3{color:#e8dcc8;font-size:24px;line-height:1.2;margin-bottom:4px}
+.client-card p{color:#6f91a8;font-size:13px;line-height:1.55}
+.client-card-meta{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}
+.client-card-meta span{display:inline-flex;align-items:center;gap:6px;background:#102638;border:1px solid #2a4a68;color:#8bd3ee;border-radius:999px;font-size:12px;padding:5px 10px}
+.client-service-list{display:flex;flex-direction:column;gap:9px}
+.client-service{background:#0d1b2a;border:1px solid #1e3a52;border-radius:11px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:stretch}
+.client-service-main{min-width:0}
+.client-service-type{display:inline-flex;background:#2a1f08;border:1px solid #c8a84b44;color:#c8a84b;border-radius:999px;font-size:11px;padding:3px 9px;margin-bottom:6px}
+.client-service-main strong{display:block;color:#e8dcc8;font-size:18px;line-height:1.25}
+.client-service-main p{margin-top:4px}
+.client-service-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.client-service-money span{background:#081018;border:1px solid #1e3a52;border-radius:9px;padding:8px;min-width:0}
+.client-service-money small{display:block;color:#6f91a8;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.client-service-money strong{display:block;color:#d8c8a0;font-size:14px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.25}
+.client-service-actions{display:flex;align-items:center;gap:7px;justify-content:flex-start}
+.client-action{border:1px solid #285577;background:#102638;color:#8bd3ee;border-radius:9px;min-height:38px;padding:8px 10px;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.client-action.danger{width:38px;padding:0;background:#251212;color:#e07070;border-color:#6b2a2a}
+.client-service-empty{border:1px dashed #2a4a68;border-radius:10px;color:#6f91a8;padding:16px;text-align:center;font-size:13px}
+.client-add-service{margin-top:10px;border-top:1px solid #1e3a52;padding-top:10px}
+.client-add-service summary{cursor:pointer;color:#c8a84b;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;list-style:none}
+.client-add-service summary::-webkit-details-marker{display:none}
+.client-service-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+.client-service-form label{display:flex;flex-direction:column;gap:5px}
+.client-service-form label.wide{grid-column:1/-1}
+.client-service-form span{font-size:11px;color:#6f91a8;font-weight:700}
+.client-service-form input{width:100%;background:#081018;border:1px solid #1e3a52;border-radius:9px;color:#c8d8e0;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:13px;padding:10px 12px;outline:none}
+.client-service-form input:focus{border-color:#c8a84b66}
 .fee-list{display:flex;flex-direction:column;gap:9px}
 .fee-item{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:12px;align-items:center;background:#0d1b2a;border:1px solid #1e3a52;border-radius:12px;padding:14px}
 .fee-item-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
@@ -313,19 +357,19 @@ body.ink-mode .page,body.ink-mode .main{background:#f7f2df}
 body.ink-mode .brand,body.ink-mode .nav-footer,body.ink-mode .divider,body.ink-mode .doc-dialog-head{border-color:#1b1b1b}
 body.ink-mode .brand-icon,body.ink-mode .hero-icon,body.ink-mode .tool-primary,body.ink-mode .btn-add{background:#111;color:#fff;box-shadow:none}
 body.ink-mode .brand-name,body.ink-mode .breadcrumb .cur,body.ink-mode .hero-title,body.ink-mode .tool-page-head h2,body.ink-mode .law-catalog-head h2,body.ink-mode .doc-title,body.ink-mode .doc-dialog-head h2,body.ink-mode .ai-name,body.ink-mode .tool-panel-head,body.ink-mode .settings-stats strong,body.ink-mode .settings-info strong,body.ink-mode .hstat-num{color:#111}
-body.ink-mode .dashboard-recent-item span,body.ink-mode .collection-card h3,body.ink-mode .local-judgment-item h3,body.ink-mode .fee-item h3,body.ink-mode .law-card h3{color:#111}
-body.ink-mode .brand-sub,body.ink-mode .nav-lbl,body.ink-mode .breadcrumb,body.ink-mode .breadcrumb span,body.ink-mode .hero-sub,body.ink-mode .rb-left,body.ink-mode .tool-page-head p,body.ink-mode .law-catalog-head p,body.ink-mode .doc-num,body.ink-mode .meta-chip,body.ink-mode .settings-stats,body.ink-mode .settings-info,body.ink-mode .ai-sub,body.ink-mode .ai-desc,body.ink-mode .collection-card p,body.ink-mode .dashboard-recent-item small,body.ink-mode .local-judgment-item p{color:#333}
+body.ink-mode .dashboard-recent-item span,body.ink-mode .collection-card h3,body.ink-mode .local-judgment-item h3,body.ink-mode .fee-item h3,body.ink-mode .law-card h3,body.ink-mode .client-card h3,body.ink-mode .client-service-main strong,body.ink-mode .client-service-money strong{color:#111}
+body.ink-mode .brand-sub,body.ink-mode .nav-lbl,body.ink-mode .breadcrumb,body.ink-mode .breadcrumb span,body.ink-mode .hero-sub,body.ink-mode .rb-left,body.ink-mode .tool-page-head p,body.ink-mode .law-catalog-head p,body.ink-mode .doc-num,body.ink-mode .meta-chip,body.ink-mode .settings-stats,body.ink-mode .settings-info,body.ink-mode .ai-sub,body.ink-mode .ai-desc,body.ink-mode .collection-card p,body.ink-mode .dashboard-recent-item small,body.ink-mode .local-judgment-item p,body.ink-mode .client-card p,body.ink-mode .client-form-title span,body.ink-mode .client-eyebrow,body.ink-mode .client-service-money small{color:#333}
 body.ink-mode .ni{color:#111}
 body.ink-mode .ni:hover,body.ink-mode .ni.on,body.ink-mode .ni-ai,body.ink-mode .ni-ai:hover,body.ink-mode .ni-ai.on{background:#111;color:#fff;border-color:#111}
 body.ink-mode .ni .ct,body.ink-mode .ni.on .ct,body.ink-mode .ai-ct,body.ink-mode .ni-ai.on .ai-ct{background:#fff;color:#111;border:1px solid #111}
-body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item,body.ink-mode .receipt-preview,body.ink-mode .receipt-summary-grid div{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
+body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item,body.ink-mode .receipt-preview,body.ink-mode .receipt-summary-grid div,body.ink-mode .client-profile-composer,body.ink-mode .client-list-toolbar,body.ink-mode .client-card,body.ink-mode .client-service,body.ink-mode .client-service-money span{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
-body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea{background:#fff;border-color:#1b1b1b;color:#111}
+body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
 body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
-body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon{background:#f0ead8;color:#111;border:1px solid #111}
+body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
 body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
 body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{color:#fff}
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
@@ -553,6 +597,16 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .receipt-workspace{grid-template-columns:1fr}
 .receipt-summary-grid{grid-template-columns:1fr}
 .receipt-actions .tool-primary,.receipt-actions .tool-secondary{width:100%}
+.client-manager-layout{grid-template-columns:1fr}
+.client-profile-composer{padding:12px;border-radius:10px}
+.client-card-head,.client-service{grid-template-columns:1fr}
+.client-card-head .fee-delete{width:100%;height:42px}
+.client-service-money{grid-template-columns:1fr}
+.client-service-actions{justify-content:stretch;flex-wrap:wrap}
+.client-action{flex:1}
+.client-action.danger{flex:0 0 42px;height:42px}
+.client-service-form{grid-template-columns:1fr}
+.client-add-service .tool-secondary{width:100%}
 .fee-item{grid-template-columns:minmax(0,1fr);gap:10px}
 .fee-delete{width:100%;height:42px}
 .setting-row{flex-direction:column;align-items:stretch}

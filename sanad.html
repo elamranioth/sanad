@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=fee-receipts-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=client-invoices-20260525">
 </head>
 <body>
 
@@ -308,22 +308,22 @@
           <div class="fee-result" id="feeCalcResult">أدخل القيم ثم اضغط احتساب.</div>
         </div>
       </div>
-      <div class="tool-panel receipt-panel">
-        <div class="tool-panel-head"><i class="ti ti-file-invoice"></i><span>استخراج إيصال</span></div>
+      <div class="tool-panel receipt-panel english-panel" dir="ltr">
+        <div class="tool-panel-head"><i class="ti ti-file-invoice"></i><span>Client Invoice</span></div>
         <div class="receipt-workspace">
           <div>
             <div class="form-grid">
-              <label class="field"><span>اسم العميل</span><input id="receiptClientInput" type="text" placeholder="اسم العميل أو الشركة"></label>
-              <label class="field"><span>موضوع الخدمة</span><input id="receiptMatterInput" type="text" placeholder="استشارة، دعوى، مذكرة..."></label>
-              <label class="field"><span>المبلغ الإجمالي المتفق عليه</span><input id="receiptTotalInput" type="number" min="0" step="0.01" placeholder="0"></label>
-              <label class="field"><span>الدفعة الأولى</span><input id="receiptPaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
-              <label class="field"><span>طريقة الدفع</span><input id="receiptMethodInput" type="text" placeholder="نقداً، تحويل بنكي، شيك..."></label>
-              <label class="field"><span>تاريخ الإيصال</span><input id="receiptDateInput" type="date"></label>
-              <label class="field wide"><span>ملاحظة</span><input id="receiptNoteInput" type="text" placeholder="أي بيان إضافي يظهر في الإيصال"></label>
+              <label class="field"><span>Client name</span><input id="receiptClientInput" type="text" placeholder="Client or company name"></label>
+              <label class="field"><span>Service / case</span><input id="receiptMatterInput" type="text" placeholder="Consultancy, litigation, memorandum..."></label>
+              <label class="field"><span>Total agreed amount</span><input id="receiptTotalInput" type="number" min="0" step="0.01" placeholder="0"></label>
+              <label class="field"><span>First payment</span><input id="receiptPaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
+              <label class="field"><span>Payment method</span><input id="receiptMethodInput" type="text" placeholder="Bank transfer, cash, cheque..."></label>
+              <label class="field"><span>Invoice date</span><input id="receiptDateInput" type="date"></label>
+              <label class="field wide"><span>Notes</span><input id="receiptNoteInput" type="text" placeholder="Additional note to show on the invoice"></label>
             </div>
             <div class="receipt-actions">
-              <button class="tool-secondary" type="button" onclick="syncReceiptPreview()"><i class="ti ti-refresh"></i>تحديث المعاينة</button>
-              <button class="tool-primary" type="button" onclick="generateFeeReceipt()"><i class="ti ti-printer"></i>استخراج إيصال</button>
+              <button class="tool-secondary" type="button" onclick="syncReceiptPreview()"><i class="ti ti-refresh"></i>Refresh preview</button>
+              <button class="tool-primary" type="button" onclick="generateFeeReceipt()"><i class="ti ti-printer"></i>Create invoice</button>
             </div>
           </div>
           <div class="receipt-preview" id="receiptPreview">
@@ -335,13 +335,42 @@
               </div>
             </div>
             <div class="receipt-total-hero">
-              <span>المبلغ الإجمالي المتفق عليه</span>
-              <strong id="receiptTotalDisplay">٠ درهم</strong>
+              <span>Total agreed amount</span>
+              <strong id="receiptTotalDisplay">0 AED</strong>
             </div>
             <div class="receipt-summary-grid">
-              <div><span>الدفعة الأولى</span><strong id="receiptPaidDisplay">٠ درهم</strong></div>
-              <div><span id="receiptRemainingLabel">المبلغ المتبقي</span><strong id="receiptRemainingDisplay">٠ درهم</strong></div>
+              <div><span>First payment</span><strong id="receiptPaidDisplay">0 AED</strong></div>
+              <div><span id="receiptRemainingLabel">Remaining balance</span><strong id="receiptRemainingDisplay">0 AED</strong></div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="tool-panel client-manager-panel english-panel" dir="ltr">
+        <div class="tool-panel-head"><i class="ti ti-users"></i><span>Client Profiles</span></div>
+        <div class="client-manager-layout">
+          <div class="client-profile-composer">
+            <div class="client-form-title">
+              <strong>Register a client</strong>
+              <span>Each profile can hold more than one service or case.</span>
+            </div>
+            <div class="form-grid">
+              <label class="field"><span>Client name</span><input id="clientNameInput" type="text" placeholder="Client or company name"></label>
+              <label class="field"><span>Contact</span><input id="clientContactInput" type="text" placeholder="Phone, email, or reference"></label>
+              <label class="field"><span>Case / service type</span><input id="clientServiceTypeInput" type="text" placeholder="Civil case, consultation, drafting..."></label>
+              <label class="field"><span>Service title</span><input id="clientServiceTitleInput" type="text" placeholder="Short matter description"></label>
+              <label class="field"><span>Total agreed amount</span><input id="clientServiceAmountInput" type="number" min="0" step="0.01" placeholder="0"></label>
+              <label class="field"><span>First payment</span><input id="clientServicePaidInput" type="number" min="0" step="0.01" placeholder="0"></label>
+              <label class="field wide"><span>Notes</span><input id="clientServiceNoteInput" type="text" placeholder="Internal note for this service"></label>
+            </div>
+            <button class="tool-primary" type="button" onclick="addClientProfile()"><i class="ti ti-user-plus"></i>Save client profile</button>
+          </div>
+          <div class="client-profile-browser">
+            <div class="client-list-toolbar">
+              <span>Saved clients</span>
+              <strong id="clientProfileCount">0</strong>
+            </div>
+            <div class="client-profile-list" id="clientProfileList"></div>
+            <div class="tool-empty hidden" id="clientProfileEmpty"><i class="ti ti-users-off"></i><p>No client profiles saved yet.</p></div>
           </div>
         </div>
       </div>
@@ -373,11 +402,13 @@
             <span><strong id="settingsSavedCount">٠</strong> أحكام محفوظة</span>
             <span><strong id="settingsLocalJudgmentCount">٠</strong> أحكام مضافة محليًا</span>
             <span><strong id="settingsFeeCount">٠</strong> رسوم محفوظة</span>
+            <span><strong id="settingsClientCount">٠</strong> عملاء محفوظون</span>
           </div>
           <div class="settings-actions">
             <button class="tool-secondary" type="button" onclick="clearSavedJudgments()"><i class="ti ti-bookmark-off"></i>مسح المحفوظات</button>
             <button class="tool-secondary danger" type="button" onclick="clearLocalJudgments()"><i class="ti ti-file-x"></i>مسح الأحكام المحلية</button>
             <button class="tool-secondary danger" type="button" onclick="clearFeeItems()"><i class="ti ti-trash"></i>مسح الرسوم</button>
+            <button class="tool-secondary danger" type="button" onclick="clearClientProfiles()"><i class="ti ti-user-x"></i>مسح العملاء</button>
           </div>
         </div>
         <div class="tool-panel">
@@ -385,7 +416,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v15</strong></span>
+            <span>الكاش: <strong>v16</strong></span>
           </div>
         </div>
       </div>
@@ -443,6 +474,6 @@
 <script src="./data/judgments.js?v=law-reader-20260523"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=fee-receipts-20260525"></script>
+<script src="./assets/app.js?v=client-invoices-20260525"></script>
 </body>
 </html>
