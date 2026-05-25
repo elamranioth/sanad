@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=client-edit-profile-20260525">
+<link rel="stylesheet" href="./assets/styles.css?v=platform-phases-20260525">
 </head>
 <body>
 
@@ -94,6 +94,19 @@
     <div class="client-edit-actions">
       <button class="tool-secondary" id="clientEditCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
       <button class="tool-primary" id="clientEditSaveBtn" type="button"><i class="ti ti-device-floppy"></i>Save changes</button>
+    </div>
+  </div>
+</div>
+<div class="app-lock-modal hidden" id="appLockModal" role="presentation" aria-hidden="true" dir="ltr">
+  <div class="app-lock-dialog" role="dialog" aria-modal="true" aria-labelledby="appLockTitle">
+    <div class="confirm-icon"><i class="ti ti-lock"></i></div>
+    <div class="confirm-copy">
+      <h2 id="appLockTitle">SANAD is locked</h2>
+      <p>Enter your local passcode to unlock client profiles, notes, invoices, and saved work on this device.</p>
+    </div>
+    <label class="client-edit-field wide"><span>Passcode</span><input id="appUnlockInput" type="password" placeholder="Enter passcode"></label>
+    <div class="confirm-actions">
+      <button class="tool-primary" id="appUnlockBtn" type="button"><i class="ti ti-lock-open"></i>Unlock</button>
     </div>
   </div>
 </div>
@@ -201,6 +214,7 @@
 
     <!-- DOC GRID -->
     <div class="doc-grid" id="docGrid"></div>
+    <div class="pagination-bar hidden" id="paginationBar" aria-label="تنقل صفحات الأحكام"></div>
     <div class="no-results hidden" id="noResults">
       <i class="ti ti-mood-empty"></i>
       <p>لم يتم العثور على أحكام مطابقة لبحثك</p>
@@ -415,6 +429,10 @@
           </div>
         </div>
         <div class="client-profile-browser">
+          <div class="client-filter-row">
+            <label><i class="ti ti-search"></i><input id="clientSearchInput" type="text" placeholder="Search clients, email, phone, service, notes"></label>
+            <label><i class="ti ti-filter"></i><select id="clientStatusFilter"><option value="all">All statuses</option><option value="outstanding">Outstanding</option><option value="paid">Paid</option><option value="overpaid">Overpaid</option><option value="empty">No services</option></select></label>
+          </div>
           <div class="client-list-toolbar">
             <span>Client Profile</span>
             <strong id="clientProfileCount">0</strong>
@@ -460,7 +478,28 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">٠</strong></span>
             <span>القوانين: <strong id="settingsLawCount">٠</strong></span>
-            <span>الكاش: <strong>v20</strong></span>
+            <span>الكاش: <strong>v21</strong></span>
+          </div>
+        </div>
+        <div class="tool-panel wide">
+          <div class="tool-panel-head"><i class="ti ti-shield-lock"></i><span>Backup and protection</span></div>
+          <div class="backup-grid english-panel" dir="ltr">
+            <div>
+              <p class="settings-note">Export or import your local clients, invoices, notes, tags, highlights, saved judgments, and settings.</p>
+              <div class="settings-actions">
+                <button class="tool-primary" type="button" onclick="exportSanadBackup()"><i class="ti ti-download"></i>Export backup</button>
+                <button class="tool-secondary" type="button" onclick="document.getElementById('backupImportInput').click()"><i class="ti ti-upload"></i>Import backup</button>
+                <input class="hidden" id="backupImportInput" type="file" accept="application/json">
+              </div>
+            </div>
+            <div>
+              <label class="field"><span>Local app passcode</span><input id="protectionPasscodeInput" type="password" placeholder="Set or change passcode"></label>
+              <div class="settings-actions">
+                <button class="tool-secondary" type="button" onclick="setProtectionPasscode()"><i class="ti ti-lock"></i>Enable / change</button>
+                <button class="tool-secondary danger" type="button" onclick="clearProtectionPasscode()"><i class="ti ti-lock-off"></i>Remove passcode</button>
+              </div>
+              <p class="settings-note">This is local device protection for the browser app. Keep separate secure backups for sensitive files.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -515,9 +554,10 @@
   </div><!-- end page -->
 </div><!-- end main -->
 
-<script src="./data/judgments.js?v=law-reader-20260523"></script>
+<script src="./data/judgments/index.js?v=platform-phases-20260525"></script>
+<script src="./data/search-index.js?v=platform-phases-20260525"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=client-edit-profile-20260525"></script>
+<script src="./assets/app.js?v=platform-phases-20260525"></script>
 </body>
 </html>

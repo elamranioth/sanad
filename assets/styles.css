@@ -204,6 +204,11 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .tt-idari{background:#221a30;color:#b07ac0;border:1px solid #b07ac033}
 .tt-osri{background:#1a2a3a;color:#5a9acc;border:1px solid #5a9acc33}
 .doc-num{font-size:10px;color:#2d5060}
+.pagination-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin:-8px 0 24px}
+.pagination-bar button{min-height:40px;border:1px solid #285577;background:#102638;color:#8bd3ee;border-radius:9px;padding:8px 14px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.pagination-bar button:disabled{opacity:.45;cursor:not-allowed}
+.pagination-bar span{color:#7a9ab0;font-size:12px}
+.workbench-chip{border-color:#8b6b24!important;color:#d8c06e!important}
 .hidden{display:none!important}
 
 /* ─── NO RESULTS ─── */
@@ -248,6 +253,27 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .law-no-results{text-align:center;padding:40px;color:#3d6070;display:flex;flex-direction:column;align-items:center;gap:8px}
 .law-no-results i{font-size:40px;color:#1e3a52}
 .law-no-results p{font-size:13px}
+.judgment-workbench{border:1px solid #2a4a68;background:#0a1520;border-radius:14px;padding:16px;margin-bottom:18px}
+.workbench-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.workbench-head strong{display:block;color:#e8dcc8;font-size:17px;margin-bottom:4px}
+.workbench-head span{display:block;color:#6f91a8;font-size:12px;line-height:1.6}
+.workbench-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.workbench-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.highlight-list{display:flex;flex-direction:column;gap:8px}
+.highlight-item{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:10px;align-items:center;background:#0d1b2a;border:1px solid #1e3a52;border-radius:10px;padding:10px 12px}
+.highlight-item p{color:#c8d8e0;font-size:13px;line-height:1.8}
+.highlight-empty{border:1px dashed #2a4a68;border-radius:10px;color:#5f8198;font-size:12px;text-align:center;padding:12px}
+.workbench-icon{width:38px;height:38px;border-radius:9px;border:1px solid #2a4a68;background:#102638;color:#8bd3ee;cursor:pointer}
+.workbench-icon.danger{background:#251212;color:#e07070;border-color:#6b2a2a}
+.judgment-loading{border:1px dashed #2a4a68;border-radius:12px;padding:24px;color:#8aa6b8;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px}
+.sourced blockquote{margin-top:8px;border-right:3px solid #c8a84b;background:#0a1520;border-radius:8px;padding:10px 12px;color:#c8d8e0;line-height:1.8}
+.sourced small{display:block;color:#8aa6b8;margin-top:4px;line-height:1.6}
+.backup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.settings-note{color:#6f91a8;font-size:12px;line-height:1.7;margin-bottom:10px}
+.app-lock-modal{position:fixed;inset:0;z-index:180;background:#02070df2;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(10px)}
+.app-lock-dialog{width:min(460px,100%);background:linear-gradient(160deg,#0b1726,#101f32);border:1px solid #3a5f86;border-radius:18px;padding:24px;box-shadow:0 28px 80px #00000099;display:grid;grid-template-columns:62px minmax(0,1fr);gap:16px;align-items:start}
+.app-lock-dialog .client-edit-field{grid-column:1/-1}
+body.locked-app .main,body.locked-app .sidebar,body.locked-app .sidebar-overlay{filter:blur(5px);pointer-events:none;user-select:none}
 
 /* ─── TOOL PAGES ─── */
 .fees-manager,.settings-page,.dashboard-page,.collection-page,.import-page{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
@@ -325,6 +351,11 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .client-form-title strong{color:#e8dcc8;font-size:22px;line-height:1.2}
 .client-form-title span{color:#6f91a8;font-size:12px;line-height:1.5}
 .client-profile-browser{min-width:0}
+.client-filter-row{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:10px;margin-bottom:18px}
+.client-filter-row label{min-height:46px;background:#0a1520;border:1px solid #1e3a52;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px}
+.client-filter-row i{color:#c8a84b;font-size:18px}
+.client-filter-row input,.client-filter-row select{width:100%;background:transparent;border:0;outline:0;color:#c8d8e0;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:14px}
+.client-filter-row select option{background:#0d1b2a;color:#c8d8e0}
 .client-list-toolbar{display:flex;align-items:center;justify-content:flex-start;gap:18px;background:transparent;border:0;border-radius:0;padding:0 0 18px;margin:0;color:#d7dced;font-size:17px;text-transform:uppercase;letter-spacing:3px}
 .client-list-toolbar::before{content:'';width:3px;height:28px;border-radius:99px;background:#c8a84b;box-shadow:0 0 16px #c8a84b55}
 .client-list-toolbar strong{display:none}
@@ -349,6 +380,12 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .client-profile-delete{right:0;border:1px solid #9b3434;background:#2c1219;color:#ef6f65}
 .client-card-meta{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0}
 .client-card-meta span{display:inline-flex;align-items:center;gap:14px;background:#102845;border:1px solid #2e537d;color:#d8e8f6;border-radius:18px;font-size:18px;padding:13px 22px;box-shadow:inset 0 1px 0 #ffffff08}
+.client-card-meta .client-status{font-size:15px}
+.client-status i{font-size:10px!important}
+.client-status.paid{border-color:#3c7d4c;color:#a9e4aa}
+.client-status.outstanding{border-color:#a27424;color:#f0be4b}
+.client-status.overpaid{border-color:#2f8ca8;color:#8bd3ee}
+.client-status.empty{border-color:#56687a;color:#b2bdd0}
 .client-card-meta i{color:#8bd3ee;font-size:22px}
 .client-expand-toggle{width:46px;height:46px;border-radius:14px;border:1px solid #2e537d;background:#102845;color:#d8e8f6;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s,border-color .2s}
 .client-expand-toggle:hover{border-color:#c8a84b88;color:#f0be4b}
@@ -422,18 +459,18 @@ body.ink-mode .ni:hover,body.ink-mode .ni.on,body.ink-mode .ni-ai,body.ink-mode 
 body.ink-mode .ni .ct,body.ink-mode .ni.on .ct,body.ink-mode .ai-ct,body.ink-mode .ni-ai.on .ai-ct{background:#fff;color:#111;border:1px solid #111}
 body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .doc-card,body.ink-mode .law-card,body.ink-mode .tool-counter,body.ink-mode .law-counter,body.ink-mode .dashboard-stat,body.ink-mode .dashboard-recent-item,body.ink-mode .collection-card,body.ink-mode .local-judgment-item,body.ink-mode .fee-item,body.ink-mode .setting-row,body.ink-mode .law-stat,body.ink-mode .law-reader-meta,body.ink-mode .intro-item,body.ink-mode .receipt-preview,body.ink-mode .receipt-summary-grid div,body.ink-mode .client-profile-composer,body.ink-mode .client-list-toolbar,body.ink-mode .client-card,body.ink-mode .client-service,body.ink-mode .client-service-money span{background:#fff;border-color:#1b1b1b;color:#111;box-shadow:none}
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
-body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input,body.ink-mode .client-edit-field input,body.ink-mode .client-edit-field textarea{background:#fff;border-color:#1b1b1b;color:#111}
+body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input,body.ink-mode .client-edit-field input,body.ink-mode .client-edit-field textarea,body.ink-mode .client-filter-row label{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
-body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit{background:#fff;color:#111;border-color:#111;box-shadow:none}
+body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit,body.ink-mode .pagination-bar button{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
-body.ink-mode .confirm-dialog{background:#fff;border-color:#111;color:#111}
+body.ink-mode .confirm-dialog,body.ink-mode .app-lock-dialog,body.ink-mode .judgment-workbench,body.ink-mode .highlight-item{background:#fff;border-color:#111;color:#111}
 body.ink-mode .confirm-copy h2,body.ink-mode .confirm-copy p{color:#111}
 body.ink-mode .client-expand-toggle,body.ink-mode .client-action.edit{background:#fff;color:#111;border-color:#111}
 body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
 body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{color:#fff}
-body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text{background:#fff;border-color:#111;color:#111}
+body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text,body.ink-mode .sourced blockquote{background:#fff;border-color:#111;color:#111}
 body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
 body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
 body.ink-mode .judgment-para{background:#fff;border-color:#111;border-right-color:#111;color:#111}
@@ -617,6 +654,7 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .tool-page-head{padding:16px;border-radius:12px;align-items:flex-start}
 .tool-page-head h2{font-size:22px}
 .tool-grid,.settings-grid{grid-template-columns:1fr;gap:12px}
+.backup-grid{grid-template-columns:1fr}
 .tool-panel{padding:14px;border-radius:12px}
 .form-grid{grid-template-columns:1fr}
 .field input,.field select,.field textarea,.setting-row select{font-size:16px}
@@ -672,6 +710,7 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .receipt-actions .tool-primary,.receipt-actions .tool-secondary{width:100%}
 .client-manager-layout{grid-template-columns:1fr}
 .client-profile-composer{padding:12px;border-radius:10px}
+.client-filter-row{grid-template-columns:1fr}
 .client-card-head,.client-service{grid-template-columns:1fr}
 .client-avatar{width:46px;height:46px;border-radius:12px}
 .client-profile-edit,.client-profile-delete{position:static;width:100%;height:42px}

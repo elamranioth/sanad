@@ -1,4 +1,4 @@
-const CACHE_NAME = "sanad-pwa-v20";
+const CACHE_NAME = "sanad-pwa-v21";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -10,7 +10,8 @@ const APP_ASSETS = [
   "./assets/vendor/tabler/fonts/tabler-icons.woff2",
   "./assets/vendor/tabler/fonts/tabler-icons.woff",
   "./assets/vendor/tabler/fonts/tabler-icons.ttf",
-  "./data/judgments.js",
+  "./data/judgments/index.js",
+  "./data/search-index.js",
   "./data/laws.js",
   "./data/legal-forms.js",
   "./content/laws/qanoon_al_ijraat_al_madaniya_uae_42_2022.md",

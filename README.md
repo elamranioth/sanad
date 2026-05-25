@@ -9,7 +9,9 @@ sanad.html              Main HTML shell and page sections
 assets/styles.css       Responsive visual design
 assets/app.js           Navigation, routing, search, readers, local storage services
 assets/vendor/tabler/   Local Tabler icon font used by the app UI
-data/judgments.js       Published judgment records
+data/judgments/index.js Lightweight judgment manifest used for lists
+data/judgments/chunks/  Full judgment bodies split by year/type/page
+data/search-index.js    Static token index used by browser search
 data/laws.js            Published law records
 data/legal-forms.js     Legal form/template records
 content/laws/           Original Markdown law sources
@@ -22,7 +24,7 @@ sanad-local-server.js   Local static server
 ## Pages And Services
 
 - `#dashboard`: overview dashboard and quick service links.
-- `#judgments` / `#documents`: judgment catalog with search, filters, sorting, reader, and saved judgments.
+- `#judgments` / `#documents`: judgment catalog with indexed search, filters, sorting, pagination, reader, saved judgments, tags, notes, and highlights.
 - `#laws`: law catalog and formatted law reader.
 - `#decrees`: independent decrees page, ready for future decree records.
 - `#regulations`: independent regulations page, ready for future regulation records.
@@ -55,21 +57,27 @@ Laws are loaded into `window.SANAD_DATA.laws`; keep original Markdown in `conten
 Local user data is stored in browser `localStorage`:
 
 - `sanadSavedJudgments`
+- `sanadJudgmentWorkbench`
 - `sanadFeeItems`
 - `sanadSettings`
 - `sanadLocalJudgments`
+- `sanadClientProfiles`
+- `sanadProtection`
+
+The settings page includes JSON backup/export/import and an optional local passcode lock. This protects casual access on the same device, but it is not a substitute for encrypted server-side storage.
 
 ## Scaling Plan
 
-For 100,000+ judgments, keep `sanad.html` small and split data by collection:
+For 100,000+ judgments, keep `sanad.html` small and split data by collection. The current app already follows this pattern:
 
 ```text
-data/judgments/2025-commercial.js
-data/judgments/2025-civil.js
-data/judgments/2024-commercial.js
+data/judgments/index.js
+data/judgments/chunks/2025-tijari-001.js
+data/judgments/chunks/2025-madani-001.js
+data/search-index.js
 ```
 
-The UI logic should remain in `assets/app.js`; large datasets should be loaded by year/type/search scope instead of embedding everything in `sanad.html`.
+The UI logic remains in `assets/app.js`; large judgment bodies are loaded on demand when a user opens a judgment. See `docs/SCALING_BACKEND_PLAN.md` for the backend/search migration plan once the static approach becomes too large.
 
 ## Local Preview
 

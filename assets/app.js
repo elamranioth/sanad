@@ -1,7 +1,10 @@
-﻿const baseDocs=window.SANAD_DATA?.judgments||[];
+const judgmentCatalog=window.SANAD_DATA?.judgmentCatalog||{chunks:{}};
+const searchTokens=window.SANAD_DATA?.searchTokens||{};
+const baseDocs=(window.SANAD_DATA?.judgmentIndex||window.SANAD_DATA?.judgments||[]).map(doc=>({...doc,isIndexed:!doc.body}));
 const laws=window.SANAD_DATA?.laws||[];
 const legalForms=window.SANAD_DATA?.legalForms||[];
 const localJudgmentsStorageKey='sanadLocalJudgments';
+const workbenchStorageKey='sanadJudgmentWorkbench';
 const defaultCatalog={
   title:'أحكام قضائية',
   subtitle:'تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عمالية، جنائية، إدارية وأسرية',
@@ -48,12 +51,22 @@ const savedStorageKey='sanadSavedJudgments';
 const feeStorageKey='sanadFeeItems';
 const clientStorageKey='sanadClientProfiles';
 const settingsStorageKey='sanadSettings';
+const protectionStorageKey='sanadProtection';
 let savedJudgmentIds=loadSavedJudgments();
+let judgmentWorkbench=loadJudgmentWorkbench();
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
 let expandedClientIds=new Set();
 let clientEditContext=null;
 let sanadSettings=loadSanadSettings();
+let protectionSettings=loadProtectionSettings();
+let loadedJudgmentChunks=new Set();
+let pendingChunkLoads={};
+let currentDocResults=[];
+let currentPage=1;
+let clientQuery='';
+let clientStatusFilter='all';
+const docPageSize=24;
 function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
 function calculateCounts(){
   return docs.reduce((acc,d)=>{
@@ -67,12 +80,59 @@ function refreshJudgmentData(){
   counts=calculateCounts();
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
-function matchesDoc(d,q){return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.body].some(v=>String(v||'').includes(q))}
 function matchesLaw(law,q){return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>String(v||'').includes(q))}
 function normalizeDigits(value){
   return String(value||'')
     .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
     .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+function normalizeSearchText(value){
+  return normalizeDigits(value).toLowerCase()
+    .replace(/[إأآا]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/[\u064B-\u065F\u0670]/g,'')
+    .replace(/[^\u0600-\u06FFa-z0-9\s/.-]/g,' ');
+}
+function searchWords(value){
+  return [...new Set(normalizeSearchText(value).split(/\s+/).map(word=>word.trim()).filter(word=>/^\d+$/.test(word)?word.length>0:word.length>2))];
+}
+function getWorkbenchEntry(id){
+  const key=String(id);
+  if(!judgmentWorkbench[key])judgmentWorkbench[key]={tags:[],note:'',highlights:[]};
+  return judgmentWorkbench[key];
+}
+function workbenchSearchText(id){
+  const entry=judgmentWorkbench[String(id)];
+  if(!entry)return '';
+  return [entry.note,...(entry.tags||[]),...(entry.highlights||[]).map(item=>item.text||'')].join(' ');
+}
+function matchesDoc(d,q){
+  const needle=normalizeSearchText(q).trim();
+  if(!needle)return true;
+  return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.excerpt,d.body,workbenchSearchText(d.id)]
+    .some(v=>normalizeSearchText(v).includes(needle));
+}
+function scoreDocSearch(doc,query){
+  const words=searchWords(query);
+  if(!words.length)return 1;
+  let score=0;
+  const id=Number(doc.id);
+  const localText=normalizeSearchText([doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,workbenchSearchText(id)].join(' '));
+  for(const word of words){
+    if(searchTokens[word]?.includes(id))score+=5;
+    if(localText.includes(word))score+=3;
+  }
+  return score;
+}
+function filterDocsBySearchIndex(list,query){
+  const q=String(query||'').trim();
+  if(!q)return list;
+  return list
+    .map(doc=>({doc,score:scoreDocSearch(doc,q)}))
+    .filter(item=>item.score>0||matchesDoc(item.doc,q))
+    .sort((a,b)=>b.score-a.score||sortableDateValue(b.doc)-sortableDateValue(a.doc))
+    .map(item=>item.doc);
 }
 function sortableDateValue(doc){
   const raw=normalizeDigits(doc.date||doc.createdAt||'');
@@ -146,6 +206,35 @@ function formatJudgmentBody(body,doc=null){
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
   const paragraphs=splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
   return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
+}
+function renderWorkbenchPanel(id){
+  const entry=getWorkbenchEntry(id);
+  const tags=(entry.tags||[]).join(', ');
+  const highlights=entry.highlights?.length?entry.highlights.map((item,index)=>`
+    <div class="highlight-item">
+      <p>${escapeHtml(item.text)}</p>
+      <button class="workbench-icon danger" type="button" data-highlight-delete="${index}" aria-label="حذف الاقتباس"><i class="ti ti-trash"></i></button>
+    </div>`).join(''):'<div class="highlight-empty">لا توجد اقتباسات محفوظة لهذا الحكم بعد.</div>';
+  return `<section class="judgment-workbench" id="judgmentWorkbenchPanel">
+    <div class="workbench-head">
+      <div><strong>ملف العمل على الحكم</strong><span>وسوم، ملاحظات، واقتباسات محفوظة محليًا على هذا الجهاز.</span></div>
+      <button class="tool-secondary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-device-floppy"></i>حفظ</button>
+    </div>
+    <div class="workbench-grid">
+      <label class="field"><span>وسوم البحث</span><input id="workbenchTagsInput" type="text" value="${escapeHtml(tags)}" placeholder="مثال: تعويض، عقد، إثبات"></label>
+      <label class="field wide"><span>ملاحظة داخلية</span><textarea id="workbenchNoteInput" rows="4" placeholder="اكتب ملاحظتك القانونية أو سبب أهمية الحكم...">${escapeHtml(entry.note||'')}</textarea></label>
+      <label class="field wide"><span>اقتباس أو مبدأ مهم</span><input id="highlightTextInput" type="text" placeholder="الصق فقرة مهمة من الحكم ثم اضغط إضافة اقتباس"></label>
+    </div>
+    <div class="workbench-actions">
+      <button class="tool-secondary" type="button" onclick="addHighlightFromModal()"><i class="ti ti-quote"></i>إضافة اقتباس</button>
+      <button class="tool-primary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-tags"></i>حفظ الوسوم والملاحظة</button>
+    </div>
+    <div class="highlight-list">${highlights}</div>
+  </section>`;
+}
+function refreshWorkbenchPanel(){
+  const panel=document.getElementById('judgmentWorkbenchPanel');
+  if(panel&&currentDocId!==null)panel.outerHTML=renderWorkbenchPanel(currentDocId);
 }
 function renderLawMarkdown(markdown){
   const lines=String(markdown||'').replace(/\r/g,'').split('\n');
@@ -248,6 +337,30 @@ function saveSavedJudgments(){
   }
 }
 function isSaved(id){return savedJudgmentIds.has(Number(id))}
+function loadJudgmentWorkbench(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(workbenchStorageKey)||'{}');
+    if(!saved||typeof saved!=='object'||Array.isArray(saved))return {};
+    return Object.fromEntries(Object.entries(saved).map(([id,entry])=>[String(id),{
+      tags:Array.isArray(entry.tags)?entry.tags.map(tag=>String(tag).trim()).filter(Boolean):[],
+      note:String(entry.note||''),
+      highlights:Array.isArray(entry.highlights)?entry.highlights
+        .filter(item=>item&&item.text)
+        .map(item=>({text:String(item.text).trim(),createdAt:item.createdAt||new Date().toISOString()})):[],
+      updated:entry.updated||''
+    }]));
+  }catch(_){
+    return {};
+  }
+}
+function saveJudgmentWorkbench(){
+  try{
+    localStorage.setItem(workbenchStorageKey,JSON.stringify(judgmentWorkbench));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
 function loadLocalJudgments(){
   try{
     const saved=JSON.parse(localStorage.getItem(localJudgmentsStorageKey)||'[]');
@@ -345,6 +458,89 @@ function saveSanadSettings(){
     return false;
   }
 }
+function loadProtectionSettings(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(protectionStorageKey)||'{}');
+    return saved&&typeof saved==='object'?{enabled:!!saved.enabled,passcodeHash:String(saved.passcodeHash||'')}: {enabled:false,passcodeHash:''};
+  }catch(_){
+    return {enabled:false,passcodeHash:''};
+  }
+}
+function saveProtectionSettings(){
+  try{
+    localStorage.setItem(protectionStorageKey,JSON.stringify(protectionSettings));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
+async function hashText(value){
+  const text=String(value||'');
+  if(window.crypto?.subtle){
+    const bytes=new TextEncoder().encode(text);
+    const digest=await crypto.subtle.digest('SHA-256',bytes);
+    return [...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  return btoa(unescape(encodeURIComponent(text)));
+}
+function setLockVisible(visible){
+  const modal=document.getElementById('appLockModal');
+  if(!modal)return;
+  modal.classList.toggle('hidden',!visible);
+  modal.setAttribute('aria-hidden',visible?'false':'true');
+  document.body.classList.toggle('locked-app',visible);
+  if(visible)setTimeout(()=>document.getElementById('appUnlockInput')?.focus(),100);
+}
+function enforceProtection(){
+  if(protectionSettings.enabled&&protectionSettings.passcodeHash&&sessionStorage.getItem('sanadUnlocked')!=='true'){
+    setLockVisible(true);
+  }
+}
+async function unlockProtectedApp(){
+  const input=document.getElementById('appUnlockInput');
+  const value=input?.value||'';
+  if(!value){
+    showToast('Enter the passcode first.');
+    return;
+  }
+  const hash=await hashText(value);
+  if(hash!==protectionSettings.passcodeHash){
+    showToast('Wrong passcode.');
+    return;
+  }
+  sessionStorage.setItem('sanadUnlocked','true');
+  if(input)input.value='';
+  setLockVisible(false);
+  showToast('SANAD unlocked.');
+}
+async function setProtectionPasscode(){
+  const input=document.getElementById('protectionPasscodeInput');
+  const value=input?.value||'';
+  if(value.length<4){
+    showToast('Use at least 4 characters for the passcode.');
+    return;
+  }
+  protectionSettings={enabled:true,passcodeHash:await hashText(value)};
+  saveProtectionSettings();
+  sessionStorage.setItem('sanadUnlocked','true');
+  if(input)input.value='';
+  showToast('Local app passcode enabled.');
+}
+async function clearProtectionPasscode(){
+  if(protectionSettings.enabled){
+    const ok=await confirmAction({
+      title:'Remove app passcode?',
+      message:'This will remove the local passcode lock from this device. Your stored data will remain on the device.',
+      confirmLabel:'Remove passcode',
+      icon:'ti-lock-off'
+    });
+    if(!ok)return;
+  }
+  protectionSettings={enabled:false,passcodeHash:''};
+  sessionStorage.removeItem('sanadUnlocked');
+  saveProtectionSettings();
+  showToast('Local app passcode removed.');
+}
 function money(value){
   const number=Number(value)||0;
   return `${new Intl.NumberFormat('ar-AE',{maximumFractionDigits:2}).format(number)} درهم`;
@@ -352,6 +548,53 @@ function money(value){
 function moneyEn(value){
   const number=Number(value)||0;
   return `${new Intl.NumberFormat('en-AE',{maximumFractionDigits:2}).format(number)} AED`;
+}
+function scriptLoad(src){
+  return new Promise((resolve,reject)=>{
+    const existing=document.querySelector(`script[data-dynamic-src="${src}"]`);
+    if(existing){
+      existing.addEventListener('load',resolve,{once:true});
+      existing.addEventListener('error',reject,{once:true});
+      if(existing.dataset.loaded==='true')resolve();
+      return;
+    }
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=true;
+    script.dataset.dynamicSrc=src;
+    script.onload=()=>{script.dataset.loaded='true';resolve();};
+    script.onerror=()=>reject(new Error(`Unable to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+async function loadJudgmentChunk(chunkId){
+  if(!chunkId)return false;
+  if(loadedJudgmentChunks.has(chunkId)||window.SANAD_DATA?.judgmentChunks?.[chunkId]){
+    loadedJudgmentChunks.add(chunkId);
+    return true;
+  }
+  if(!pendingChunkLoads[chunkId]){
+    const src=judgmentCatalog.chunks?.[chunkId];
+    pendingChunkLoads[chunkId]=src?scriptLoad(new URL(src,location.href).href).then(()=>{
+      loadedJudgmentChunks.add(chunkId);
+      return true;
+    }).catch(error=>{
+      console.error(error);
+      return false;
+    }):Promise.resolve(false);
+  }
+  return pendingChunkLoads[chunkId];
+}
+async function getFullJudgment(id){
+  const numericId=Number(id);
+  const local=localJudgments.find(item=>Number(item.id)===numericId);
+  if(local)return local;
+  const indexed=baseDocs.find(item=>Number(item.id)===numericId);
+  if(!indexed)return docs.find(item=>Number(item.id)===numericId);
+  if(indexed.body)return indexed;
+  await loadJudgmentChunk(indexed.chunk);
+  const chunkDocs=window.SANAD_DATA?.judgmentChunks?.[indexed.chunk]||[];
+  return chunkDocs.find(item=>Number(item.id)===numericId)||indexed;
 }
 function applySettings(){
   document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
@@ -550,14 +793,14 @@ function hideStandalonePages(){
   setSettingsVisible(false);
 }
 function setJudgmentWorkspaceVisible(visible){
-  ['.type-cards','.search-bar','.results-bar','#docGrid'].forEach(selector=>{
+  ['.type-cards','.search-bar','.results-bar','#docGrid','#paginationBar'].forEach(selector=>{
     const el=document.querySelector(selector);
     if(el)el.classList.toggle('hidden',!visible);
   });
   if(!visible)document.getElementById('noResults')?.classList.add('hidden');
 }
-function restoreJudgmentCatalog(){
-  setRouteHash('');
+function restoreJudgmentCatalog(hash='#judgments'){
+  setRouteHash(hash);
   document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
   hideStandalonePages();
   setCatalogHeader(defaultCatalog.title,defaultCatalog.subtitle,defaultCatalog.icon);
@@ -944,6 +1187,42 @@ function serviceBalance(service){
     overpaid:Math.max(paid-amount,0)
   };
 }
+function clientFinancialSummary(client){
+  const services=Array.isArray(client?.services)?client.services:[];
+  const totals=services.reduce((acc,service)=>{
+    const balance=serviceBalance(service);
+    acc.amount+=balance.amount;
+    acc.paid+=balance.paid;
+    acc.remaining+=balance.remaining;
+    acc.overpaid+=balance.overpaid;
+    return acc;
+  },{amount:0,paid:0,remaining:0,overpaid:0});
+  const status=!services.length?'empty':totals.remaining>0?'outstanding':totals.overpaid>0?'overpaid':'paid';
+  return {...totals,status,serviceCount:services.length};
+}
+function clientStatusLabel(status){
+  return {empty:'No services',outstanding:'Outstanding',overpaid:'Overpaid',paid:'Paid'}[status]||'Active';
+}
+function clientSearchText(client){
+  return normalizeSearchText([
+    client.name,client.email,client.phone,client.contact,
+    ...(client.services||[]).flatMap(service=>[service.type,service.title,service.note,service.amount,service.paid])
+  ].join(' '));
+}
+function filteredClientProfiles(){
+  const query=normalizeSearchText(clientQuery).trim();
+  return clientProfiles.filter(client=>{
+    const summary=clientFinancialSummary(client);
+    const matchesStatus=clientStatusFilter==='all'||summary.status===clientStatusFilter;
+    const matchesQuery=!query||clientSearchText(client).includes(query);
+    return matchesStatus&&matchesQuery;
+  });
+}
+function filterClients(){
+  clientQuery=document.getElementById('clientSearchInput')?.value||'';
+  clientStatusFilter=document.getElementById('clientStatusFilter')?.value||'all';
+  renderClientProfiles();
+}
 function clientContactHtml(client){
   const email=String(client.email||'').trim();
   const phone=String(client.phone||'').trim();
@@ -976,15 +1255,19 @@ function renderClientProfiles(){
   const navCount=document.querySelector('.client-ct');
   if(navCount)navCount.textContent=ar(clientProfiles.length);
   if(!list)return;
-  if(!clientProfiles.length){
+  const visibleClients=filteredClientProfiles();
+  if(count)count.textContent=`${visibleClients.length}/${clientProfiles.length}`;
+  if(!visibleClients.length){
     list.innerHTML='';
     empty?.classList.remove('hidden');
+    if(empty)empty.querySelector('p').textContent=clientProfiles.length?'No clients match the current filter.':'No client profiles saved yet.';
     return;
   }
   empty?.classList.add('hidden');
-  list.innerHTML=clientProfiles.map(client=>{
+  list.innerHTML=visibleClients.map(client=>{
     const services=Array.isArray(client.services)?client.services:[];
     const serviceTotal=services.length;
+    const summary=clientFinancialSummary(client);
     const isOpen=expandedClientIds.has(String(client.id));
     const servicesHtml=services.length?services.map(service=>{
       const balance=serviceBalance(service);
@@ -1020,6 +1303,8 @@ function renderClientProfiles(){
         </div>
         <div class="client-card-meta">
           <span><i class="ti ti-briefcase"></i>${serviceTotal} ${serviceTotal===1?'service':'services'}</span>
+          <span class="client-status ${summary.status}"><i class="ti ti-circle-filled"></i>${clientStatusLabel(summary.status)}</span>
+          <span><i class="ti ti-wallet"></i>${moneyEn(summary.remaining)}</span>
         </div>
         <button class="client-expand-toggle" type="button" data-client-toggle="${escapeHtml(client.id)}" aria-label="${isOpen?'Close client profile':'Open client profile'}"><i class="ti ${isOpen?'ti-chevron-up':'ti-chevron-down'}"></i></button>
         <button class="client-profile-edit" type="button" data-client-edit="${escapeHtml(client.id)}" aria-label="Edit client profile"><i class="ti ti-pencil"></i></button>
@@ -1247,7 +1532,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v20',label:'الكاش'}
+    {value:'v21',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -1530,6 +1815,70 @@ function updateSettingsFromControls(){
   saveSanadSettings();
   showToast('تم حفظ الإعدادات.');
 }
+function backupPayload(){
+  return {
+    app:'SANAD',
+    version:1,
+    exportedAt:new Date().toISOString(),
+    savedJudgmentIds:[...savedJudgmentIds],
+    judgmentWorkbench,
+    localJudgments,
+    feeItems,
+    clientProfiles,
+    sanadSettings
+  };
+}
+function exportSanadBackup(){
+  const blob=new Blob([JSON.stringify(backupPayload(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=`sanad-backup-${todayIsoDate()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showToast('Backup exported.');
+}
+async function importSanadBackup(file){
+  if(!file)return;
+  try{
+    const payload=JSON.parse(await file.text());
+    if(payload.app!=='SANAD')throw new Error('Invalid backup');
+    const ok=await confirmAction({
+      title:'Import SANAD backup?',
+      message:'This will replace local saved judgments, notes, clients, fees, and settings on this device.',
+      confirmLabel:'Import backup',
+      icon:'ti-upload'
+    });
+    if(!ok)return;
+    savedJudgmentIds=new Set(Array.isArray(payload.savedJudgmentIds)?payload.savedJudgmentIds.map(Number).filter(Number.isFinite):[]);
+    judgmentWorkbench=payload.judgmentWorkbench&&typeof payload.judgmentWorkbench==='object'?payload.judgmentWorkbench:{};
+    localJudgments=Array.isArray(payload.localJudgments)?payload.localJudgments:[];
+    feeItems=Array.isArray(payload.feeItems)?payload.feeItems:[];
+    clientProfiles=Array.isArray(payload.clientProfiles)?payload.clientProfiles:[];
+    sanadSettings={...sanadSettings,...(payload.sanadSettings||{})};
+    saveSavedJudgments();
+    saveJudgmentWorkbench();
+    saveLocalJudgmentsToStorage();
+    saveFeeItems();
+    saveClientProfiles();
+    saveSanadSettings();
+    refreshJudgmentData();
+    applySettings();
+    syncSettingsControls();
+    updateDisplayedCounts();
+    updateSettingsStats();
+    renderDocs(sortDocuments(docs));
+    renderFees();
+    renderClientProfiles();
+    renderLocalJudgments();
+    showToast('Backup imported.');
+  }catch(error){
+    console.error(error);
+    showToast('Could not import this backup file.');
+  }
+}
 async function clearSavedJudgments(){
   const ok=await confirmAction({
     title:'Clear saved judgments?',
@@ -1602,13 +1951,44 @@ async function clearClientProfiles(){
   showToast('Client profiles cleared.');
 }
 function showAllJudgments(){
-  restoreJudgmentCatalog();
+  restoreJudgmentCatalog('#judgments');
   currentView='documents';
   currentType='all';
   document.getElementById('typeSelect').value='all';
   document.getElementById('searchInput').value='';
   syncCards('all');
   filterDocs();
+}
+function showSavedJudgments(){
+  restoreJudgmentCatalog('#saved');
+  currentView='saved';
+  currentType='all';
+  document.getElementById('typeSelect').value='all';
+  document.getElementById('searchInput').value='';
+  syncCards('all');
+  filterDocs();
+  scrollPageTo('.results-bar');
+}
+function showRecentJudgments(){
+  restoreJudgmentCatalog('#recent');
+  currentView='documents';
+  currentType='all';
+  document.getElementById('typeSelect').value='all';
+  document.getElementById('searchInput').value='';
+  syncCards('all');
+  const recentList=sortDocuments(docs,'newest').slice(0,30);
+  renderDocs(recentList);
+  scrollPageTo('.results-bar');
+}
+function showSearchPage(){
+  restoreJudgmentCatalog('#search');
+  currentView='documents';
+  currentType='all';
+  document.getElementById('typeSelect').value='all';
+  syncCards('all');
+  filterDocs();
+  scrollPageTo('.search-bar');
+  setTimeout(()=>document.getElementById('searchInput')?.focus(),220);
 }
 function handleNav(event,action,el){
   event.preventDefault();
@@ -1642,35 +2022,17 @@ function handleNav(event,action,el){
     return;
   }
   if(action==='saved'){
-    restoreJudgmentCatalog();
-    currentView='saved';
-    currentType='all';
-    document.getElementById('typeSelect').value='all';
-    search.value='';
-    syncCards('all');
-    filterDocs();
-    scrollPageTo('.results-bar');
+    showSavedJudgments();
     showToast(savedJudgmentIds.size?'تم عرض الأحكام المحفوظة.':'لا توجد أحكام محفوظة بعد.');
     return;
   }
   if(action==='recent'){
-    restoreJudgmentCatalog();
-    currentView='documents';
-    currentType='all';
-    document.getElementById('typeSelect').value='all';
-    search.value='';
-    syncCards('all');
-    const recentList=sortDocuments(docs,'newest').slice(0,30);
-    document.getElementById('totalCount').textContent=ar(recentList.length);
-    renderDocs(recentList);
-    scrollPageTo('.results-bar');
+    showRecentJudgments();
     showToast('تم عرض آخر الأحكام المضافة.');
     return;
   }
   if(action==='search'){
-    showAllJudgments();
-    scrollPageTo('.search-bar');
-    setTimeout(()=>search.focus(),220);
+    showSearchPage();
     showToast('اكتب كلمات البحث أو رقم الطعن.');
     return;
   }
@@ -1727,11 +2089,37 @@ function updateDisplayedCounts(){
   if(total)total.textContent=ar(counts.all);
 }
 
-function renderDocs(list){
+function docWorkbenchBadges(id){
+  const entry=judgmentWorkbench[String(id)];
+  if(!entry)return '';
+  const tags=(entry.tags||[]).slice(0,3).map(tag=>`<span class="meta-chip workbench-chip"><i class="ti ti-tag"></i>${escapeHtml(tag)}</span>`).join('');
+  const note=entry.note?'<span class="meta-chip workbench-chip"><i class="ti ti-note"></i>ملاحظة</span>':'';
+  const highlights=entry.highlights?.length?`<span class="meta-chip workbench-chip"><i class="ti ti-quote"></i>${ar(entry.highlights.length)}</span>`:'';
+  return tags+note+highlights;
+}
+function renderDocs(list,page=1){
+  currentDocResults=[...list];
+  currentPage=Number(page)||1;
+  renderDocsPage();
+}
+function renderDocsPage(){
   const g=document.getElementById('docGrid'),nr=document.getElementById('noResults');
-  if(!list.length){g.innerHTML='';nr.classList.remove('hidden');document.getElementById('shownCount').textContent=ar(0);return;}
+  const pagination=document.getElementById('paginationBar');
+  const total=currentDocResults.length;
+  const totalPages=Math.max(1,Math.ceil(total/docPageSize));
+  currentPage=Math.min(Math.max(1,currentPage),totalPages);
+  const start=(currentPage-1)*docPageSize;
+  const pageItems=currentDocResults.slice(start,start+docPageSize);
+  if(!total){
+    g.innerHTML='';
+    nr.classList.remove('hidden');
+    if(pagination)pagination.classList.add('hidden');
+    document.getElementById('shownCount').textContent=ar(0);
+    document.getElementById('totalCount').textContent=ar(0);
+    return;
+  }
   nr.classList.add('hidden');
-  g.innerHTML=list.map(d=>`
+  g.innerHTML=pageItems.map(d=>`
     <button class="doc-card" type="button" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
       <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i></div>
       <div class="doc-body">
@@ -1741,6 +2129,7 @@ function renderDocs(list){
           <span class="meta-chip"><i class="ti ti-building"></i>${escapeHtml(d.court)}</span>
           <span class="meta-chip"><i class="ti ti-hash"></i>${escapeHtml(d.num)}</span>
           ${isSaved(d.id)?`<span class="meta-chip"><i class="ti ti-bookmark-filled"></i>محفوظ</span>`:''}
+          ${docWorkbenchBadges(d.id)}
         </div>
       </div>
       <div class="doc-badge">
@@ -1748,11 +2137,23 @@ function renderDocs(list){
         <i class="ti ti-chevron-left"></i>
       </div>
     </button>`).join('');
-  document.getElementById('shownCount').textContent=ar(list.length);
+  document.getElementById('shownCount').textContent=`${ar(start+1)}-${ar(start+pageItems.length)}`;
+  document.getElementById('totalCount').textContent=ar(total);
+  if(pagination){
+    pagination.classList.toggle('hidden',totalPages<=1);
+    pagination.innerHTML=`<button type="button" data-doc-page="${currentPage-1}" ${currentPage===1?'disabled':''}><i class="ti ti-chevron-right"></i>السابق</button>
+      <span>صفحة ${ar(currentPage)} من ${ar(totalPages)}</span>
+      <button type="button" data-doc-page="${currentPage+1}" ${currentPage===totalPages?'disabled':''}>التالي<i class="ti ti-chevron-left"></i></button>`;
+  }
+}
+function setDocsPage(page){
+  currentPage=Number(page)||1;
+  renderDocsPage();
+  scrollPageTo('#docGrid');
 }
 
-function openDoc(id){
-  const d=docs.find(item=>item.id===id);
+async function openDoc(id){
+  const d=docs.find(item=>Number(item.id)===Number(id));
   if(!d)return;
   readerMode='judgment';
   currentDocId=d.id;
@@ -1761,10 +2162,13 @@ function openDoc(id){
   document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
   document.getElementById('modalTitle').textContent=displayDocTitle(d);
-  document.getElementById('modalBody').innerHTML=formatJudgmentBody(d.body,d);
+  document.getElementById('modalBody').innerHTML=`${renderWorkbenchPanel(d.id)}<div class="judgment-loading"><div class="spinner"></div>جارٍ تحميل نص الحكم الكامل...</div>`;
   syncSaveButton();
   document.getElementById('docModal').classList.remove('hidden');
   document.body.classList.add('modal-open');
+  const fullDoc=await getFullJudgment(d.id);
+  if(currentDocId!==d.id||readerMode!=='judgment')return;
+  document.getElementById('modalBody').innerHTML=renderWorkbenchPanel(d.id)+formatJudgmentBody(fullDoc?.body||d.body,fullDoc||d);
 }
 function openLaw(id){
   const law=laws.find(item=>String(item.id)===String(id));
@@ -1804,6 +2208,48 @@ function toggleSavedFromModal(){
   filterDocs();
   if(!persisted)showToast('تم حفظ التغيير لهذه الجلسة فقط.');
 }
+function saveWorkbenchFromModal(){
+  if(readerMode!=='judgment'||currentDocId===null)return;
+  const entry=getWorkbenchEntry(currentDocId);
+  entry.tags=String(document.getElementById('workbenchTagsInput')?.value||'')
+    .split(',')
+    .map(tag=>tag.trim())
+    .filter(Boolean)
+    .slice(0,12);
+  entry.note=document.getElementById('workbenchNoteInput')?.value.trim()||'';
+  entry.updated=new Date().toISOString();
+  const persisted=saveJudgmentWorkbench();
+  filterDocs();
+  refreshWorkbenchPanel();
+  showToast(persisted?'تم حفظ ملف العمل على الحكم.':'تم حفظ ملف العمل لهذه الجلسة فقط.');
+}
+function addHighlightFromModal(){
+  if(readerMode!=='judgment'||currentDocId===null)return;
+  const input=document.getElementById('highlightTextInput');
+  const text=input?.value.trim()||'';
+  if(!text){
+    showToast('أضف نص الاقتباس أولًا.');
+    return;
+  }
+  const entry=getWorkbenchEntry(currentDocId);
+  entry.highlights=[{text,createdAt:new Date().toISOString()},...(entry.highlights||[])].slice(0,20);
+  entry.updated=new Date().toISOString();
+  if(input)input.value='';
+  saveJudgmentWorkbench();
+  refreshWorkbenchPanel();
+  filterDocs();
+  showToast('تم حفظ الاقتباس داخل الحكم.');
+}
+function deleteHighlightFromModal(index){
+  if(readerMode!=='judgment'||currentDocId===null)return;
+  const entry=getWorkbenchEntry(currentDocId);
+  entry.highlights=(entry.highlights||[]).filter((_,itemIndex)=>itemIndex!==Number(index));
+  entry.updated=new Date().toISOString();
+  saveJudgmentWorkbench();
+  refreshWorkbenchPanel();
+  filterDocs();
+  showToast('تم حذف الاقتباس.');
+}
 
 function closeDoc(){
   const modal=document.getElementById('docModal');
@@ -1816,6 +2262,16 @@ document.getElementById('docGrid')?.addEventListener('click',event=>{
   const card=event.target.closest('.doc-card[data-doc-id]');
   if(!card)return;
   openDoc(Number(card.dataset.docId));
+});
+document.getElementById('paginationBar')?.addEventListener('click',event=>{
+  const button=event.target.closest('[data-doc-page]');
+  if(!button||button.disabled)return;
+  setDocsPage(button.dataset.docPage);
+});
+document.getElementById('modalBody')?.addEventListener('click',event=>{
+  const button=event.target.closest('[data-highlight-delete]');
+  if(!button)return;
+  deleteHighlightFromModal(button.dataset.highlightDelete);
 });
 document.getElementById('lawList')?.addEventListener('click',event=>{
   const card=event.target.closest('.law-card[data-law-id]');
@@ -1907,12 +2363,22 @@ document.getElementById('clientProfileList')?.addEventListener('input',event=>{
     syncClientBalanceInputs(event.target.closest('.client-add-service')||document);
   }
 });
+document.getElementById('clientSearchInput')?.addEventListener('input',filterClients);
+document.getElementById('clientStatusFilter')?.addEventListener('change',filterClients);
 ['clientServiceAmountInput','clientServicePaidInput'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',()=>syncClientBalanceInputs());
 });
 document.getElementById('readerSizeSelect')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('inkModeToggle')?.addEventListener('change',updateSettingsFromControls);
 document.getElementById('compactCardsToggle')?.addEventListener('change',updateSettingsFromControls);
+document.getElementById('backupImportInput')?.addEventListener('change',event=>{
+  importSanadBackup(event.target.files?.[0]);
+  event.target.value='';
+});
+document.getElementById('appUnlockBtn')?.addEventListener('click',unlockProtectedApp);
+document.getElementById('appUnlockInput')?.addEventListener('keydown',event=>{
+  if(event.key==='Enter')unlockProtectedApp();
+});
 ['receiptClientInput','receiptMatterInput','receiptTotalInput','receiptPaidInput','receiptMethodInput','receiptDateInput','receiptNoteInput'].forEach(id=>{
   const input=document.getElementById(id);
   input?.addEventListener('input',syncReceiptPreview);
@@ -1930,6 +2396,18 @@ window.addEventListener('hashchange',()=>{
   if(route==='dashboard'){
     activateNavByAction('dashboard');
     showDashboardPage();
+  }else if(route==='judgments'||route==='documents'||!route){
+    activateNavByAction('judgments');
+    showAllJudgments();
+  }else if(route==='saved'){
+    activateNavByAction('saved');
+    showSavedJudgments();
+  }else if(route==='recent'){
+    activateNavByAction('recent');
+    showRecentJudgments();
+  }else if(route==='search'){
+    activateNavByAction('search');
+    showSearchPage();
   }else if(route==='aiAnalysis'){
     activateNavByAction('aiAnalysis');
     showAiAnalysisPage();
@@ -1970,8 +2448,7 @@ function filterDocs(){
   if(sel!==currentType){currentType=sel;syncCards(sel);}
   let list=currentView==='saved'?docs.filter(d=>isSaved(d.id)):docs;
   if(currentType!=='all') list=list.filter(d=>d.type===currentType);
-  if(q) list=list.filter(d=>matchesDoc(d,q));
-  document.getElementById('totalCount').textContent=ar(currentView==='saved'?savedJudgmentIds.size:(counts[currentType]||0));
+  if(q) list=filterDocsBySearchIndex(list,q);
   renderDocs(sortDocuments(list));
 }
 
@@ -2000,21 +2477,30 @@ function setTypeFromSelect(){
 
 async function analyzeCase(){
   const text=document.getElementById('caseInput').value.trim();
-  if(!text){alert('يرجى وصف قضيتك أولاً');return;}
+  if(!text){showToast('يرجى وصف قضيتك أولاً.');return;}
   const btn=document.getElementById('analyzeBtn'),res=document.getElementById('aiResult');
   btn.disabled=true;
-  res.innerHTML=`<div class="ai-loading"><div class="spinner"></div>جارٍ تحليل القضية وتحديد القوانين والسوابق...</div>`;
+  res.innerHTML=`<div class="ai-loading"><div class="spinner"></div>جارٍ بناء تحليل مستند إلى المصادر...</div>`;
   await new Promise(resolve=>setTimeout(resolve,350));
   const words=[...new Set(text.replace(/[^\u0600-\u06FFa-zA-Z0-9\s]/g,' ').split(/\s+/).map(w=>w.trim()).filter(w=>w.length>2))];
   const score=(value)=>words.reduce((sum,word)=>sum+(String(value||'').includes(word)?1:0),0);
-  const snippet=(value)=>escapeHtml(String(value||'').replace(/\s+/g,' ').slice(0,220));
+  const snippet=(value)=>escapeHtml(String(value||'').replace(/\s+/g,' ').slice(0,260));
+  const matchedWords=value=>words.filter(word=>String(value||'').includes(word)).slice(0,6);
+  const sourceQuote=(value)=>{
+    const clean=String(value||'').replace(/\s+/g,' ').trim();
+    if(!clean)return 'لا يوجد مقتطف نصي متاح في الفهرس.';
+    const first=words.find(word=>clean.includes(word));
+    if(!first)return clean.slice(0,260);
+    const index=Math.max(0,clean.indexOf(first)-90);
+    return `${index>0?'...':''}${clean.slice(index,index+280)}${index+280<clean.length?'...':''}`;
+  };
   const lawMatches=laws
     .map(law=>({law,score:score([law.title,law.subtitle,law.body].join(' '))}))
     .filter(item=>item.score>0)
     .sort((a,b)=>b.score-a.score)
     .slice(0,3);
-  const precedentMatches=docs
-    .map(doc=>({doc,score:score([doc.title,doc.court,doc.body,doc.num].join(' '))}))
+  const precedentMatches=filterDocsBySearchIndex(docs,text)
+    .map(doc=>({doc,score:scoreDocSearch(doc,text)}))
     .filter(item=>item.score>0)
     .sort((a,b)=>b.score-a.score)
     .slice(0,5);
@@ -2025,15 +2511,15 @@ async function analyzeCase(){
   res.innerHTML=`<div class="ai-result">
     <div class="ars-block">
       <div class="ars-head laws"><i class="ti ti-file-certificate"></i>القوانين والمواد ذات الصلة</div>
-      <div class="ars-items">${selectedLaws.length?selectedLaws.map(({law,score})=>`<div class="law-item"><span class="law-num">${escapeHtml(law.number?`قانون ${law.number}`:'قانون')}</span><div class="item-text"><strong>${escapeHtml(law.title)}</strong><br>${score?snippet(law.subtitle||law.body):'لم يظهر تطابق مباشر، وهذا أقرب قانون متاح في المكتبة.'}</div></div>`).join(''):'<div class="law-item"><span class="law-num">لا يوجد</span><div class="item-text">لم يتم رفع قوانين كافية للمقارنة بعد.</div></div>'}</div>
+      <div class="ars-items">${selectedLaws.length?selectedLaws.map(({law,score})=>`<div class="law-item sourced"><span class="law-num">${escapeHtml(law.number?`قانون ${law.number}`:'قانون')}</span><div class="item-text"><strong>${escapeHtml(law.title)}</strong><br><small>درجة الصلة: ${ar(score)} | كلمات مطابقة: ${escapeHtml(matchedWords([law.title,law.subtitle,law.body].join(' ')).join('، ')||'غير مباشر')}</small><blockquote>${escapeHtml(sourceQuote(law.subtitle||law.body))}</blockquote></div></div>`).join(''):'<div class="law-item"><span class="law-num">لا يوجد</span><div class="item-text">لم يتم رفع قوانين كافية للمقارنة بعد.</div></div>'}</div>
     </div>
     <div class="ars-block">
       <div class="ars-head prec"><i class="ti ti-gavel"></i>سوابق قضائية للاستناد</div>
-      <div class="ars-items">${selectedDocs.length?selectedDocs.map(({doc,score})=>`<button class="prec-item analysis-open-doc" type="button" data-doc-id="${Number(doc.id)}"><span class="prec-num">${escapeHtml(doc.num||ar(doc.id))}</span><div class="item-text"><strong>${escapeHtml(displayDocTitle(doc))}</strong><br>${score?snippet(doc.body||doc.title):'لم يظهر تطابق مباشر، وهذا من أحدث الأحكام المتاحة.'}</div></button>`).join(''):'<div class="prec-item"><span class="prec-num">لا يوجد</span><div class="item-text">لم يتم رفع أحكام كافية للمقارنة بعد.</div></div>'}</div>
+      <div class="ars-items">${selectedDocs.length?selectedDocs.map(({doc,score})=>`<button class="prec-item analysis-open-doc sourced" type="button" data-doc-id="${Number(doc.id)}"><span class="prec-num">${escapeHtml(doc.num||ar(doc.id))}</span><div class="item-text"><strong>${escapeHtml(displayDocTitle(doc))}</strong><br><small>درجة الصلة: ${ar(score)} | المصدر: ${escapeHtml(doc.court||'حكم قضائي')} ${escapeHtml(doc.date||'')}</small><blockquote>${escapeHtml(sourceQuote(doc.excerpt||doc.body||doc.title))}</blockquote></div></button>`).join(''):'<div class="prec-item"><span class="prec-num">لا يوجد</span><div class="item-text">لم يتم رفع أحكام كافية للمقارنة بعد.</div></div>'}</div>
     </div>
     <div class="ars-block">
-      <div class="ars-head analysis"><i class="ti ti-chart-line"></i>تحليل أولي</div>
-      <div class="analysis-text">هذا تحليل محلي يعتمد على الكلمات المشتركة بين وصف القضية وقاعدة بيانات سند. راجع النتائج، وافتح السوابق المقترحة، ثم قارن الوقائع والطلبات وأسباب الحكم قبل استخدامها في مذكرة أو دفاع.</div>
+      <div class="ars-head analysis"><i class="ti ti-chart-line"></i>تحليل مستند إلى المصادر</div>
+      <div class="analysis-text">النتائج أعلاه مبنية على فهرس كلمات داخل القوانين والأحكام المحملة في سند. ابدأ بالمصادر الأعلى درجة، وافتح الحكم المقترح، ثم احفظ الوسوم أو الاقتباسات المهمة داخل ملف العمل قبل استخدام النتيجة في مذكرة أو دفاع.</div>
     </div>
   </div>`;
   btn.disabled=false;
@@ -2044,6 +2530,7 @@ updateDisplayedCounts();
 updateInstallButton();
 applySettings();
 syncSettingsControls();
+enforceProtection();
 renderDocs(sortDocuments(docs));
 renderLaws(laws);
 renderFees();
@@ -2053,6 +2540,18 @@ updateSettingsStats();
 if(window.location.hash==='#dashboard'){
   activateNavByAction('dashboard');
   showDashboardPage();
+}else if(window.location.hash==='#judgments'||window.location.hash==='#documents'||!window.location.hash){
+  activateNavByAction('judgments');
+  showAllJudgments();
+}else if(window.location.hash==='#saved'){
+  activateNavByAction('saved');
+  showSavedJudgments();
+}else if(window.location.hash==='#recent'){
+  activateNavByAction('recent');
+  showRecentJudgments();
+}else if(window.location.hash==='#search'){
+  activateNavByAction('search');
+  showSearchPage();
 }else if(window.location.hash==='#aiAnalysis'){
   activateNavByAction('aiAnalysis');
   showAiAnalysisPage();
