@@ -112,6 +112,7 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .search-input-wrap input{background:none;border:none;outline:none;font-size:14px;color:#c8d8e0;font-family:'Tajawal',sans-serif;width:100%;direction:rtl}
 .search-input-wrap input::placeholder{color:#2d5060}
 .type-select-wrap{background:#0d1b2a;border:1px solid #1e3a52;border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:8px;min-width:190px;cursor:pointer;transition:border-color .2s;position:relative}
+.year-select-wrap{min-width:150px}
 .type-select-wrap:focus-within{border-color:#c8a84b66}
 .type-select-wrap i.sel-icon{font-size:18px;color:#c8a84b;flex-shrink:0}
 .type-select-wrap select{background:none;border:none;outline:none;font-size:13px;color:#c8d8e0;font-family:'Tajawal',sans-serif;width:100%;direction:rtl;cursor:pointer;appearance:none;-webkit-appearance:none}
@@ -187,6 +188,7 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .dci-all{background:#1e3040;color:#c8a84b}
 .dci-tijari{background:#1a2e40;color:#6aaccc}
 .dci-madani{background:#1a2a1a;color:#7aaa6a}
+.dci-aqari{background:#102a26;color:#62cfa8}
 .dci-omali{background:#2a1f10;color:#d4a055}
 .dci-jinai{background:#2a1010;color:#e07070}
 .dci-idari{background:#221a30;color:#b07ac0}
@@ -204,6 +206,7 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .tt-all{background:#2a1f08;color:#c8a84b;border:1px solid #c8a84b33}
 .tt-tijari{background:#1a2e40;color:#6aaccc;border:1px solid #6aaccc33}
 .tt-madani{background:#1a2a1a;color:#7aaa6a;border:1px solid #7aaa6a33}
+.tt-aqari{background:#08241e;color:#62cfa8;border:1px solid #62cfa833}
 .tt-omali{background:#2a1f10;color:#d4a055;border:1px solid #d4a05533}
 .tt-jinai{background:#2a1010;color:#e07070;border:1px solid #e0707033}
 .tt-idari{background:#221a30;color:#b07ac0;border:1px solid #b07ac033}

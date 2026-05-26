@@ -81,6 +81,7 @@ function calculateCounts(){
 function refreshJudgmentData(){
   docs=[...localJudgments,...baseDocs];
   counts=calculateCounts();
+  populateYearFilter();
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function currentListSearchQuery(){return document.getElementById('searchInput')?.value.trim()||''}
@@ -89,6 +90,25 @@ function normalizeDigits(value){
   return String(value||'')
     .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
     .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+function extractYear(value){
+  const match=normalizeDigits(value).match(/(?:^|[^\d])((?:19|20)\d{2})(?=$|[^\d])/);
+  return match?match[1]:'';
+}
+function docYear(doc){
+  return extractYear(doc.year)||extractYear(doc.num)||extractYear(doc.title)||extractYear(doc.date)||'';
+}
+function populateYearFilter(){
+  const select=document.getElementById('yearSelect');
+  if(!select)return;
+  const current=select.value||'all';
+  const years=[...new Set(docs.map(docYear).filter(Boolean))].sort((a,b)=>Number(b)-Number(a));
+  select.innerHTML='<option value="all">جميع السنوات</option>'+years.map(year=>`<option value="${year}">${ar(year)}</option>`).join('');
+  select.value=years.includes(current)?current:'all';
+}
+function setYearFilter(value='all'){
+  const select=document.getElementById('yearSelect');
+  if(select)select.value=value;
 }
 function normalizeSearchText(value){
   return normalizeDigits(value).toLowerCase()
@@ -2050,6 +2070,7 @@ function showAllJudgments(){
   currentType='all';
   document.getElementById('typeSelect').value='all';
   document.getElementById('searchInput').value='';
+  setYearFilter('all');
   syncCards('all');
   filterDocs();
 }
@@ -2059,6 +2080,7 @@ function showSavedJudgments(){
   currentType='all';
   document.getElementById('typeSelect').value='all';
   document.getElementById('searchInput').value='';
+  setYearFilter('all');
   syncCards('all');
   filterDocs();
   scrollPageTo('.results-bar');
@@ -2069,6 +2091,7 @@ function showRecentJudgments(){
   currentType='all';
   document.getElementById('typeSelect').value='all';
   document.getElementById('searchInput').value='';
+  setYearFilter('all');
   syncCards('all');
   const recentList=sortDocuments(docs,'newest').slice(0,30);
   renderDocs(recentList);
@@ -2551,9 +2574,11 @@ function filterDocs(){
   if(standaloneViews.has(currentView))return;
   const q=document.getElementById('searchInput').value.trim();
   const sel=document.getElementById('typeSelect').value;
+  const year=document.getElementById('yearSelect')?.value||'all';
   if(sel!==currentType){currentType=sel;syncCards(sel);}
   let list=currentView==='saved'?docs.filter(d=>isSaved(d.id)):docs;
   if(currentType!=='all') list=list.filter(d=>d.type===currentType);
+  if(year!=='all') list=list.filter(d=>docYear(d)===year);
   if(q) list=filterDocsBySearchIndex(list,q);
   renderDocs(sortDocuments(list));
 }
@@ -2632,6 +2657,7 @@ async function analyzeCase(){
 }
 
 syncSidebarToggle();
+populateYearFilter();
 updateDisplayedCounts();
 updateInstallButton();
 applySettings();

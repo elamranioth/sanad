@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=real-estate-20260527">
+<link rel="stylesheet" href="./assets/styles.css?v=civil-2024-year-filter-20260527">
 </head>
 <body>
 
@@ -202,6 +202,13 @@
           <option value="jinai">جنائي</option>
           <option value="idari">إداري</option>
           <option value="osri">أسري</option>
+        </select>
+        <i class="ti ti-chevron-down arr"></i>
+      </div>
+      <div class="type-select-wrap year-select-wrap">
+        <i class="ti ti-calendar-stats sel-icon"></i>
+        <select id="yearSelect" onchange="filterDocs()" aria-label="تحديد سنة البحث">
+          <option value="all">جميع السنوات</option>
         </select>
         <i class="ti ti-chevron-down arr"></i>
       </div>
@@ -560,10 +567,10 @@
   </div><!-- end page -->
 </div><!-- end main -->
 
-<script src="./data/judgments/index.js?v=real-estate-20260527"></script>
-<script src="./data/search-index.js?v=real-estate-20260527"></script>
+<script src="./data/judgments/index.js?v=civil-2024-year-filter-20260527"></script>
+<script src="./data/search-index.js?v=civil-2024-year-filter-20260527"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=real-estate-20260527"></script>
+<script src="./assets/app.js?v=civil-2024-year-filter-20260527"></script>
 </body>
 </html>
