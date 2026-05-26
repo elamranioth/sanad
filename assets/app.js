@@ -7,12 +7,12 @@ const localJudgmentsStorageKey='sanadLocalJudgments';
 const workbenchStorageKey='sanadJudgmentWorkbench';
 const defaultCatalog={
   title:'أحكام قضائية',
-  subtitle:'تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عمالية، جنائية، إدارية وأسرية',
+  subtitle:'تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عقارية، عمالية، جنائية، إدارية وأسرية',
   icon:'ti-gavel'
 };
-const icons={tijari:'ti-briefcase',madani:'ti-scale',omali:'ti-hammer',jinai:'ti-shield-lock',idari:'ti-building-bank',osri:'ti-heart'};
-const labels={tijari:'تجاري',madani:'مدني',omali:'عمالي',jinai:'جنائي',idari:'إداري',osri:'أسري'};
-const typeKeys=['tijari','madani','omali','jinai','idari','osri'];
+const icons={tijari:'ti-briefcase',madani:'ti-scale',aqari:'ti-home',omali:'ti-hammer',jinai:'ti-shield-lock',idari:'ti-building-bank',osri:'ti-heart'};
+const labels={tijari:'تجاري',madani:'مدني',aqari:'عقاري',omali:'عمالي',jinai:'جنائي',idari:'إداري',osri:'أسري'};
+const typeKeys=['tijari','madani','aqari','omali','jinai','idari','osri'];
 let localJudgments=loadLocalJudgments();
 let docs=[...localJudgments,...baseDocs];
 const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','clients','fees','settings','import']);
@@ -76,7 +76,7 @@ function calculateCounts(){
     acc.all++;
     if(acc[d.type]!==undefined)acc[d.type]++;
     return acc;
-  },{all:0,tijari:0,madani:0,omali:0,jinai:0,idari:0,osri:0});
+  },{all:0,tijari:0,madani:0,aqari:0,omali:0,jinai:0,idari:0,osri:0});
 }
 function refreshJudgmentData(){
   docs=[...localJudgments,...baseDocs];

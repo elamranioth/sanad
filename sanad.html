@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=judgment-search-20260526">
+<link rel="stylesheet" href="./assets/styles.css?v=real-estate-20260527">
 </head>
 <body>
 
@@ -136,11 +136,11 @@
         <div class="hero-icon"><i class="ti ti-gavel"></i></div>
         <div class="hero-text">
           <div class="hero-title">أحكام قضائية</div>
-          <div class="hero-sub">تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عمالية، جنائية، إدارية وأسرية</div>
+          <div class="hero-sub">تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عقارية، عمالية، جنائية، إدارية وأسرية</div>
         </div>
         <div class="hero-stats">
           <div class="hstat"><div class="hstat-num">٢٤٧</div><div class="hstat-lbl">حكم</div></div>
-          <div class="hstat"><div class="hstat-num">٦</div><div class="hstat-lbl">تخصص</div></div>
+          <div class="hstat"><div class="hstat-num">٧</div><div class="hstat-lbl">تخصص</div></div>
           <div class="hstat"><div class="hstat-num">١٨</div><div class="hstat-lbl">هذا الشهر</div></div>
         </div>
       </div>
@@ -162,6 +162,11 @@
         <div class="tc-icon"><i class="ti ti-scale"></i></div>
         <div class="tc-label">مدني</div>
         <div class="tc-count">٢٧٠</div>
+      </div>
+      <div class="tc tc-aqari" onclick="setType('aqari',this)">
+        <div class="tc-icon"><i class="ti ti-home"></i></div>
+        <div class="tc-label">عقاري</div>
+        <div class="tc-count">٠</div>
       </div>
       <div class="tc tc-omali" onclick="setType('omali',this)">
         <div class="tc-icon"><i class="ti ti-hammer"></i></div>
@@ -192,6 +197,7 @@
           <option value="all">جميع الأنواع</option>
           <option value="tijari">تجاري</option>
           <option value="madani">مدني</option>
+          <option value="aqari">عقاري</option>
           <option value="omali">عمالي</option>
           <option value="jinai">جنائي</option>
           <option value="idari">إداري</option>
@@ -303,7 +309,7 @@
           <div class="form-grid">
             <label class="field wide"><span>عنوان الحكم</span><input id="newJudgmentTitle" type="text" placeholder="مثال: الطعن رقم 27 لسنة 2025 طعن تجاري"></label>
             <label class="field"><span>المحكمة</span><input id="newJudgmentCourt" type="text" placeholder="محكمة التمييز"></label>
-            <label class="field"><span>التصنيف</span><select id="newJudgmentType"><option value="tijari">تجاري</option><option value="madani">مدني</option><option value="omali">عمالي</option><option value="jinai">جنائي</option><option value="idari">إداري</option><option value="osri">أسري</option></select></label>
+            <label class="field"><span>التصنيف</span><select id="newJudgmentType"><option value="tijari">تجاري</option><option value="madani">مدني</option><option value="aqari">عقاري</option><option value="omali">عمالي</option><option value="jinai">جنائي</option><option value="idari">إداري</option><option value="osri">أسري</option></select></label>
             <label class="field"><span>رقم الحكم أو الطعن</span><input id="newJudgmentNumber" type="text" placeholder="2025/27"></label>
             <label class="field"><span>التاريخ</span><input id="newJudgmentDate" type="date"></label>
             <label class="field wide"><span>نص الحكم الكامل</span><textarea id="newJudgmentBody" rows="10" placeholder="ألصق نص الحكم الكامل هنا..."></textarea></label>
@@ -554,10 +560,10 @@
   </div><!-- end page -->
 </div><!-- end main -->
 
-<script src="./data/judgments/index.js?v=commercial-2-8-20260527"></script>
-<script src="./data/search-index.js?v=commercial-2-8-20260527"></script>
+<script src="./data/judgments/index.js?v=real-estate-20260527"></script>
+<script src="./data/search-index.js?v=real-estate-20260527"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=judgment-search-20260526"></script>
+<script src="./assets/app.js?v=real-estate-20260527"></script>
 </body>
 </html>

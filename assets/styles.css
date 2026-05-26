@@ -122,7 +122,7 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .search-btn i{font-size:17px}
 
 /* ─── TYPE CARDS ─── */
-.type-cards{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px}
+.type-cards{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:20px}
 .tc{background:#0a1520;border:1.5px solid #1e3a52;border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:8px}
 .tc:hover{border-color:#2a5070;background:#0d1e30;transform:translateY(-2px)}
 .tc.active{border-color:transparent;transform:translateY(-2px)}
@@ -144,6 +144,11 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .tc-madani.active{background:#0e200e;border-color:#7aaa6a55}
 .tc-madani.active .tc-icon{background:#7aaa6a22;color:#7aaa6a}
 .tc-madani.active .tc-label{color:#7aaa6a}
+
+.tc-aqari .tc-icon{background:#102a26;color:#62cfa8}
+.tc-aqari.active{background:#08241e;border-color:#62cfa855}
+.tc-aqari.active .tc-icon{background:#62cfa822;color:#62cfa8}
+.tc-aqari.active .tc-label{color:#62cfa8}
 
 .tc-omali .tc-icon{background:#2a1f10;color:#d4a055}
 .tc-omali.active{background:#201508;border-color:#d4a05555}
