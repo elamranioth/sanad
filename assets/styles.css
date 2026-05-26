@@ -465,7 +465,7 @@ body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-acti
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
-body.ink-mode .confirm-dialog,body.ink-mode .app-lock-dialog,body.ink-mode .judgment-workbench,body.ink-mode .highlight-item{background:#fff;border-color:#111;color:#111}
+body.ink-mode .confirm-dialog,body.ink-mode .app-lock-dialog,body.ink-mode .judgment-workbench,body.ink-mode .judgment-search-panel,body.ink-mode .highlight-item{background:#fff;border-color:#111;color:#111}
 body.ink-mode .confirm-copy h2,body.ink-mode .confirm-copy p{color:#111}
 body.ink-mode .client-expand-toggle,body.ink-mode .client-action.edit{background:#fff;color:#111;border-color:#111}
 body.ink-mode .receipt-total-hero{background:#111;border-color:#111;color:#fff}
@@ -474,6 +474,11 @@ body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law
 body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
 body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
 body.ink-mode .judgment-para{background:#fff;border-color:#111;border-right-color:#111;color:#111}
+body.ink-mode .judgment-search-field{background:#fff;border-color:#111;color:#111}
+body.ink-mode .judgment-search-field input,body.ink-mode .judgment-search-tools span{color:#111}
+body.ink-mode .judgment-search-tools button{background:#fff;color:#111;border-color:#111}
+body.ink-mode .judgment-search-hit{background:#111;color:#fff;box-shadow:none}
+body.ink-mode .judgment-search-hit.active{background:#000;color:#fff;outline:2px solid #000;outline-offset:2px}
 body.ink-mode .judgment-tag,body.ink-mode .law-article-head span{background:#f7f2df;color:#111;border-color:#111}
 body.ink-mode .hero::before{display:none}
 body.ink-mode .hero::after{color:#111;opacity:.06}
@@ -553,6 +558,19 @@ body.modal-open{overflow:hidden}
 .intro-issued{font-family:'Amiri',serif;color:#e8dcc8;font-size:20px;font-weight:700;margin-top:18px;padding-top:14px;border-top:1px solid #1e3a52}
 .judgment-content{display:flex;flex-direction:column;gap:12px}
 .judgment-para{margin:0;background:#0d1b2a;border:1px solid #183044;border-right:4px solid #2a4a68;border-radius:10px;padding:15px 18px;color:#b8cbd6;line-height:2.05}
+.judgment-search-panel{position:sticky;top:0;z-index:4;margin-bottom:16px;background:#08121d;border:1px solid #2a4a68;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 28px #00000033}
+.judgment-search-field{flex:1;min-width:0;background:#0d1b2a;border:1px solid #1e3a52;border-radius:9px;padding:10px 12px;display:flex;align-items:center;gap:8px}
+.judgment-search-field:focus-within{border-color:#c8a84b88;box-shadow:0 0 0 3px #c8a84b17}
+.judgment-search-field i{color:#c8a84b;font-size:17px;flex-shrink:0}
+.judgment-search-field input{width:100%;background:transparent;border:0;outline:0;color:#dce8ef;font-family:'Tajawal',sans-serif;font-size:14px;direction:rtl}
+.judgment-search-field input::placeholder{color:#42677c}
+.judgment-search-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.judgment-search-tools span{color:#8bd3ee;font-size:12px;font-weight:700;white-space:nowrap}
+.judgment-search-tools button{border:1px solid #285577;background:#102638;color:#8bd3ee;border-radius:8px;padding:8px 10px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.judgment-search-tools button:disabled{opacity:.45;cursor:not-allowed}
+.judgment-para.has-search-match{border-color:#c8a84b66;border-right-color:#c8a84b;background:#111b24}
+.judgment-search-hit{background:#fff176;color:#101010;border-radius:4px;padding:1px 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;box-shadow:0 0 0 1px #c8a84b55}
+.judgment-search-hit.active{background:#ffbd33;color:#101010;box-shadow:0 0 0 2px #fff3a6,0 0 22px #c8a84b55}
 .judgment-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;font-size:10px;font-weight:700;padding:3px 9px;margin:0 0 8px 8px}
 .law-modal .doc-dialog-body{background:#08121d}
 .law-reader{display:flex;flex-direction:column;gap:16px}
@@ -577,7 +595,7 @@ body.modal-open{overflow:hidden}
 .law-bullet span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#c8a84b;margin-left:9px;vertical-align:middle}
 .law-reader strong{color:#e8dcc8}
 .law-reader code{font-family:'Tajawal',sans-serif;background:#122638;border:1px solid #2a4a68;border-radius:5px;padding:1px 5px;color:#8bd3ee}
-@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-para{padding:13px 14px}}
+@media(max-width:760px){.doc-dialog-head{padding:14px 16px;flex-direction:column}.doc-dialog-actions{width:100%;justify-content:flex-start}.doc-action:not(.icon-only){flex:1}.doc-dialog-head h2{font-size:19px}.doc-dialog-body{padding:18px 16px;font-size:15px;line-height:2}.judgment-intro{padding:18px 14px}.intro-grid{grid-template-columns:1fr}.intro-court{font-size:22px}.intro-bismillah{font-size:19px}.judgment-search-panel{position:relative;flex-direction:column;align-items:stretch}.judgment-search-tools{justify-content:space-between}.judgment-search-tools button{flex:1;justify-content:center}.judgment-para{padding:13px 14px}}
 @media(max-width:1180px){
 .client-card{padding:24px}
 .client-card-head{grid-template-columns:112px minmax(0,1fr) 48px;padding-right:0}

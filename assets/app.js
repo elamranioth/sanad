@@ -64,6 +64,9 @@ let loadedJudgmentChunks=new Set();
 let pendingChunkLoads={};
 let currentDocResults=[];
 let currentPage=1;
+let currentReaderDoc=null;
+let currentJudgmentSearchQuery='';
+let currentJudgmentMatchIndex=0;
 let clientQuery='';
 let clientStatusFilter='all';
 const docPageSize=24;
@@ -80,6 +83,7 @@ function refreshJudgmentData(){
   counts=calculateCounts();
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function currentListSearchQuery(){return document.getElementById('searchInput')?.value.trim()||''}
 function matchesLaw(law,q){return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>String(v||'').includes(q))}
 function normalizeDigits(value){
   return String(value||'')
@@ -96,6 +100,59 @@ function normalizeSearchText(value){
 }
 function searchWords(value){
   return [...new Set(normalizeSearchText(value).split(/\s+/).map(word=>word.trim()).filter(word=>/^\d+$/.test(word)?word.length>0:word.length>2))];
+}
+function splitSentenceSegments(text){
+  const source=String(text||'');
+  if(!source.trim())return [];
+  const segments=[];
+  const sentenceEnd=/[.!?؟؛;]/;
+  let start=0;
+  for(let i=0;i<source.length;i++){
+    if(sentenceEnd.test(source[i])){
+      let end=i+1;
+      while(end<source.length&&/\s/.test(source[end]))end++;
+      const part=source.slice(start,end);
+      if(part.trim())segments.push(part);
+      start=end;
+    }
+  }
+  const tail=source.slice(start);
+  if(tail.trim())segments.push(tail);
+  return segments.length?segments:[source];
+}
+function sentenceMatchesSearch(sentence,query){
+  const needle=normalizeSearchText(query).trim();
+  if(!needle)return false;
+  const haystack=normalizeSearchText(sentence);
+  if(haystack.includes(needle))return true;
+  const words=searchWords(query);
+  return words.length>0&&words.every(word=>haystack.includes(word));
+}
+function renderSearchMatchedSentence(sentence,query){
+  if(!sentenceMatchesSearch(sentence,query))return escapeHtml(sentence);
+  return `<mark class="judgment-search-hit">${escapeHtml(sentence)}</mark>`;
+}
+function countJudgmentSentenceMatches(body,query){
+  const q=String(query||'').trim();
+  if(!q)return 0;
+  const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  const introEnd=lines.findIndex(line=>line.includes('أصـدرت')||line.includes('أصدرت'));
+  const mainLines=introEnd>=0?lines.slice(introEnd+1):lines;
+  return mainLines.reduce((sum,line)=>sum+splitSentenceSegments(line).filter(sentence=>sentenceMatchesSearch(sentence,q)).length,0);
+}
+function renderJudgmentSearchPanel(query='',body=''){
+  const count=countJudgmentSentenceMatches(body,query);
+  return `<section class="judgment-search-panel" id="judgmentSearchPanel">
+    <div class="judgment-search-field">
+      <i class="ti ti-search"></i>
+      <input id="judgmentSearchInput" type="text" value="${escapeHtml(query)}" placeholder="ابحث داخل نص الحكم..." oninput="updateJudgmentSearchFromInput()">
+    </div>
+    <div class="judgment-search-tools">
+      <span id="judgmentSearchCount">${query?`${ar(count)} نتيجة`:'اكتب للبحث داخل الحكم'}</span>
+      <button type="button" onclick="jumpJudgmentSearchMatch(-1)" ${count?'':'disabled'}><i class="ti ti-chevron-right"></i>السابق</button>
+      <button type="button" onclick="jumpJudgmentSearchMatch(1)" ${count?'':'disabled'}>التالي<i class="ti ti-chevron-left"></i></button>
+    </div>
+  </section>`;
 }
 function getWorkbenchEntry(id){
   const key=String(id);
@@ -194,18 +251,55 @@ function renderJudgmentIntro(lines){
 function splitJudgmentParagraphs(text){
   return String(text||'').replace(/\r/g,'').split(/\n+/).map(part=>part.trim()).filter(Boolean);
 }
-function renderJudgmentParagraph(text){
-  return `<p class="judgment-para">${escapeHtml(text)}</p>`;
+function renderJudgmentParagraph(text,query=''){
+  const segments=splitSentenceSegments(text);
+  const html=segments.map(sentence=>renderSearchMatchedSentence(sentence,query)).join('');
+  const matched=query&&segments.some(sentence=>sentenceMatchesSearch(sentence,query));
+  return `<p class="judgment-para${matched?' has-search-match':''}">${html}</p>`;
 }
-function formatJudgmentBody(body,doc=null){
+function formatJudgmentBody(body,doc=null,query=''){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
   if(!lines.length)return '<div class="judgment-reader"><p class="judgment-para facts">لا يتوفر نص الحكم الكامل لهذا السجل.</p></div>';
   const introEnd=lines.findIndex(line=>line.includes('أصـدرت')||line.includes('أصدرت'));
   const introLines=introEnd>=0?lines.slice(0,introEnd+1):[];
   const mainText=(introEnd>=0?lines.slice(introEnd+1):lines).join('\n');
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
-  const paragraphs=splitJudgmentParagraphs(mainText).map(renderJudgmentParagraph).join('');
-  return `<div class="judgment-reader">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
+  const paragraphs=splitJudgmentParagraphs(mainText).map(part=>renderJudgmentParagraph(part,query)).join('');
+  return `<div class="judgment-reader" id="judgmentReaderShell">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
+}
+function updateJudgmentSearchPanelState(){
+  const body=currentReaderDoc?.body||'';
+  const count=countJudgmentSentenceMatches(body,currentJudgmentSearchQuery);
+  const countEl=document.getElementById('judgmentSearchCount');
+  if(countEl)countEl.textContent=currentJudgmentSearchQuery?`${ar(count)} نتيجة`:'اكتب للبحث داخل الحكم';
+  document.querySelectorAll('#judgmentSearchPanel button').forEach(button=>{button.disabled=!count;});
+  return count;
+}
+function focusJudgmentSearchMatch(index=0){
+  const matches=[...document.querySelectorAll('.judgment-search-hit')];
+  matches.forEach(item=>item.classList.remove('active'));
+  if(!matches.length)return;
+  currentJudgmentMatchIndex=((index%matches.length)+matches.length)%matches.length;
+  const active=matches[currentJudgmentMatchIndex];
+  active.classList.add('active');
+  active.scrollIntoView({block:'center',behavior:'smooth'});
+}
+function renderCurrentJudgmentReader(){
+  const shell=document.getElementById('judgmentReaderShell');
+  if(!shell||!currentReaderDoc)return;
+  shell.outerHTML=formatJudgmentBody(currentReaderDoc.body,currentReaderDoc,currentJudgmentSearchQuery);
+  const count=updateJudgmentSearchPanelState();
+  if(count)focusJudgmentSearchMatch(currentJudgmentMatchIndex);
+}
+function updateJudgmentSearchFromInput(){
+  currentJudgmentSearchQuery=document.getElementById('judgmentSearchInput')?.value.trim()||'';
+  currentJudgmentMatchIndex=0;
+  renderCurrentJudgmentReader();
+}
+function jumpJudgmentSearchMatch(step=1){
+  const matches=[...document.querySelectorAll('.judgment-search-hit')];
+  if(!matches.length)return;
+  focusJudgmentSearchMatch(currentJudgmentMatchIndex+Number(step||1));
 }
 function renderWorkbenchPanel(id){
   const entry=getWorkbenchEntry(id);
@@ -2158,6 +2252,9 @@ async function openDoc(id){
   readerMode='judgment';
   currentDocId=d.id;
   currentLawId=null;
+  currentReaderDoc=null;
+  currentJudgmentSearchQuery=currentListSearchQuery();
+  currentJudgmentMatchIndex=0;
   document.getElementById('docModal').classList.remove('law-modal');
   document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
@@ -2168,7 +2265,10 @@ async function openDoc(id){
   document.body.classList.add('modal-open');
   const fullDoc=await getFullJudgment(d.id);
   if(currentDocId!==d.id||readerMode!=='judgment')return;
-  document.getElementById('modalBody').innerHTML=renderWorkbenchPanel(d.id)+formatJudgmentBody(fullDoc?.body||d.body,fullDoc||d);
+  currentReaderDoc={...d,...(fullDoc||{})};
+  document.getElementById('modalBody').innerHTML=renderWorkbenchPanel(d.id)+renderJudgmentSearchPanel(currentJudgmentSearchQuery,currentReaderDoc.body)+formatJudgmentBody(currentReaderDoc.body,currentReaderDoc,currentJudgmentSearchQuery);
+  updateJudgmentSearchPanelState();
+  if(currentJudgmentSearchQuery)setTimeout(()=>focusJudgmentSearchMatch(0),80);
 }
 function openLaw(id){
   const law=laws.find(item=>String(item.id)===String(id));
@@ -2176,6 +2276,9 @@ function openLaw(id){
   readerMode='law';
   currentLawId=law.id;
   currentDocId=null;
+  currentReaderDoc=null;
+  currentJudgmentSearchQuery='';
+  currentJudgmentMatchIndex=0;
   const modal=document.getElementById('docModal');
   document.getElementById('saveJudgmentBtn')?.classList.add('hidden');
   document.getElementById('modalType').textContent=law.category||'قانون';
@@ -2255,6 +2358,9 @@ function closeDoc(){
   const modal=document.getElementById('docModal');
   modal.classList.add('hidden');
   modal.classList.remove('law-modal');
+  currentReaderDoc=null;
+  currentJudgmentSearchQuery='';
+  currentJudgmentMatchIndex=0;
   document.body.classList.remove('modal-open');
 }
 
