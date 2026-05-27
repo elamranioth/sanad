@@ -2423,6 +2423,11 @@ document.getElementById('aiResult')?.addEventListener('click',event=>{
   openDoc(Number(item.dataset.docId));
 });
 document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
+document.getElementById('searchInput')?.addEventListener('keydown',event=>{
+  if(event.key!=='Enter')return;
+  event.preventDefault();
+  searchWithGoogle();
+});
 document.getElementById('feeList')?.addEventListener('click',event=>{
   const button=event.target.closest('[data-fee-delete]');
   if(!button)return;
@@ -2581,6 +2586,23 @@ function filterDocs(){
   if(year!=='all') list=list.filter(d=>docYear(d)===year);
   if(q) list=filterDocsBySearchIndex(list,q);
   renderDocs(sortDocuments(list));
+}
+
+function searchWithGoogle(){
+  const query=document.getElementById('searchInput')?.value.trim()||'';
+  if(!query){
+    showToast('اكتب النص الذي تريد البحث عنه في Google.');
+    document.getElementById('searchInput')?.focus();
+    return;
+  }
+  const type=document.getElementById('typeSelect')?.value||'all';
+  const year=document.getElementById('yearSelect')?.value||'all';
+  const parts=[query];
+  if(type!=='all')parts.push(labels[type]||type);
+  if(year!=='all')parts.push(year);
+  const url=`https://www.google.com/search?q=${encodeURIComponent(parts.join(' '))}`;
+  const opened=window.open(url,'_blank','noopener,noreferrer');
+  if(!opened)window.location.href=url;
 }
 
 function syncCards(type){

@@ -121,6 +121,8 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .search-btn{background:#c8a84b;color:#0d1b2a;border:none;border-radius:9px;padding:10px 20px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap;transition:background .2s}
 .search-btn:hover{background:#dab85c}
 .search-btn i{font-size:17px}
+.google-search-btn{background:#e8f0fe;color:#12356b}
+.google-search-btn:hover{background:#fff}
 
 /* ─── TYPE CARDS ─── */
 .type-cards{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:20px}
