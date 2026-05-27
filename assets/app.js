@@ -64,6 +64,7 @@ let loadedJudgmentChunks=new Set();
 let pendingChunkLoads={};
 let currentDocResults=[];
 let currentPage=1;
+let snippetHydrationToken=0;
 let currentReaderDoc=null;
 let currentJudgmentSearchQuery='';
 let currentJudgmentMatchIndex=0;
@@ -148,9 +149,46 @@ function sentenceMatchesSearch(sentence,query){
   const words=searchWords(query);
   return words.length>0&&words.every(word=>haystack.includes(word));
 }
+function sentenceLooselyMatchesSearch(sentence,query){
+  const words=searchWords(query);
+  if(!words.length)return false;
+  const haystack=normalizeSearchText(sentence);
+  return words.some(word=>haystack.includes(word));
+}
 function renderSearchMatchedSentence(sentence,query){
   if(!sentenceMatchesSearch(sentence,query))return escapeHtml(sentence);
   return `<mark class="judgment-search-hit">${escapeHtml(sentence)}</mark>`;
+}
+function trimSearchSnippet(sentence){
+  const clean=String(sentence||'').replace(/\s+/g,' ').trim();
+  return clean.length>420?`${clean.slice(0,420)}...`:clean;
+}
+function findSearchSnippet(text,query){
+  const q=String(query||'').trim();
+  if(!q)return '';
+  const paragraphs=String(text||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  for(const paragraph of paragraphs){
+    const sentence=splitSentenceSegments(paragraph).find(part=>sentenceMatchesSearch(part,q));
+    if(sentence)return trimSearchSnippet(sentence);
+  }
+  for(const paragraph of paragraphs){
+    const sentence=splitSentenceSegments(paragraph).find(part=>sentenceLooselyMatchesSearch(part,q));
+    if(sentence)return trimSearchSnippet(sentence);
+  }
+  return '';
+}
+function renderDocSearchSnippetContent(doc,query,loaded=false){
+  const q=String(query||'').trim();
+  if(!q)return '';
+  const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal,workbenchSearchText(doc.id)].join(' '),q);
+  if(sentence)return `<i class="ti ti-quote"></i><span><mark class="judgment-search-hit">${escapeHtml(sentence)}</mark></span>`;
+  if(!loaded&&doc.isIndexed)return '<i class="ti ti-loader-2"></i><span class="snippet-muted">جارٍ إظهار موضع النص المطابق...</span>';
+  return '<i class="ti ti-file-search"></i><span class="snippet-muted">توجد نتيجة مطابقة في بيانات الحكم أو عنوانه.</span>';
+}
+function renderDocSearchSnippet(doc,query){
+  const q=String(query||'').trim();
+  if(!q)return '';
+  return `<div class="doc-search-snippet" data-doc-snippet="${Number(doc.id)}">${renderDocSearchSnippetContent(doc,q,false)}</div>`;
 }
 function countJudgmentSentenceMatches(body,query){
   const q=String(query||'').trim();
@@ -709,6 +747,26 @@ async function getFullJudgment(id){
   await loadJudgmentChunk(indexed.chunk);
   const chunkDocs=window.SANAD_DATA?.judgmentChunks?.[indexed.chunk]||[];
   return chunkDocs.find(item=>Number(item.id)===numericId)||indexed;
+}
+function getLoadedJudgmentForSnippet(indexed){
+  const numericId=Number(indexed.id);
+  const local=localJudgments.find(item=>Number(item.id)===numericId);
+  if(local)return local;
+  const chunkDocs=window.SANAD_DATA?.judgmentChunks?.[indexed.chunk]||[];
+  return chunkDocs.find(item=>Number(item.id)===numericId)||indexed;
+}
+async function hydrateVisibleSearchSnippets(pageItems,query){
+  const q=String(query||'').trim();
+  if(!q)return;
+  const token=++snippetHydrationToken;
+  const chunkIds=[...new Set(pageItems.map(item=>item.chunk).filter(Boolean))];
+  await Promise.all(chunkIds.map(loadJudgmentChunk));
+  if(token!==snippetHydrationToken)return;
+  pageItems.forEach(item=>{
+    const el=document.querySelector(`[data-doc-snippet="${Number(item.id)}"]`);
+    if(!el)return;
+    el.innerHTML=renderDocSearchSnippetContent(getLoadedJudgmentForSnippet(item),q,true);
+  });
 }
 function applySettings(){
   document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
@@ -2222,11 +2280,13 @@ function renderDocs(list,page=1){
 function renderDocsPage(){
   const g=document.getElementById('docGrid'),nr=document.getElementById('noResults');
   const pagination=document.getElementById('paginationBar');
+  const searchQuery=currentListSearchQuery();
   const total=currentDocResults.length;
   const totalPages=Math.max(1,Math.ceil(total/docPageSize));
   currentPage=Math.min(Math.max(1,currentPage),totalPages);
   const start=(currentPage-1)*docPageSize;
   const pageItems=currentDocResults.slice(start,start+docPageSize);
+  if(!searchQuery)snippetHydrationToken++;
   if(!total){
     g.innerHTML='';
     nr.classList.remove('hidden');
@@ -2248,6 +2308,7 @@ function renderDocsPage(){
           ${isSaved(d.id)?`<span class="meta-chip"><i class="ti ti-bookmark-filled"></i>محفوظ</span>`:''}
           ${docWorkbenchBadges(d.id)}
         </div>
+        ${renderDocSearchSnippet(d,searchQuery)}
       </div>
       <div class="doc-badge">
         <span class="type-tag tt-${d.type}">${labels[d.type]||'حكم'}</span>
@@ -2262,6 +2323,7 @@ function renderDocsPage(){
       <span>صفحة ${ar(currentPage)} من ${ar(totalPages)}</span>
       <button type="button" data-doc-page="${currentPage+1}" ${currentPage===totalPages?'disabled':''}>التالي<i class="ti ti-chevron-left"></i></button>`;
   }
+  if(searchQuery)hydrateVisibleSearchSnippets(pageItems,searchQuery);
 }
 function setDocsPage(page){
   currentPage=Number(page)||1;
@@ -2426,7 +2488,7 @@ document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
 document.getElementById('searchInput')?.addEventListener('keydown',event=>{
   if(event.key!=='Enter')return;
   event.preventDefault();
-  searchWithGoogle();
+  filterDocs();
 });
 document.getElementById('feeList')?.addEventListener('click',event=>{
   const button=event.target.closest('[data-fee-delete]');
@@ -2586,23 +2648,6 @@ function filterDocs(){
   if(year!=='all') list=list.filter(d=>docYear(d)===year);
   if(q) list=filterDocsBySearchIndex(list,q);
   renderDocs(sortDocuments(list));
-}
-
-function searchWithGoogle(){
-  const query=document.getElementById('searchInput')?.value.trim()||'';
-  if(!query){
-    showToast('اكتب النص الذي تريد البحث عنه في Google.');
-    document.getElementById('searchInput')?.focus();
-    return;
-  }
-  const type=document.getElementById('typeSelect')?.value||'all';
-  const year=document.getElementById('yearSelect')?.value||'all';
-  const parts=[query];
-  if(type!=='all')parts.push(labels[type]||type);
-  if(year!=='all')parts.push(year);
-  const url=`https://www.google.com/search?q=${encodeURIComponent(parts.join(' '))}`;
-  const opened=window.open(url,'_blank','noopener,noreferrer');
-  if(!opened)window.location.href=url;
 }
 
 function syncCards(type){
