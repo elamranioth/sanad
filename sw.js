@@ -1,17 +1,18 @@
-const CACHE_NAME = "sanad-pwa-v21";
+const CACHE_NAME = "sanad-pwa-v22";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./sanad.html",
   "./assets/styles.css",
   "./assets/app.js",
+  "./assets/search-worker.js",
   "./assets/el-amrani-logo.png",
   "./assets/vendor/tabler/tabler-icons.min.css",
   "./assets/vendor/tabler/fonts/tabler-icons.woff2",
   "./assets/vendor/tabler/fonts/tabler-icons.woff",
   "./assets/vendor/tabler/fonts/tabler-icons.ttf",
   "./data/judgments/index.js",
-  "./data/search-index.js",
+  "./data/search/manifest.js",
   "./data/laws.js",
   "./data/legal-forms.js",
   "./content/laws/qanoon_al_ijraat_al_madaniya_uae_42_2022.md",

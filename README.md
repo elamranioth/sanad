@@ -8,10 +8,12 @@ Sanad is a static Arabic legal research web app for judgments, laws, decrees, re
 sanad.html              Main HTML shell and page sections
 assets/styles.css       Responsive visual design
 assets/app.js           Navigation, routing, search, readers, local storage services
+assets/search-worker.js Background judgment search worker
 assets/vendor/tabler/   Local Tabler icon font used by the app UI
 data/judgments/index.js Lightweight judgment manifest used for lists
 data/judgments/chunks/  Full judgment bodies split by year/type/page
-data/search-index.js    Static token index used by browser search
+data/search/manifest.js Lightweight search shard manifest
+data/search/shards/     Lazy-loaded search shards by year and case type
 data/laws.js            Published law records
 data/legal-forms.js     Legal form/template records
 content/laws/           Original Markdown law sources
@@ -24,7 +26,7 @@ sanad-local-server.js   Local static server
 ## Pages And Services
 
 - `#dashboard`: overview dashboard and quick service links.
-- `#judgments` / `#documents`: judgment catalog with indexed search, filters, sorting, pagination, reader, saved judgments, tags, notes, and highlights.
+- `#judgments` / `#documents`: judgment catalog with advanced indexed search, filters, relevance sorting, pagination, reader, saved judgments, tags, notes, and highlights.
 - `#laws`: law catalog and formatted law reader.
 - `#decrees`: independent decrees page, ready for future decree records.
 - `#regulations`: independent regulations page, ready for future regulation records.
@@ -74,10 +76,18 @@ For 100,000+ judgments, keep `sanad.html` small and split data by collection. Th
 data/judgments/index.js
 data/judgments/chunks/2025-tijari-001.js
 data/judgments/chunks/2025-madani-001.js
-data/search-index.js
+data/search/manifest.js
+data/search/shards/2025-tijari.js
+data/search/shards/2025-madani.js
 ```
 
-The UI logic remains in `assets/app.js`; large judgment bodies are loaded on demand when a user opens a judgment. See `docs/SCALING_BACKEND_PLAN.md` for the backend/search migration plan once the static approach becomes too large.
+The UI logic remains in `assets/app.js`; large judgment bodies are loaded on demand when a user opens a judgment. Search shards are loaded only when the user searches, and the worker keeps phone scrolling responsive. Rebuild shards after judgment imports with:
+
+```powershell
+node tools\build-search-shards.js
+```
+
+See `docs/SCALING_BACKEND_PLAN.md` for the backend/search migration plan once the static approach becomes too large.
 
 ## Local Preview
 

@@ -1,5 +1,5 @@
 const judgmentCatalog=window.SANAD_DATA?.judgmentCatalog||{chunks:{}};
-const searchTokens=window.SANAD_DATA?.searchTokens||{};
+const searchManifest=window.SANAD_DATA?.searchManifest||{shards:{},stopwords:[],commonTokens:[]};
 const baseDocs=(window.SANAD_DATA?.judgmentIndex||window.SANAD_DATA?.judgments||[]).map(doc=>({...doc,isIndexed:!doc.body}));
 const laws=window.SANAD_DATA?.laws||[];
 const legalForms=window.SANAD_DATA?.legalForms||[];
@@ -65,6 +65,10 @@ let pendingChunkLoads={};
 let currentDocResults=[];
 let currentPage=1;
 let snippetHydrationToken=0;
+let searchRunToken=0;
+let judgmentSearchWorker=null;
+let searchResultMeta=new Map();
+let pendingSearchRequests=new Map();
 let currentReaderDoc=null;
 let currentJudgmentSearchQuery='';
 let currentJudgmentMatchIndex=0;
@@ -86,7 +90,19 @@ function refreshJudgmentData(){
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function currentListSearchQuery(){return document.getElementById('searchInput')?.value.trim()||''}
-function matchesLaw(law,q){return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>String(v||'').includes(q))}
+function currentEffectiveSearchQuery(){return currentListSearchQuery()||document.getElementById('exactPhraseInput')?.value.trim()||''}
+const searchSectionLabels={principle:'مبدأ قضائي',reasoning:'تسبيب المحكمة',facts:'وقائع وملخص',operative:'منطوق الحكم',preview:'مقتطف',body:'نص الحكم',meta:'بيانات الحكم'};
+function setSearchStatus(message='',busy=false){
+  const el=document.getElementById('searchStatus');
+  if(!el)return;
+  el.textContent=message;
+  el.classList.toggle('busy',!!busy);
+}
+function matchesLaw(law,q){
+  const needle=normalizeSearchText(q).trim();
+  if(!needle)return true;
+  return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>normalizeSearchText(v).includes(needle));
+}
 function normalizeDigits(value){
   return String(value||'')
     .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
@@ -119,8 +135,15 @@ function normalizeSearchText(value){
     .replace(/[\u064B-\u065F\u0670]/g,'')
     .replace(/[^\u0600-\u06FFa-z0-9\s/.-]/g,' ');
 }
+const searchStopWords=new Set([...(searchManifest.stopwords||[]),...(searchManifest.commonTokens||[])]);
+const shortLegalTerms=new Set(['حق','دين','ضرر','غش','عيب','فسخ','بيع','رهن','اجر','عمل','اصل']);
 function searchWords(value){
-  return [...new Set(normalizeSearchText(value).split(/\s+/).map(word=>word.trim()).filter(word=>/^\d+$/.test(word)?word.length>0:word.length>2))];
+  return [...new Set(normalizeSearchText(value).split(/\s+/).map(word=>word.trim()).filter(word=>{
+    if(!word)return false;
+    if(/^\d+$/.test(word))return true;
+    if(word.length<3&&!shortLegalTerms.has(word))return false;
+    return !searchStopWords.has(word);
+  }))];
 }
 function splitSentenceSegments(text){
   const source=String(text||'');
@@ -179,6 +202,17 @@ function findSearchSnippet(text,query){
 }
 function renderDocSearchSnippetContent(doc,query,loaded=false){
   const q=String(query||'').trim();
+  const meta=searchResultMeta.get(Number(doc.id));
+  if(!q&&!meta)return '';
+  if(meta?.snippet){
+    const label=searchSectionLabels[meta.section]||'مقتطف مطابق';
+    const score=Number(meta.score||0);
+    return `<i class="ti ti-quote"></i><span><span class="doc-search-section">${escapeHtml(label)}</span>${score?`<span class="doc-search-score">${escapeHtml(Math.round(score))}</span>`:''}<mark class="judgment-search-hit">${escapeHtml(meta.snippet)}</mark></span>`;
+  }
+  if(meta){
+    const label=searchSectionLabels[meta.section]||'نص الحكم';
+    return `<i class="ti ti-file-search"></i><span><span class="doc-search-section">${escapeHtml(label)}</span><span class="snippet-muted">توجد مطابقة في فهرس الحكم. افتح الحكم للانتقال إلى الموضع المظلل.</span></span>`;
+  }
   if(!q)return '';
   const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal,workbenchSearchText(doc.id)].join(' '),q);
   if(sentence)return `<i class="ti ti-quote"></i><span><mark class="judgment-search-hit">${escapeHtml(sentence)}</mark></span>`;
@@ -187,7 +221,7 @@ function renderDocSearchSnippetContent(doc,query,loaded=false){
 }
 function renderDocSearchSnippet(doc,query){
   const q=String(query||'').trim();
-  if(!q)return '';
+  if(!q&&!searchResultMeta.has(Number(doc.id)))return '';
   return `<div class="doc-search-snippet" data-doc-snippet="${Number(doc.id)}">${renderDocSearchSnippetContent(doc,q,false)}</div>`;
 }
 function countJudgmentSentenceMatches(body,query){
@@ -233,9 +267,12 @@ function scoreDocSearch(doc,query){
   if(!words.length)return 1;
   let score=0;
   const id=Number(doc.id);
-  const localText=normalizeSearchText([doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,workbenchSearchText(id)].join(' '));
+  const title=normalizeSearchText(doc.title||'');
+  const number=normalizeSearchText([doc.num,doc.appeal].join(' '));
+  const localText=normalizeSearchText([doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body,workbenchSearchText(id)].join(' '));
   for(const word of words){
-    if(searchTokens[word]?.includes(id))score+=5;
+    if(title.includes(word))score+=12;
+    if(number.includes(word))score+=14;
     if(localText.includes(word))score+=3;
   }
   return score;
@@ -262,6 +299,10 @@ function sortableDateValue(doc){
 }
 function sortDocuments(list,mode=document.getElementById('sortSelect')?.value||'newest'){
   const sorted=[...list];
+  if(mode==='relevance'){
+    if(currentListSearchQuery()||searchResultMeta.size)return sorted;
+    mode='newest';
+  }
   if(mode==='oldest')return sorted.sort((a,b)=>sortableDateValue(a)-sortableDateValue(b));
   if(mode==='court')return sorted.sort((a,b)=>String(a.court||'').localeCompare(String(b.court||''),'ar')||sortableDateValue(b)-sortableDateValue(a));
   return sorted.sort((a,b)=>sortableDateValue(b)-sortableDateValue(a));
@@ -758,6 +799,7 @@ function getLoadedJudgmentForSnippet(indexed){
 async function hydrateVisibleSearchSnippets(pageItems,query){
   const q=String(query||'').trim();
   if(!q)return;
+  if(searchResultMeta.size)return;
   const token=++snippetHydrationToken;
   const chunkIds=[...new Set(pageItems.map(item=>item.chunk).filter(Boolean))];
   await Promise.all(chunkIds.map(loadJudgmentChunk));
@@ -767,6 +809,96 @@ async function hydrateVisibleSearchSnippets(pageItems,query){
     if(!el)return;
     el.innerHTML=renderDocSearchSnippetContent(getLoadedJudgmentForSnippet(item),q,true);
   });
+}
+function getSearchFilters(){
+  const mode=document.getElementById('matchModeSelect')?.value||'all';
+  const exactPhrase=document.getElementById('exactPhraseInput')?.value.trim()||'';
+  return {
+    query:currentListSearchQuery(),
+    mode:mode==='exact'?'all':mode,
+    exactPhrase:mode==='exact'?(exactPhrase||currentListSearchQuery()):exactPhrase,
+    exclude:document.getElementById('excludeInput')?.value.trim()||'',
+    court:document.getElementById('courtFilterInput')?.value.trim()||'',
+    number:document.getElementById('numberFilterInput')?.value.trim()||'',
+    section:document.getElementById('sectionFilter')?.value||'all',
+    type:document.getElementById('typeSelect')?.value||'all',
+    year:document.getElementById('yearSelect')?.value||'all'
+  };
+}
+function isSearchActive(filters){
+  return !!(filters.query||filters.exactPhrase||filters.exclude||filters.court||filters.number||(filters.section&&filters.section!=='all'));
+}
+function ensureJudgmentSearchWorker(){
+  if(judgmentSearchWorker)return judgmentSearchWorker;
+  if(!('Worker' in window))return null;
+  try{
+    judgmentSearchWorker=new Worker(new URL('./assets/search-worker.js?v=advanced-search-20260527',location.href).href);
+    judgmentSearchWorker.onmessage=event=>{
+      const data=event.data||{};
+      const pending=pendingSearchRequests.get(data.token);
+      if(!pending)return;
+      pendingSearchRequests.delete(data.token);
+      if(data.type==='search-error')pending.reject(new Error(data.message||'Search failed'));
+      else pending.resolve(data);
+    };
+    judgmentSearchWorker.onerror=event=>{
+      pendingSearchRequests.forEach(pending=>pending.reject(new Error(event.message||'Search worker failed')));
+      pendingSearchRequests.clear();
+      judgmentSearchWorker?.terminate();
+      judgmentSearchWorker=null;
+    };
+    return judgmentSearchWorker;
+  }catch(error){
+    console.warn(error);
+    return null;
+  }
+}
+function runWorkerJudgmentSearch(list,filters,token){
+  const worker=ensureJudgmentSearchWorker();
+  if(!worker)return Promise.reject(new Error('Search worker is unavailable'));
+  return new Promise((resolve,reject)=>{
+    pendingSearchRequests.set(token,{resolve,reject});
+    worker.postMessage({
+      type:'search',
+      token,
+      baseUrl:location.href,
+      docs:list.map(doc=>({...doc,workbenchText:workbenchSearchText(doc.id)})),
+      filters
+    });
+  });
+}
+function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+function numberFilterMatches(text,needle){
+  const cleanNeedle=normalizeSearchText(needle).trim();
+  if(!cleanNeedle)return true;
+  const cleanText=normalizeSearchText(text);
+  if(/\d/.test(cleanNeedle))return new RegExp(`(^|[^\\d])${escapeRegExp(cleanNeedle)}($|[^\\d])`).test(cleanText);
+  return cleanText.includes(cleanNeedle);
+}
+function fallbackSearchDocs(list,filters){
+  const words=searchWords([filters.query,filters.exactPhrase].filter(Boolean).join(' '));
+  const phrase=normalizeSearchText(filters.exactPhrase||filters.query||'').trim();
+  const exclude=searchWords(filters.exclude||'');
+  const results=[];
+  list.forEach(doc=>{
+    const haystack=[doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body,workbenchSearchText(doc.id)].join(' ');
+    const normalized=normalizeSearchText(haystack);
+    if(filters.court&&!normalizeSearchText(doc.court).includes(normalizeSearchText(filters.court)))return;
+    if(filters.number&&!numberFilterMatches([doc.num,doc.title,doc.appeal].join(' '),filters.number))return;
+    if(phrase&&!normalized.includes(phrase)&&!words.every(word=>normalized.includes(word)))return;
+    if(exclude.some(word=>normalized.includes(word)))return;
+    const snippet=findSearchSnippet(doc.body||doc.excerpt||haystack,filters.exactPhrase||filters.query);
+    results.push({id:Number(doc.id),score:1,snippet,section:snippet?'body':'meta'});
+  });
+  return {results};
+}
+async function searchJudgmentList(list,filters,token){
+  try{
+    return await runWorkerJudgmentSearch(list,filters,token);
+  }catch(error){
+    console.warn(error);
+    return fallbackSearchDocs(list,filters);
+  }
 }
 function applySettings(){
   document.body.classList.toggle('reader-large',sanadSettings.readerSize==='large');
@@ -2280,13 +2412,13 @@ function renderDocs(list,page=1){
 function renderDocsPage(){
   const g=document.getElementById('docGrid'),nr=document.getElementById('noResults');
   const pagination=document.getElementById('paginationBar');
-  const searchQuery=currentListSearchQuery();
+  const searchQuery=currentEffectiveSearchQuery();
   const total=currentDocResults.length;
   const totalPages=Math.max(1,Math.ceil(total/docPageSize));
   currentPage=Math.min(Math.max(1,currentPage),totalPages);
   const start=(currentPage-1)*docPageSize;
   const pageItems=currentDocResults.slice(start,start+docPageSize);
-  if(!searchQuery)snippetHydrationToken++;
+  if(!searchQuery&&!searchResultMeta.size)snippetHydrationToken++;
   if(!total){
     g.innerHTML='';
     nr.classList.remove('hidden');
@@ -2338,7 +2470,7 @@ async function openDoc(id){
   currentDocId=d.id;
   currentLawId=null;
   currentReaderDoc=null;
-  currentJudgmentSearchQuery=currentListSearchQuery();
+  currentJudgmentSearchQuery=currentEffectiveSearchQuery();
   currentJudgmentMatchIndex=0;
   document.getElementById('docModal').classList.remove('law-modal');
   document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
@@ -2637,17 +2769,33 @@ window.addEventListener('appinstalled',()=>{
   showToast('تم تثبيت تطبيق سند.');
 });
 
-function filterDocs(){
+async function filterDocs(){
   if(standaloneViews.has(currentView))return;
-  const q=document.getElementById('searchInput').value.trim();
+  const token=++searchRunToken;
+  const filters=getSearchFilters();
+  const q=filters.query;
   const sel=document.getElementById('typeSelect').value;
-  const year=document.getElementById('yearSelect')?.value||'all';
+  const year=filters.year;
   if(sel!==currentType){currentType=sel;syncCards(sel);}
   let list=currentView==='saved'?docs.filter(d=>isSaved(d.id)):docs;
   if(currentType!=='all') list=list.filter(d=>d.type===currentType);
   if(year!=='all') list=list.filter(d=>docYear(d)===year);
-  if(q) list=filterDocsBySearchIndex(list,q);
-  renderDocs(sortDocuments(list));
+  const active=isSearchActive(filters);
+  if(active){
+    setSearchStatus('جارٍ البحث في الفهرس القانوني...',true);
+    const result=await searchJudgmentList(list,filters,token);
+    if(token!==searchRunToken)return;
+    const byId=new Map(list.map(doc=>[Number(doc.id),doc]));
+    searchResultMeta=new Map((result.results||[]).map(item=>[Number(item.id),item]));
+    list=(result.results||[]).map(item=>byId.get(Number(item.id))).filter(Boolean);
+    const ignored=result.ignoredCommon?.length?` | تجاهل كلمات عامة: ${result.ignoredCommon.slice(0,3).join('، ')}`:'';
+    setSearchStatus(`${ar(list.length)} نتيجة | ${ar(result.loadedShards?.length||0)} فهرس${ignored}`,false);
+  }else{
+    searchResultMeta.clear();
+    setSearchStatus('',false);
+  }
+  const sortMode=document.getElementById('sortSelect')?.value||'relevance';
+  renderDocs(active&&sortMode==='relevance'?list:sortDocuments(list,sortMode));
 }
 
 function syncCards(type){

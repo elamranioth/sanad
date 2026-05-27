@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=judgment-search-snippets-20260527">
+<link rel="stylesheet" href="./assets/styles.css?v=advanced-search-20260527">
 </head>
 <body>
 
@@ -214,11 +214,23 @@
       </div>
       <button class="search-btn" onclick="filterDocs()"><i class="ti ti-search"></i>بحث</button>
     </div>
+    <details class="advanced-search" id="advancedSearchPanel">
+      <summary><i class="ti ti-adjustments-search"></i><span>بحث متقدم</span><small id="searchStatus"></small></summary>
+      <div class="advanced-search-grid">
+        <label><span>طريقة المطابقة</span><select id="matchModeSelect" onchange="filterDocs()"><option value="all">كل الكلمات</option><option value="any">أي كلمة</option><option value="exact">عبارة دقيقة</option></select></label>
+        <label><span>عبارة دقيقة</span><input id="exactPhraseInput" type="text" placeholder="مثال: ومن المقرر في قضاء هذه المحكمة" oninput="filterDocs()"></label>
+        <label><span>استبعاد كلمات</span><input id="excludeInput" type="text" placeholder="كلمات لا تريد ظهورها" oninput="filterDocs()"></label>
+        <label><span>المحكمة</span><input id="courtFilterInput" type="text" placeholder="محكمة التمييز" oninput="filterDocs()"></label>
+        <label><span>رقم الحكم / الطعن</span><input id="numberFilterInput" type="text" placeholder="2025/27" oninput="filterDocs()"></label>
+        <label><span>موضع البحث</span><select id="sectionFilter" onchange="filterDocs()"><option value="all">كل الحكم</option><option value="principle">مبدأ قضائي</option><option value="reasoning">تسبيب المحكمة</option><option value="facts">وقائع وملخص</option><option value="operative">منطوق الحكم</option></select></label>
+      </div>
+    </details>
 
     <!-- RESULTS BAR -->
     <div class="results-bar">
       <div class="rb-left">عرض <strong id="shownCount">١٢</strong> من <strong id="totalCount">٢٤٧</strong> حكم</div>
       <select class="sort-sel" id="sortSelect" onchange="filterDocs()">
+        <option value="relevance">الأكثر صلة</option>
         <option value="newest">الأحدث أولاً</option>
         <option value="oldest">الأقدم أولاً</option>
         <option value="court">حسب المحكمة</option>
@@ -567,10 +579,10 @@
   </div><!-- end page -->
 </div><!-- end main -->
 
-<script src="./data/judgments/index.js?v=judgment-search-snippets-20260527"></script>
-<script src="./data/search-index.js?v=judgment-search-snippets-20260527"></script>
+<script src="./data/judgments/index.js?v=advanced-search-20260527"></script>
+<script src="./data/search/manifest.js?v=advanced-search-20260527"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=judgment-search-snippets-20260527"></script>
+<script src="./assets/app.js?v=advanced-search-20260527"></script>
 </body>
 </html>
