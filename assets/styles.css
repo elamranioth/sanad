@@ -485,8 +485,8 @@ body.ink-mode .receipt-total-hero strong,body.ink-mode .receipt-total-hero span{
 body.ink-mode .judgment-intro,body.ink-mode .law-reader-cover,body.ink-mode .law-article,body.ink-mode .ars-block,body.ink-mode .law-item,body.ink-mode .prec-item,body.ink-mode .analysis-text,body.ink-mode .sourced blockquote{background:#fff;border-color:#111;color:#111}
 body.ink-mode .intro-bismillah,body.ink-mode .intro-ruler,body.ink-mode .intro-court,body.ink-mode .intro-session,body.ink-mode .intro-value,body.ink-mode .intro-issued,body.ink-mode .intro-label,body.ink-mode .doc-dialog-kicker,body.ink-mode .law-reader-label,body.ink-mode .law-reader-cover h1,body.ink-mode .law-reader-cover p,body.ink-mode .law-reader-body .law-title-main,body.ink-mode .law-heading-two,body.ink-mode .law-heading-three,body.ink-mode .law-article p{color:#111}
 body.ink-mode .intro-case{background:#111;color:#fff;border-color:#111}
-body.ink-mode .judgment-subject{background:#fff;border-color:#111;border-right-color:#111;color:#111;box-shadow:none}
-body.ink-mode .judgment-subject-title,body.ink-mode .judgment-subject p{color:#111}
+body.ink-mode .judgment-operative-ruling{background:#fff;border-color:#111;color:#111;box-shadow:none}
+body.ink-mode .judgment-operative-ruling::before{background:#111;border-color:#111;color:#fff}
 body.ink-mode .judgment-para{background:#fff;border-color:#111;border-right-color:#111;color:#111}
 body.ink-mode .judgment-search-field{background:#fff;border-color:#111;color:#111}
 body.ink-mode .judgment-search-field input,body.ink-mode .judgment-search-tools span{color:#111}
@@ -577,12 +577,11 @@ body.modal-open{overflow:hidden}
 .intro-label{font-size:10px;color:#6aaccc;font-weight:700;margin-bottom:5px}
 .intro-value{font-size:13px;color:#c8d8e0;line-height:1.7}
 .intro-issued{font-family:'Amiri',serif;color:#e8dcc8;font-size:20px;font-weight:700;margin-top:18px;padding-top:14px;border-top:1px solid #1e3a52}
-.judgment-subject{background:linear-gradient(135deg,#101d2a,#0a1520);border:1px solid #2a4a68;border-right:4px solid #c8a84b;border-radius:12px;padding:16px 18px;box-shadow:0 12px 30px #00000024}
-.judgment-subject-title{display:flex;align-items:center;gap:8px;color:#c8a84b;font-size:12px;font-weight:800;margin-bottom:8px}
-.judgment-subject-title i{font-size:18px}
-.judgment-subject p{margin:0;color:#d8e6ee;font-size:15px;line-height:1.9;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .judgment-content{display:flex;flex-direction:column;gap:12px}
 .judgment-para{margin:0;background:#0d1b2a;border:1px solid #183044;border-right:4px solid #2a4a68;border-radius:10px;padding:15px 18px;color:#b8cbd6;line-height:2.05}
+.judgment-para.has-operative-ruling{border-color:#c8a84b55;border-right-color:#c8a84b;background:#101b24}
+.judgment-operative-ruling{display:block;margin:8px 0 0;background:#151c18;border:1px solid #c8a84b88;border-right:6px solid #c8a84b;border-radius:12px;padding:15px 18px;color:#f0dfae;font-weight:800;line-height:2.05;box-shadow:0 12px 30px #00000026}
+.judgment-operative-ruling::before{content:'منطوق الحكم';display:inline-flex;margin:0 0 8px 10px;background:#2a1f08;border:1px solid #c8a84b66;border-radius:999px;color:#d8c06e;font-size:11px;font-weight:900;line-height:1;padding:5px 10px}
 .judgment-search-panel{position:sticky;top:0;z-index:4;margin-bottom:16px;background:#08121d;border:1px solid #2a4a68;border-radius:12px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 28px #00000033}
 .judgment-search-field{flex:1;min-width:0;background:#0d1b2a;border:1px solid #1e3a52;border-radius:9px;padding:10px 12px;display:flex;align-items:center;gap:8px}
 .judgment-search-field:focus-within{border-color:#c8a84b88;box-shadow:0 0 0 3px #c8a84b17}
