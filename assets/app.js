@@ -415,17 +415,17 @@ function renderWorkbenchPanel(id){
     </div>`).join(''):'<div class="highlight-empty">لا توجد اقتباسات محفوظة لهذا الحكم بعد.</div>';
   return `<section class="judgment-workbench" id="judgmentWorkbenchPanel">
     <div class="workbench-head">
-      <div><strong>ملف العمل على الحكم</strong><span>وسوم، ملاحظات، واقتباسات محفوظة محليًا على هذا الجهاز.</span></div>
+      <div><strong>موضوع الحكم</strong><span>اكتب موضوع الحكم باختصار شديد ليسهل الرجوع إليه.</span></div>
       <button class="tool-secondary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-device-floppy"></i>حفظ</button>
     </div>
     <div class="workbench-grid">
       <label class="field"><span>وسوم البحث</span><input id="workbenchTagsInput" type="text" value="${escapeHtml(tags)}" placeholder="مثال: تعويض، عقد، إثبات"></label>
-      <label class="field wide"><span>ملاحظة داخلية</span><textarea id="workbenchNoteInput" rows="4" placeholder="اكتب ملاحظتك القانونية أو سبب أهمية الحكم...">${escapeHtml(entry.note||'')}</textarea></label>
+      <label class="field wide"><span>موضوع الحكم المختصر</span><textarea id="workbenchNoteInput" rows="2" maxlength="180" placeholder="مثال: مطالبة بتعويض عن إخلال عقد توريد">${escapeHtml(entry.note||'')}</textarea></label>
       <label class="field wide"><span>اقتباس أو مبدأ مهم</span><input id="highlightTextInput" type="text" placeholder="الصق فقرة مهمة من الحكم ثم اضغط إضافة اقتباس"></label>
     </div>
     <div class="workbench-actions">
       <button class="tool-secondary" type="button" onclick="addHighlightFromModal()"><i class="ti ti-quote"></i>إضافة اقتباس</button>
-      <button class="tool-primary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-tags"></i>حفظ الوسوم والملاحظة</button>
+      <button class="tool-primary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-tags"></i>حفظ الموضوع والوسوم</button>
     </div>
     <div class="highlight-list">${highlights}</div>
   </section>`;
@@ -2405,7 +2405,7 @@ function docWorkbenchBadges(id){
   const entry=judgmentWorkbench[String(id)];
   if(!entry)return '';
   const tags=(entry.tags||[]).slice(0,3).map(tag=>`<span class="meta-chip workbench-chip"><i class="ti ti-tag"></i>${escapeHtml(tag)}</span>`).join('');
-  const note=entry.note?'<span class="meta-chip workbench-chip"><i class="ti ti-note"></i>ملاحظة</span>':'';
+  const note=entry.note?'<span class="meta-chip workbench-chip"><i class="ti ti-note"></i>موضوع</span>':'';
   const highlights=entry.highlights?.length?`<span class="meta-chip workbench-chip"><i class="ti ti-quote"></i>${ar(entry.highlights.length)}</span>`:'';
   return tags+note+highlights;
 }
@@ -2546,7 +2546,7 @@ function saveWorkbenchFromModal(){
   const persisted=saveJudgmentWorkbench();
   filterDocs();
   refreshWorkbenchPanel();
-  showToast(persisted?'تم حفظ ملف العمل على الحكم.':'تم حفظ ملف العمل لهذه الجلسة فقط.');
+  showToast(persisted?'تم حفظ موضوع الحكم.':'تم حفظ موضوع الحكم لهذه الجلسة فقط.');
 }
 function addHighlightFromModal(){
   if(readerMode!=='judgment'||currentDocId===null)return;
@@ -2870,7 +2870,7 @@ async function analyzeCase(){
     </div>
     <div class="ars-block">
       <div class="ars-head analysis"><i class="ti ti-chart-line"></i>تحليل مستند إلى المصادر</div>
-      <div class="analysis-text">النتائج أعلاه مبنية على فهرس كلمات داخل القوانين والأحكام المحملة في سند. ابدأ بالمصادر الأعلى درجة، وافتح الحكم المقترح، ثم احفظ الوسوم أو الاقتباسات المهمة داخل ملف العمل قبل استخدام النتيجة في مذكرة أو دفاع.</div>
+      <div class="analysis-text">النتائج أعلاه مبنية على فهرس كلمات داخل القوانين والأحكام المحملة في سند. ابدأ بالمصادر الأعلى درجة، وافتح الحكم المقترح، ثم احفظ موضوع الحكم أو الاقتباسات المهمة قبل استخدام النتيجة في مذكرة أو دفاع.</div>
     </div>
   </div>`;
   btn.disabled=false;
