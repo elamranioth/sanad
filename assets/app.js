@@ -179,7 +179,7 @@ function normalizeSearchText(value){
     .replace(/[إأآا]/g,'ا')
     .replace(/ى/g,'ي')
     .replace(/ة/g,'ه')
-    .replace(/[\u064B-\u065F\u0670]/g,'')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g,'')
     .replace(/[^\u0600-\u06FFa-z0-9\s/.-]/g,' ');
 }
 const searchStopWords=new Set([...(searchManifest.stopwords||[]),...(searchManifest.commonTokens||[])]);
@@ -456,21 +456,68 @@ function renderJudgmentIntro(lines){
   }
   return `<section class="judgment-intro">${top.join('')}${info.length?`<div class="intro-grid">${info.join('')}</div>`:''}${issued?`<div class="intro-issued">${escapeHtml(issued)}</div>`:''}</section>`;
 }
-function splitJudgmentParagraphs(text){
-  return String(text||'').replace(/\r/g,'').split(/\n+/).map(part=>part.trim()).filter(Boolean);
+function splitJudgmentParagraphsWithOffsets(text){
+  const source=String(text||'').replace(/\r/g,'');
+  const paragraphs=[];
+  const pattern=/\S[\s\S]*?(?=\n+|$)/g;
+  let match;
+  while((match=pattern.exec(source))){
+    const raw=match[0];
+    const leading=raw.match(/^\s*/)?.[0].length||0;
+    const trailing=raw.match(/\s*$/)?.[0].length||0;
+    const start=match.index+leading;
+    const end=match.index+raw.length-trailing;
+    if(end>start)paragraphs.push({text:source.slice(start,end),start,end});
+  }
+  return paragraphs;
 }
-function renderJudgmentParagraph(text,query=''){
-  const segments=splitSentenceSegments(text);
-  const html=segments.map(sentence=>{
-    const rendered=renderSearchMatchedSentence(sentence,query);
-    return isOperativeRulingSentence(sentence)?`<span class="judgment-operative-ruling">${rendered}</span>`:rendered;
-  }).join('');
-  const matched=query&&segments.some(sentence=>searchHighlightRanges(sentence,query).length);
-  const hasOperative=segments.some(isOperativeRulingSentence);
+function operativeTriggerMatches(text){
+  const comparable=buildSearchMap(text);
+  const pattern=/(^|[\s.?!؟؛،])((?:(?:ف?لهذه|ولهذه)\s+الاسباب)|(?:(?:فلذلك|ولذلك|لذلك|ومن\s+ثم|لما\s+(?:تقدم|سلف))\s+(?:حكمت|امرت|قررت|قضت)\s+المحكمه))/g;
+  const matches=[];
+  let match;
+  while((match=pattern.exec(comparable.text))){
+    const normalizedStart=match.index+(match[1]?.length||0);
+    const originalStart=comparable.map[normalizedStart];
+    if(Number.isFinite(originalStart))matches.push({start:originalStart});
+  }
+  return matches;
+}
+function findOperativeRulingEnd(text,start){
+  const source=String(text||'');
+  const nextParagraph=source.indexOf('\n',start);
+  if(nextParagraph!==-1)return nextParagraph;
+  return source.length;
+}
+function findFallbackOperativeRulingRange(text){
+  const outcomePattern=/(?:حكم|حكمت|قضت|امرت|الزمت|رفض|برفض|بنقض|بعدم\s+(?:قبول|جواز)|مصادره|المصروفات|المصاريف|التامين)/;
+  const paragraphs=splitJudgmentParagraphsWithOffsets(text);
+  for(let i=paragraphs.length-1;i>=0;i--){
+    const normalized=comparableSearchText(paragraphs[i].text);
+    if(normalized.length<20)continue;
+    if(outcomePattern.test(normalized))return {start:paragraphs[i].start,end:paragraphs[i].end};
+  }
+  return null;
+}
+function findOperativeRulingRange(text){
+  const matches=operativeTriggerMatches(text);
+  if(!matches.length)return findFallbackOperativeRulingRange(text);
+  const last=matches[matches.length-1];
+  const end=findOperativeRulingEnd(text,last.start);
+  return end>last.start?{start:last.start,end}:null;
+}
+function renderJudgmentTextPortion(text,query=''){
+  return splitSentenceSegments(text).map(sentence=>renderSearchMatchedSentence(sentence,query)).join('');
+}
+function renderJudgmentParagraph(text,query='',operativeRange=null,paragraphStart=0){
+  const localStart=operativeRange?Math.max(0,operativeRange.start-paragraphStart):-1;
+  const localEnd=operativeRange?Math.min(String(text).length,operativeRange.end-paragraphStart):-1;
+  const hasOperative=operativeRange&&localEnd>0&&localStart<String(text).length&&localEnd>localStart;
+  const html=hasOperative
+    ? `${renderJudgmentTextPortion(String(text).slice(0,localStart),query)}<span class="judgment-operative-ruling">${renderJudgmentTextPortion(String(text).slice(localStart,localEnd),query)}</span>${renderJudgmentTextPortion(String(text).slice(localEnd),query)}`
+    : renderJudgmentTextPortion(text,query);
+  const matched=query&&splitSentenceSegments(text).some(sentence=>searchHighlightRanges(sentence,query).length);
   return `<p class="judgment-para${matched?' has-search-match':''}${hasOperative?' has-operative-ruling':''}">${html}</p>`;
-}
-function isOperativeRulingSentence(text){
-  return /(?:^|\s)ف?لهذه\s+(?:الأسباب|الاسباب)\s+حكمت\s+المحكمة/.test(String(text||''));
 }
 function formatJudgmentBody(body,doc=null,query=''){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
@@ -479,7 +526,8 @@ function formatJudgmentBody(body,doc=null,query=''){
   const introLines=introEnd>=0?lines.slice(0,introEnd+1):[];
   const mainText=(introEnd>=0?lines.slice(introEnd+1):lines).join('\n');
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
-  const paragraphs=splitJudgmentParagraphs(mainText).map(part=>renderJudgmentParagraph(part,query)).join('');
+  const operativeRange=findOperativeRulingRange(mainText);
+  const paragraphs=splitJudgmentParagraphsWithOffsets(mainText).map(part=>renderJudgmentParagraph(part.text,query,operativeRange,part.start)).join('');
   return `<div class="judgment-reader" id="judgmentReaderShell">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
 }
 function updateJudgmentSearchPanelState(){
@@ -1899,7 +1947,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v28',label:'الكاش'}
+    {value:'v29',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
