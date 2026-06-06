@@ -4,7 +4,6 @@ const baseDocs=(window.SANAD_DATA?.judgmentIndex||window.SANAD_DATA?.judgments||
 const laws=window.SANAD_DATA?.laws||[];
 const legalForms=window.SANAD_DATA?.legalForms||[];
 const localJudgmentsStorageKey='sanadLocalJudgments';
-const workbenchStorageKey='sanadJudgmentWorkbench';
 const defaultCatalog={
   title:'أحكام قضائية',
   subtitle:'تصفح وابحث في مجموعة الأحكام الصادرة عن المحاكم — تجارية، مدنية، عقارية، عمالية، جنائية، إدارية وأسرية',
@@ -53,7 +52,6 @@ const clientStorageKey='sanadClientProfiles';
 const settingsStorageKey='sanadSettings';
 const protectionStorageKey='sanadProtection';
 let savedJudgmentIds=loadSavedJudgments();
-let judgmentWorkbench=loadJudgmentWorkbench();
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
 let expandedClientIds=new Set();
@@ -219,7 +217,7 @@ function renderDocSearchSnippetContent(doc,query,loaded=false){
     return `<i class="ti ti-file-search"></i><span><span class="doc-search-section">${escapeHtml(label)}</span><span class="snippet-muted">توجد مطابقة في فهرس الحكم. افتح الحكم للانتقال إلى الموضع المظلل.</span></span>`;
   }
   if(!q)return '';
-  const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal,workbenchSearchText(doc.id)].join(' '),q);
+  const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal].join(' '),q);
   if(sentence)return `<i class="ti ti-quote"></i><span><mark class="judgment-search-hit">${escapeHtml(sentence)}</mark></span>`;
   if(!loaded&&doc.isIndexed)return '<i class="ti ti-loader-2"></i><span class="snippet-muted">جارٍ إظهار موضع النص المطابق...</span>';
   return '<i class="ti ti-file-search"></i><span class="snippet-muted">توجد نتيجة مطابقة في بيانات الحكم أو عنوانه.</span>';
@@ -251,30 +249,19 @@ function renderJudgmentSearchPanel(query='',body=''){
     </div>
   </section>`;
 }
-function getWorkbenchEntry(id){
-  const key=String(id);
-  if(!judgmentWorkbench[key])judgmentWorkbench[key]={tags:[],note:'',highlights:[]};
-  return judgmentWorkbench[key];
-}
-function workbenchSearchText(id){
-  const entry=judgmentWorkbench[String(id)];
-  if(!entry)return '';
-  return [entry.note,...(entry.tags||[]),...(entry.highlights||[]).map(item=>item.text||'')].join(' ');
-}
 function matchesDoc(d,q){
   const needle=normalizeSearchText(q).trim();
   if(!needle)return true;
-  return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.excerpt,d.body,workbenchSearchText(d.id)]
+  return [d.title,d.court,d.date,d.num,d.appeal,d.source,d.excerpt,d.body]
     .some(v=>normalizeSearchText(v).includes(needle));
 }
 function scoreDocSearch(doc,query){
   const words=searchWords(query);
   if(!words.length)return 1;
   let score=0;
-  const id=Number(doc.id);
   const title=normalizeSearchText(doc.title||'');
   const number=normalizeSearchText([doc.num,doc.appeal].join(' '));
-  const localText=normalizeSearchText([doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body,workbenchSearchText(id)].join(' '));
+  const localText=normalizeSearchText([doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body].join(' '));
   for(const word of words){
     if(title.includes(word))score+=12;
     if(number.includes(word))score+=14;
@@ -361,6 +348,53 @@ function renderJudgmentParagraph(text,query=''){
   const matched=query&&segments.some(sentence=>sentenceMatchesSearch(sentence,query));
   return `<p class="judgment-para${matched?' has-search-match':''}">${html}</p>`;
 }
+function normalizeJudgmentSubjectText(text){
+  return String(text||'')
+    .replace(/\u00a0/g,' ')
+    .replace(/\s+/g,' ')
+    .replace(/^[\s،:؛.\-–]+/,'')
+    .trim();
+}
+function truncateJudgmentSubject(text,max=560){
+  const clean=normalizeJudgmentSubjectText(text);
+  if(clean.length<=max)return clean;
+  const slice=clean.slice(0,max);
+  const punctuation=Math.max(slice.lastIndexOf('،'),slice.lastIndexOf('؛'),slice.lastIndexOf('.'));
+  if(punctuation>260)return `${slice.slice(0,punctuation+1).trim()}...`;
+  const space=slice.lastIndexOf(' ');
+  return `${slice.slice(0,space>260?space:max).trim()}...`;
+}
+function extractJudgmentSubject(mainText,doc=null){
+  const paragraphs=splitJudgmentParagraphs(mainText);
+  const preferred=paragraphs.find(line=>/(?:تتحصل|تخلص|تتلخص)\s+الوقائع|وقائع\s+(?:الدعوى|النزاع|الطلب)|حاصل\s+الوقائع/.test(line));
+  const fallback=paragraphs.find(line=>/(?:بطلب\s+الحكم|طلب\s+الحكم|المطالبة|تعويض|إلزام|فسخ|بطلان|حادث|عقد|مستحقات|تصفية|تنفيذ)/.test(line)&&!/من\s+المقرر|المقرر\s+قضاء|وحيث\s+إن\s+هذا\s+النعي|وحيث\s+إن\s+النعي/.test(line));
+  let subject=normalizeJudgmentSubjectText(preferred||fallback||doc?.excerpt||doc?.title||'');
+  subject=subject
+    .replace(/^بعد\s+الاطلاع\s+على\s+الأوراق(?:\s+وسماع\s+تقرير\s+التلخيص[^:،.]*؟?)?(?:\s+والمداولة)?[:،.\s]*/,'')
+    .replace(/^حيث\s+(?:إن\s+)?(?:استوفى|استوفي)\s+الطعن\s+شروط\s+قبوله\s+الشكلية[:،.\s]*/,'')
+    .replace(/^و?حيث\s+(?:إن\s+)?(?:تتحصل|تخلص|تتلخص)\s+الوقائع\s*(?:-|–|:|،)?\s*/,'')
+    .replace(/^على\s+ما\s+يبين\s+من\s+الحكم\s+المطعون\s+فيه\s+وسائر\s+الأوراق\s*(?:-|–|:|،)?\s*/,'')
+    .replace(/^في\s+أن\s+/,'')
+    .replace(/^أن\s+/,'');
+  const stopPatterns=[
+    /\.?\s*وحيث\s+إن\s+الطعن\s+/,
+    /\.?\s*وحيث\s+إن\s+النعي\s+/,
+    /\.?\s*وحيث\s+إن\s+هذا\s+النعي\s+/,
+    /\s+ومن\s+المقرر\s+/,
+    /\s+من\s+المقرر\s+/,
+    /\s+لما\s+كان\s+ذلك\s+/
+  ];
+  for(const pattern of stopPatterns){
+    const match=subject.search(pattern);
+    if(match>180)subject=subject.slice(0,match);
+  }
+  return truncateJudgmentSubject(subject);
+}
+function renderJudgmentSubject(doc,mainText){
+  const subject=extractJudgmentSubject(mainText,doc);
+  if(!subject)return '';
+  return `<section class="judgment-subject"><div class="judgment-subject-title"><i class="ti ti-file-description"></i><span>موضوع الحكم</span></div><p>${escapeHtml(subject)}</p></section>`;
+}
 function formatJudgmentBody(body,doc=null,query=''){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
   if(!lines.length)return '<div class="judgment-reader"><p class="judgment-para facts">لا يتوفر نص الحكم الكامل لهذا السجل.</p></div>';
@@ -368,8 +402,9 @@ function formatJudgmentBody(body,doc=null,query=''){
   const introLines=introEnd>=0?lines.slice(0,introEnd+1):[];
   const mainText=(introEnd>=0?lines.slice(introEnd+1):lines).join('\n');
   const introHtml=introLines.length?renderJudgmentIntro(introLines):'';
+  const subjectHtml=renderJudgmentSubject(doc,mainText);
   const paragraphs=splitJudgmentParagraphs(mainText).map(part=>renderJudgmentParagraph(part,query)).join('');
-  return `<div class="judgment-reader" id="judgmentReaderShell">${introHtml}<section class="judgment-content">${paragraphs}</section></div>`;
+  return `<div class="judgment-reader" id="judgmentReaderShell">${introHtml}${subjectHtml}<section class="judgment-content">${paragraphs}</section></div>`;
 }
 function updateJudgmentSearchPanelState(){
   const body=currentReaderDoc?.body||'';
@@ -404,35 +439,6 @@ function jumpJudgmentSearchMatch(step=1){
   const matches=[...document.querySelectorAll('.judgment-search-hit')];
   if(!matches.length)return;
   focusJudgmentSearchMatch(currentJudgmentMatchIndex+Number(step||1));
-}
-function renderWorkbenchPanel(id){
-  const entry=getWorkbenchEntry(id);
-  const tags=(entry.tags||[]).join(', ');
-  const highlights=entry.highlights?.length?entry.highlights.map((item,index)=>`
-    <div class="highlight-item">
-      <p>${escapeHtml(item.text)}</p>
-      <button class="workbench-icon danger" type="button" data-highlight-delete="${index}" aria-label="حذف الاقتباس"><i class="ti ti-trash"></i></button>
-    </div>`).join(''):'<div class="highlight-empty">لا توجد اقتباسات محفوظة لهذا الحكم بعد.</div>';
-  return `<section class="judgment-workbench" id="judgmentWorkbenchPanel">
-    <div class="workbench-head">
-      <div><strong>موضوع الحكم</strong><span>اكتب موضوع الحكم باختصار شديد ليسهل الرجوع إليه.</span></div>
-      <button class="tool-secondary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-device-floppy"></i>حفظ</button>
-    </div>
-    <div class="workbench-grid">
-      <label class="field"><span>وسوم البحث</span><input id="workbenchTagsInput" type="text" value="${escapeHtml(tags)}" placeholder="مثال: تعويض، عقد، إثبات"></label>
-      <label class="field wide"><span>موضوع الحكم المختصر</span><textarea id="workbenchNoteInput" rows="2" maxlength="180" placeholder="مثال: مطالبة بتعويض عن إخلال عقد توريد">${escapeHtml(entry.note||'')}</textarea></label>
-      <label class="field wide"><span>اقتباس أو مبدأ مهم</span><input id="highlightTextInput" type="text" placeholder="الصق فقرة مهمة من الحكم ثم اضغط إضافة اقتباس"></label>
-    </div>
-    <div class="workbench-actions">
-      <button class="tool-secondary" type="button" onclick="addHighlightFromModal()"><i class="ti ti-quote"></i>إضافة اقتباس</button>
-      <button class="tool-primary" type="button" onclick="saveWorkbenchFromModal()"><i class="ti ti-tags"></i>حفظ الموضوع والوسوم</button>
-    </div>
-    <div class="highlight-list">${highlights}</div>
-  </section>`;
-}
-function refreshWorkbenchPanel(){
-  const panel=document.getElementById('judgmentWorkbenchPanel');
-  if(panel&&currentDocId!==null)panel.outerHTML=renderWorkbenchPanel(currentDocId);
 }
 function renderLawMarkdown(markdown){
   const lines=String(markdown||'').replace(/\r/g,'').split('\n');
@@ -535,30 +541,6 @@ function saveSavedJudgments(){
   }
 }
 function isSaved(id){return savedJudgmentIds.has(Number(id))}
-function loadJudgmentWorkbench(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(workbenchStorageKey)||'{}');
-    if(!saved||typeof saved!=='object'||Array.isArray(saved))return {};
-    return Object.fromEntries(Object.entries(saved).map(([id,entry])=>[String(id),{
-      tags:Array.isArray(entry.tags)?entry.tags.map(tag=>String(tag).trim()).filter(Boolean):[],
-      note:String(entry.note||''),
-      highlights:Array.isArray(entry.highlights)?entry.highlights
-        .filter(item=>item&&item.text)
-        .map(item=>({text:String(item.text).trim(),createdAt:item.createdAt||new Date().toISOString()})):[],
-      updated:entry.updated||''
-    }]));
-  }catch(_){
-    return {};
-  }
-}
-function saveJudgmentWorkbench(){
-  try{
-    localStorage.setItem(workbenchStorageKey,JSON.stringify(judgmentWorkbench));
-    return true;
-  }catch(_){
-    return false;
-  }
-}
 function loadLocalJudgments(){
   try{
     const saved=JSON.parse(localStorage.getItem(localJudgmentsStorageKey)||'[]');
@@ -867,7 +849,7 @@ function runWorkerJudgmentSearch(list,filters,token){
       type:'search',
       token,
       baseUrl:location.href,
-      docs:list.map(doc=>({...doc,workbenchText:workbenchSearchText(doc.id)})),
+      docs:list,
       filters
     });
   });
@@ -886,7 +868,7 @@ function fallbackSearchDocs(list,filters){
   const exclude=searchWords(filters.exclude||'');
   const results=[];
   list.forEach(doc=>{
-    const haystack=[doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body,workbenchSearchText(doc.id)].join(' ');
+    const haystack=[doc.title,doc.court,doc.date,doc.num,doc.appeal,doc.source,doc.excerpt,doc.body].join(' ');
     const normalized=normalizeSearchText(haystack);
     if(filters.court&&!normalizeSearchText(doc.court).includes(normalizeSearchText(filters.court)))return;
     if(filters.number&&!numberFilterMatches([doc.num,doc.title,doc.appeal].join(' '),filters.number))return;
@@ -2130,7 +2112,6 @@ function backupPayload(){
     version:1,
     exportedAt:new Date().toISOString(),
     savedJudgmentIds:[...savedJudgmentIds],
-    judgmentWorkbench,
     localJudgments,
     feeItems,
     clientProfiles,
@@ -2156,19 +2137,17 @@ async function importSanadBackup(file){
     if(payload.app!=='SANAD')throw new Error('Invalid backup');
     const ok=await confirmAction({
       title:'Import SANAD backup?',
-      message:'This will replace local saved judgments, notes, clients, fees, and settings on this device.',
+      message:'This will replace local saved judgments, clients, fees, and settings on this device.',
       confirmLabel:'Import backup',
       icon:'ti-upload'
     });
     if(!ok)return;
     savedJudgmentIds=new Set(Array.isArray(payload.savedJudgmentIds)?payload.savedJudgmentIds.map(Number).filter(Number.isFinite):[]);
-    judgmentWorkbench=payload.judgmentWorkbench&&typeof payload.judgmentWorkbench==='object'?payload.judgmentWorkbench:{};
     localJudgments=Array.isArray(payload.localJudgments)?payload.localJudgments:[];
     feeItems=Array.isArray(payload.feeItems)?payload.feeItems:[];
     clientProfiles=Array.isArray(payload.clientProfiles)?payload.clientProfiles:[];
     sanadSettings={...sanadSettings,...(payload.sanadSettings||{})};
     saveSavedJudgments();
-    saveJudgmentWorkbench();
     saveLocalJudgmentsToStorage();
     saveFeeItems();
     saveClientProfiles();
@@ -2401,14 +2380,6 @@ function updateDisplayedCounts(){
   if(total)total.textContent=ar(counts.all);
 }
 
-function docWorkbenchBadges(id){
-  const entry=judgmentWorkbench[String(id)];
-  if(!entry)return '';
-  const tags=(entry.tags||[]).slice(0,3).map(tag=>`<span class="meta-chip workbench-chip"><i class="ti ti-tag"></i>${escapeHtml(tag)}</span>`).join('');
-  const note=entry.note?'<span class="meta-chip workbench-chip"><i class="ti ti-note"></i>موضوع</span>':'';
-  const highlights=entry.highlights?.length?`<span class="meta-chip workbench-chip"><i class="ti ti-quote"></i>${ar(entry.highlights.length)}</span>`:'';
-  return tags+note+highlights;
-}
 function renderDocs(list,page=1){
   currentDocResults=[...list];
   currentPage=Number(page)||1;
@@ -2443,7 +2414,6 @@ function renderDocsPage(){
           <span class="meta-chip"><i class="ti ti-building"></i>${escapeHtml(d.court)}</span>
           <span class="meta-chip"><i class="ti ti-hash"></i>${escapeHtml(d.num)}</span>
           ${isSaved(d.id)?`<span class="meta-chip"><i class="ti ti-bookmark-filled"></i>محفوظ</span>`:''}
-          ${docWorkbenchBadges(d.id)}
         </div>
         ${renderDocSearchSnippet(d,searchQuery)}
       </div>
@@ -2481,14 +2451,14 @@ async function openDoc(id){
   document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
   document.getElementById('modalTitle').textContent=displayDocTitle(d);
-  document.getElementById('modalBody').innerHTML=`${renderWorkbenchPanel(d.id)}<div class="judgment-loading"><div class="spinner"></div>جارٍ تحميل نص الحكم الكامل...</div>`;
+  document.getElementById('modalBody').innerHTML='<div class="judgment-loading"><div class="spinner"></div>جارٍ تحميل نص الحكم الكامل...</div>';
   syncSaveButton();
   document.getElementById('docModal').classList.remove('hidden');
   document.body.classList.add('modal-open');
   const fullDoc=await getFullJudgment(d.id);
   if(currentDocId!==d.id||readerMode!=='judgment')return;
   currentReaderDoc={...d,...(fullDoc||{})};
-  document.getElementById('modalBody').innerHTML=renderWorkbenchPanel(d.id)+renderJudgmentSearchPanel(currentJudgmentSearchQuery,currentReaderDoc.body)+formatJudgmentBody(currentReaderDoc.body,currentReaderDoc,currentJudgmentSearchQuery);
+  document.getElementById('modalBody').innerHTML=renderJudgmentSearchPanel(currentJudgmentSearchQuery,currentReaderDoc.body)+formatJudgmentBody(currentReaderDoc.body,currentReaderDoc,currentJudgmentSearchQuery);
   updateJudgmentSearchPanelState();
   if(currentJudgmentSearchQuery)setTimeout(()=>focusJudgmentSearchMatch(0),80);
 }
@@ -2533,49 +2503,6 @@ function toggleSavedFromModal(){
   filterDocs();
   if(!persisted)showToast('تم حفظ التغيير لهذه الجلسة فقط.');
 }
-function saveWorkbenchFromModal(){
-  if(readerMode!=='judgment'||currentDocId===null)return;
-  const entry=getWorkbenchEntry(currentDocId);
-  entry.tags=String(document.getElementById('workbenchTagsInput')?.value||'')
-    .split(',')
-    .map(tag=>tag.trim())
-    .filter(Boolean)
-    .slice(0,12);
-  entry.note=document.getElementById('workbenchNoteInput')?.value.trim()||'';
-  entry.updated=new Date().toISOString();
-  const persisted=saveJudgmentWorkbench();
-  filterDocs();
-  refreshWorkbenchPanel();
-  showToast(persisted?'تم حفظ موضوع الحكم.':'تم حفظ موضوع الحكم لهذه الجلسة فقط.');
-}
-function addHighlightFromModal(){
-  if(readerMode!=='judgment'||currentDocId===null)return;
-  const input=document.getElementById('highlightTextInput');
-  const text=input?.value.trim()||'';
-  if(!text){
-    showToast('أضف نص الاقتباس أولًا.');
-    return;
-  }
-  const entry=getWorkbenchEntry(currentDocId);
-  entry.highlights=[{text,createdAt:new Date().toISOString()},...(entry.highlights||[])].slice(0,20);
-  entry.updated=new Date().toISOString();
-  if(input)input.value='';
-  saveJudgmentWorkbench();
-  refreshWorkbenchPanel();
-  filterDocs();
-  showToast('تم حفظ الاقتباس داخل الحكم.');
-}
-function deleteHighlightFromModal(index){
-  if(readerMode!=='judgment'||currentDocId===null)return;
-  const entry=getWorkbenchEntry(currentDocId);
-  entry.highlights=(entry.highlights||[]).filter((_,itemIndex)=>itemIndex!==Number(index));
-  entry.updated=new Date().toISOString();
-  saveJudgmentWorkbench();
-  refreshWorkbenchPanel();
-  filterDocs();
-  showToast('تم حذف الاقتباس.');
-}
-
 function closeDoc(){
   const modal=document.getElementById('docModal');
   modal.classList.add('hidden');
@@ -2595,11 +2522,6 @@ document.getElementById('paginationBar')?.addEventListener('click',event=>{
   const button=event.target.closest('[data-doc-page]');
   if(!button||button.disabled)return;
   setDocsPage(button.dataset.docPage);
-});
-document.getElementById('modalBody')?.addEventListener('click',event=>{
-  const button=event.target.closest('[data-highlight-delete]');
-  if(!button)return;
-  deleteHighlightFromModal(button.dataset.highlightDelete);
 });
 document.getElementById('lawList')?.addEventListener('click',event=>{
   const card=event.target.closest('.law-card[data-law-id]');
@@ -2870,7 +2792,7 @@ async function analyzeCase(){
     </div>
     <div class="ars-block">
       <div class="ars-head analysis"><i class="ti ti-chart-line"></i>تحليل مستند إلى المصادر</div>
-      <div class="analysis-text">النتائج أعلاه مبنية على فهرس كلمات داخل القوانين والأحكام المحملة في سند. ابدأ بالمصادر الأعلى درجة، وافتح الحكم المقترح، ثم احفظ موضوع الحكم أو الاقتباسات المهمة قبل استخدام النتيجة في مذكرة أو دفاع.</div>
+      <div class="analysis-text">النتائج أعلاه مبنية على فهرس كلمات داخل القوانين والأحكام المحملة في سند. ابدأ بالمصادر الأعلى درجة، وافتح الحكم المقترح، ثم اقرأ موضوع الحكم المختصر قبل استخدام النتيجة في مذكرة أو دفاع.</div>
     </div>
   </div>`;
   btn.disabled=false;
