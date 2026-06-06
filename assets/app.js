@@ -73,7 +73,12 @@ let currentJudgmentMatchIndex=0;
 let clientQuery='';
 let clientStatusFilter='all';
 const docPageSize=24;
-function ar(n){return n.toString().replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}
+function toEnglishDigits(value){
+  return String(value??'')
+    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+}
+function ar(n){return toEnglishDigits(n)}
 function calculateCounts(){
   return docs.reduce((acc,d)=>{
     acc.all++;
@@ -86,7 +91,53 @@ function refreshJudgmentData(){
   counts=calculateCounts();
   populateYearFilter();
 }
-function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function escapeHtml(value){return toEnglishDigits(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+const displayDigitAttributes=['placeholder','aria-label','title','alt'];
+function normalizeDisplayedDigits(root=document.body){
+  if(!root)return;
+  if(root.nodeType===Node.TEXT_NODE){
+    const next=toEnglishDigits(root.nodeValue);
+    if(next!==root.nodeValue)root.nodeValue=next;
+    return;
+  }
+  if(root.nodeType!==Node.ELEMENT_NODE)return;
+  if(root.matches?.('script,style'))return;
+  const normalizeElementAttributes=element=>{
+    displayDigitAttributes.forEach(attr=>{
+      if(!element.hasAttribute(attr))return;
+      const current=element.getAttribute(attr);
+      const next=toEnglishDigits(current);
+      if(next!==current)element.setAttribute(attr,next);
+    });
+  };
+  normalizeElementAttributes(root);
+  root.querySelectorAll?.(displayDigitAttributes.map(attr=>`[${attr}]`).join(',')).forEach(normalizeElementAttributes);
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{
+    acceptNode(node){
+      return node.parentElement?.closest('script,style')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const textNodes=[];
+  while(walker.nextNode())textNodes.push(walker.currentNode);
+  textNodes.forEach(node=>normalizeDisplayedDigits(node));
+}
+function startDisplayDigitNormalizer(){
+  normalizeDisplayedDigits(document.body);
+  const observer=new MutationObserver(mutations=>{
+    mutations.forEach(mutation=>{
+      if(mutation.type==='characterData'){
+        normalizeDisplayedDigits(mutation.target);
+      }else if(mutation.type==='attributes'){
+        const current=mutation.target.getAttribute(mutation.attributeName);
+        const next=toEnglishDigits(current);
+        if(next!==current)mutation.target.setAttribute(mutation.attributeName,next);
+      }else{
+        mutation.addedNodes.forEach(node=>normalizeDisplayedDigits(node));
+      }
+    });
+  });
+  observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:displayDigitAttributes});
+}
 function currentListSearchQuery(){return document.getElementById('searchInput')?.value.trim()||''}
 function currentEffectiveSearchQuery(){return currentListSearchQuery()||document.getElementById('exactPhraseInput')?.value.trim()||''}
 const searchSectionLabels={principle:'مبدأ قضائي',reasoning:'تسبيب المحكمة',facts:'وقائع وملخص',operative:'منطوق الحكم',preview:'مقتطف',body:'نص الحكم',meta:'بيانات الحكم'};
@@ -102,9 +153,7 @@ function matchesLaw(law,q){
   return [law.title,law.subtitle,law.legislation,law.category,law.status,law.updated,law.body].some(v=>normalizeSearchText(v).includes(needle));
 }
 function normalizeDigits(value){
-  return String(value||'')
-    .replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-    .replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+  return toEnglishDigits(value);
 }
 function extractYear(value){
   const match=normalizeDigits(value).match(/(?:^|[^\d])((?:19|20)\d{2})(?=$|[^\d])/);
@@ -180,10 +229,82 @@ const legalPrincipleCuePattern=/(?:و)?من\s+المقرر(?:\s*[-–،,]?\s*(?:
 function highlightLegalPrincipleCues(html){
   return html.replace(legalPrincipleCuePattern,match=>`<strong class="legal-principle-cue">${match}</strong>`);
 }
+function comparableSearchText(value){
+  return normalizeSearchText(value).replace(/\s+/g,' ').trim();
+}
+function buildSearchMap(value){
+  const source=String(value||'');
+  let text='';
+  const map=[];
+  for(let i=0;i<source.length;i++){
+    const normalized=normalizeSearchText(source[i]);
+    for(const ch of normalized){
+      const isSpace=/\s/.test(ch);
+      if(isSpace){
+        if(text&&text[text.length-1]!==' '){
+          text+=' ';
+          map.push(i);
+        }
+      }else{
+        text+=ch;
+        map.push(i);
+      }
+    }
+  }
+  return {text,map};
+}
+function comparableRanges(text,needle){
+  const target=comparableSearchText(needle);
+  if(!target)return [];
+  const comparable=buildSearchMap(text);
+  const ranges=[];
+  let index=comparable.text.indexOf(target);
+  while(index!==-1){
+    const start=comparable.map[index];
+    const end=comparable.map[index+target.length-1]+1;
+    if(Number.isFinite(start)&&Number.isFinite(end)&&end>start)ranges.push([start,end]);
+    index=comparable.text.indexOf(target,index+Math.max(1,target.length));
+  }
+  return ranges;
+}
+function mergeRanges(ranges){
+  return ranges
+    .filter(([start,end])=>Number.isFinite(start)&&Number.isFinite(end)&&end>start)
+    .sort((a,b)=>a[0]-b[0]||b[1]-a[1])
+    .reduce((merged,range)=>{
+      const last=merged[merged.length-1];
+      if(!last||range[0]>last[1]){
+        merged.push([...range]);
+      }else{
+        last[1]=Math.max(last[1],range[1]);
+      }
+      return merged;
+    },[]);
+}
+function searchHighlightRanges(text,query){
+  const q=String(query||'').trim();
+  if(!q)return [];
+  const exact=comparableRanges(text,q);
+  if(exact.length)return mergeRanges(exact);
+  if(!sentenceMatchesSearch(text,q))return [];
+  const wordRanges=searchWords(q).flatMap(word=>comparableRanges(text,word));
+  return mergeRanges(wordRanges);
+}
+function renderTextWithSearchHighlights(text,query){
+  const ranges=searchHighlightRanges(text,query);
+  if(!ranges.length)return highlightLegalPrincipleCues(escapeHtml(text));
+  let html='';
+  let cursor=0;
+  for(const [start,end] of ranges){
+    html+=highlightLegalPrincipleCues(escapeHtml(String(text).slice(cursor,start)));
+    html+=`<mark class="judgment-search-hit">${highlightLegalPrincipleCues(escapeHtml(String(text).slice(start,end)))}</mark>`;
+    cursor=end;
+  }
+  html+=highlightLegalPrincipleCues(escapeHtml(String(text).slice(cursor)));
+  return html;
+}
 function renderSearchMatchedSentence(sentence,query){
-  const html=highlightLegalPrincipleCues(escapeHtml(sentence));
-  if(!sentenceMatchesSearch(sentence,query))return html;
-  return `<mark class="judgment-search-hit">${html}</mark>`;
+  return renderTextWithSearchHighlights(sentence,query);
 }
 function trimSearchSnippet(sentence){
   const clean=String(sentence||'').replace(/\s+/g,' ').trim();
@@ -197,10 +318,6 @@ function findSearchSnippet(text,query){
     const sentence=splitSentenceSegments(paragraph).find(part=>sentenceMatchesSearch(part,q));
     if(sentence)return trimSearchSnippet(sentence);
   }
-  for(const paragraph of paragraphs){
-    const sentence=splitSentenceSegments(paragraph).find(part=>sentenceLooselyMatchesSearch(part,q));
-    if(sentence)return trimSearchSnippet(sentence);
-  }
   return '';
 }
 function renderDocSearchSnippetContent(doc,query,loaded=false){
@@ -210,7 +327,7 @@ function renderDocSearchSnippetContent(doc,query,loaded=false){
   if(meta?.snippet){
     const label=searchSectionLabels[meta.section]||'مقتطف مطابق';
     const score=Number(meta.score||0);
-    return `<i class="ti ti-quote"></i><span><span class="doc-search-section">${escapeHtml(label)}</span>${score?`<span class="doc-search-score">${escapeHtml(Math.round(score))}</span>`:''}<mark class="judgment-search-hit">${escapeHtml(meta.snippet)}</mark></span>`;
+    return `<i class="ti ti-quote"></i><span><span class="doc-search-section">${escapeHtml(label)}</span>${score?`<span class="doc-search-score">${escapeHtml(Math.round(score))}</span>`:''}${renderTextWithSearchHighlights(meta.snippet,q)}</span>`;
   }
   if(meta){
     const label=searchSectionLabels[meta.section]||'نص الحكم';
@@ -218,7 +335,7 @@ function renderDocSearchSnippetContent(doc,query,loaded=false){
   }
   if(!q)return '';
   const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal].join(' '),q);
-  if(sentence)return `<i class="ti ti-quote"></i><span><mark class="judgment-search-hit">${escapeHtml(sentence)}</mark></span>`;
+  if(sentence)return `<i class="ti ti-quote"></i><span>${renderTextWithSearchHighlights(sentence,q)}</span>`;
   if(!loaded&&doc.isIndexed)return '<i class="ti ti-loader-2"></i><span class="snippet-muted">جارٍ إظهار موضع النص المطابق...</span>';
   return '<i class="ti ti-file-search"></i><span class="snippet-muted">توجد نتيجة مطابقة في بيانات الحكم أو عنوانه.</span>';
 }
@@ -233,7 +350,7 @@ function countJudgmentSentenceMatches(body,query){
   const lines=String(body||'').replace(/\r/g,'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
   const introEnd=lines.findIndex(line=>line.includes('أصـدرت')||line.includes('أصدرت'));
   const mainLines=introEnd>=0?lines.slice(introEnd+1):lines;
-  return mainLines.reduce((sum,line)=>sum+splitSentenceSegments(line).filter(sentence=>sentenceMatchesSearch(sentence,q)).length,0);
+  return mainLines.reduce((sum,line)=>sum+splitSentenceSegments(line).filter(sentence=>searchHighlightRanges(sentence,q).length).length,0);
 }
 function renderJudgmentSearchPanel(query='',body=''){
   const count=countJudgmentSentenceMatches(body,query);
@@ -348,7 +465,7 @@ function renderJudgmentParagraph(text,query=''){
     const rendered=renderSearchMatchedSentence(sentence,query);
     return isOperativeRulingSentence(sentence)?`<span class="judgment-operative-ruling">${rendered}</span>`:rendered;
   }).join('');
-  const matched=query&&segments.some(sentence=>sentenceMatchesSearch(sentence,query));
+  const matched=query&&segments.some(sentence=>searchHighlightRanges(sentence,query).length);
   const hasOperative=segments.some(isOperativeRulingSentence);
   return `<p class="judgment-para${matched?' has-search-match':''}${hasOperative?' has-operative-ruling':''}">${html}</p>`;
 }
@@ -1782,7 +1899,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v27',label:'الكاش'}
+    {value:'v28',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2770,6 +2887,7 @@ renderFees();
 renderClientProfiles();
 renderLocalJudgments();
 updateSettingsStats();
+startDisplayDigitNormalizer();
 if(window.location.hash==='#dashboard'){
   activateNavByAction('dashboard');
   showDashboardPage();
