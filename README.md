@@ -26,7 +26,7 @@ sanad-local-server.js   Local static server
 ## Pages And Services
 
 - `#dashboard`: overview dashboard and quick service links.
-- `#judgments` / `#documents`: judgment catalog with advanced indexed search, filters, relevance sorting, pagination, reader, saved judgments, and an automatic short judgment-subject summary in the reader intro.
+- `#judgments` / `#documents`: judgment catalog with advanced indexed search, filters, relevance sorting, pagination, reader, saved judgments, and an automatic short judgment-topic note in the reader intro.
 - `#laws`: law catalog and formatted law reader.
 - `#decrees`: independent decrees page, ready for future decree records.
 - `#regulations`: independent regulations page, ready for future regulation records.

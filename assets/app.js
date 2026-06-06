@@ -364,31 +364,71 @@ function truncateJudgmentSubject(text,max=560){
   const space=slice.lastIndexOf(' ');
   return `${slice.slice(0,space>260?space:max).trim()}...`;
 }
-function extractJudgmentSubject(mainText,doc=null){
-  const paragraphs=splitJudgmentParagraphs(mainText);
-  const preferred=paragraphs.find(line=>/(?:تتحصل|تخلص|تتلخص)\s+الوقائع|وقائع\s+(?:الدعوى|النزاع|الطلب)|حاصل\s+الوقائع/.test(line));
-  const fallback=paragraphs.find(line=>/(?:بطلب\s+الحكم|طلب\s+الحكم|المطالبة|تعويض|إلزام|فسخ|بطلان|حادث|عقد|مستحقات|تصفية|تنفيذ)/.test(line)&&!/من\s+المقرر|المقرر\s+قضاء|وحيث\s+إن\s+هذا\s+النعي|وحيث\s+إن\s+النعي/.test(line));
-  let subject=normalizeJudgmentSubjectText(preferred||fallback||doc?.excerpt||doc?.title||'');
-  subject=subject
-    .replace(/^بعد\s+الاطلاع\s+على\s+الأوراق(?:\s+وسماع\s+تقرير\s+التلخيص[^:،.]*؟?)?(?:\s+والمداولة)?[:،.\s]*/,'')
-    .replace(/^حيث\s+(?:إن\s+)?(?:استوفى|استوفي)\s+الطعن\s+شروط\s+قبوله\s+الشكلية[:،.\s]*/,'')
-    .replace(/^و?حيث\s+(?:إن\s+)?(?:تتحصل|تخلص|تتلخص)\s+الوقائع\s*(?:-|–|:|،)?\s*/,'')
-    .replace(/^على\s+ما\s+يبين\s+من\s+الحكم\s+المطعون\s+فيه\s+وسائر\s+الأوراق\s*(?:-|–|:|،)?\s*/,'')
-    .replace(/^في\s+أن\s+/,'')
-    .replace(/^أن\s+/,'');
-  const stopPatterns=[
-    /\.?\s*وحيث\s+إن\s+الطعن\s+/,
-    /\.?\s*وحيث\s+إن\s+النعي\s+/,
-    /\.?\s*وحيث\s+إن\s+هذا\s+النعي\s+/,
-    /\s+ومن\s+المقرر\s+/,
-    /\s+من\s+المقرر\s+/,
-    /\s+لما\s+كان\s+ذلك\s+/
-  ];
-  for(const pattern of stopPatterns){
-    const match=subject.search(pattern);
-    if(match>180)subject=subject.slice(0,match);
+const judgmentTopicRules=[
+  {pattern:/حادث\s+سير|الدراجه\s+الناريه|وثيقه\s+التامين|لجنه\s+حل\s+وتسويه\s+المنازعات\s+التامينيه|التغطيه\s+التامينيه/,topic:'تعويض عن حادث أو نزاع تأميني حول نطاق التغطية والمسؤولية'},
+  {pattern:/علاقه\s+العمل|مستحقات\s+عماليه|الفصل\s+التعسفي|مكافاه\s+نهايه\s+الخدمه|بدل\s+الاجازه|الراتب|الاجور/,topic:'مستحقات عمالية وإنهاء علاقة العمل أو التعويض عنها'},
+  {pattern:/وحده\s+عقاريه|مطور\s+عقاري|بيع\s+عقار|ملكيه\s+العقار|تسجيل\s+العقار|دائره\s+الاراضي|العقار|عقاري/,topic:'نزاع عقاري حول الملكية أو البيع أو التزامات المطور والأطراف'},
+  {pattern:/ايجار|مستاجر|مؤجر|الاجره|بدل\s+الايجار|المستودع|العين\s+المؤجره/,topic:'نزاع إيجاري حول الأجرة أو الانتفاع أو الالتزامات الناشئة عن عقد الإيجار'},
+  {pattern:/تنفيذ\s+حكم\s+اجنبي|الحكم\s+الاجنبي|الصيغه\s+التنفيذيه|امر\s+علي\s+عريضه/,topic:'تنفيذ حكم أجنبي أو طلب وضع الصيغة التنفيذية عليه داخل الدولة'},
+  {pattern:/تحكيم|حكم\s+التحكيم|بطلان\s+حكم\s+التحكيم|اتفاق\s+التحكيم/,topic:'نزاع حول التحكيم أو صحة حكم التحكيم وآثاره'},
+  {pattern:/تسهيلات\s+بنكيه|قرض|بنك|مصرف|حساب\s+بنكي|بطاقه\s+ائتمان|الرصيد\s+المدين/,topic:'مديونية أو تسهيلات بنكية وما يرتبط بها من مطالبة مالية'},
+  {pattern:/شركاء|شريك|حصص|ارباح|تصفيه\s+الشركه|الشركات|مدير\s+الشركه/,topic:'نزاع بين شركاء أو حول إدارة الشركة والأرباح أو التصفية'},
+  {pattern:/علامه\s+تجاريه|ملكيه\s+فكريه|الاسم\s+التجاري|استعمال\s+غير\s+مشروع/,topic:'حماية علامة تجارية أو حق من حقوق الملكية الفكرية والتعويض عنه'},
+  {pattern:/مقاوله|مقاول|المستخلصات|اعمال\s+البناء|انجاز\s+الاعمال|عقد\s+مقاوله/,topic:'عقد مقاولة أو تنفيذ أعمال ومطالبات مالية مرتبطة بها'},
+  {pattern:/عقد\s+توريد|توريد|بضائع|بيع\s+البضائع|فاتوره|ثمن\s+المبيع/,topic:'عقد بيع أو توريد بضائع والوفاء بالثمن أو الالتزامات التعاقدية'},
+  {pattern:/امر\s+اداء|شيك|سند\s+لامر|مديونيه|ذمه|فاتوره|مطالبه\s+ماليه/,topic:'مطالبة مالية أو مديونية وما يتصل بها من أوامر أداء أو سندات'},
+  {pattern:/فسخ\s+العقد|اخلال\s+بالعقد|الالتزامات\s+التعاقديه|تعويض\s+عن\s+الاخلال/,topic:'مسؤولية تعاقدية وطلب فسخ أو تعويض بسبب الإخلال بالالتزامات'},
+  {pattern:/تعويض|ضرر|مسؤوليه|خطا|اصابه|اضرار\s+ماديه|اضرار\s+ادبيه/,topic:'مسؤولية مدنية وطلب تعويض عن ضرر مادي أو أدبي'},
+  {pattern:/تنفيذ|الحجز|المنفذ\s+ضده|قاضي\s+التنفيذ|منازعه\s+تنفيذ/,topic:'إجراءات تنفيذ أو منازعة متعلقة بتنفيذ حكم أو سند'},
+  {pattern:/حضان|نفقه|طلاق|زواج|احوال\s+شخصيه|ميراث|تركه/,topic:'مسألة من مسائل الأحوال الشخصية أو الأسرة'},
+  {pattern:/قرار\s+اداري|جهه\s+اداريه|الغاء\s+القرار|موظف\s+عام|اداري/,topic:'طعن إداري أو نزاع مع جهة إدارية حول قرار أو مركز قانوني'},
+  {pattern:/جنايه|جنحه|عقوبه|اتهام|ادانه|براءه|جريمه/,topic:'مسألة جنائية تتعلق بالمسؤولية أو العقوبة أو سلامة الحكم الجزائي'}
+];
+const defaultJudgmentTopic={
+  tijari:'نزاع تجاري حول التزامات مالية أو تعاقدية بين الأطراف',
+  madani:'نزاع مدني حول حقوق أو التزامات أو تعويضات',
+  aqari:'نزاع عقاري حول حقوق والتزامات مرتبطة بعقار',
+  omali:'نزاع عمالي حول مستحقات أو إنهاء علاقة عمل',
+  jinai:'مسألة جنائية حول المسؤولية أو العقوبة',
+  idari:'نزاع إداري حول قرار أو مركز قانوني',
+  osri:'نزاع أسري أو من مسائل الأحوال الشخصية'
+};
+function uniqueItems(items){
+  return [...new Set(items.filter(Boolean))];
+}
+function joinArabicList(items){
+  const clean=uniqueItems(items);
+  if(clean.length<=1)return clean[0]||'';
+  if(clean.length===2)return `${clean[0]} و${clean[1]}`;
+  return `${clean.slice(0,-1).join('، ')} و${clean[clean.length-1]}`;
+}
+function detectJudgmentTopics(source,type){
+  const topics=[];
+  for(const rule of judgmentTopicRules){
+    if(rule.pattern.test(source))topics.push(rule.topic);
+    if(topics.length>=2)break;
   }
-  return truncateJudgmentSubject(subject);
+  return topics.length?uniqueItems(topics):[defaultJudgmentTopic[type]||'نزاع قضائي حول حقوق والتزامات الأطراف'];
+}
+function detectJudgmentFocus(source){
+  const focus=[];
+  if(/تقرير\s+الخبير|الخبره|ندب\s+خبير/.test(source))focus.push('تقدير تقرير الخبرة والأدلة');
+  if(/الاختصاص|عدم\s+الاختصاص|اختصاص\s+المحكمه/.test(source))focus.push('مسألة الاختصاص');
+  if(/ميعاد\s+الطعن|قبول\s+الطعن|عدم\s+قبول\s+الطعن|اعلان|بطلان\s+الاجراءات/.test(source))focus.push('شروط قبول الطعن أو صحة الإجراءات');
+  if(/سلطه\s+محكمه\s+الموضوع|تقدير\s+الادله|فهم\s+الواقع/.test(source))focus.push('سلطة محكمة الموضوع في فهم الواقع وتقدير الأدلة');
+  if(/الفائده|الفوائد|المصاريف|اتعاب\s+المحاماه/.test(source))focus.push('الفوائد والمصاريف والآثار المالية للحكم');
+  return focus.slice(0,2);
+}
+function extractJudgmentSubject(mainText,doc=null){
+  const source=normalizeSearchText([doc?.title,doc?.court,doc?.num,doc?.excerpt,mainText].join(' '));
+  const typeName=labels[doc?.type]||'قضائي';
+  const topics=detectJudgmentTopics(source,doc?.type);
+  const focus=detectJudgmentFocus(source);
+  const lines=[`حكم ${typeName} يتناول ${joinArabicList(topics)}.`];
+  if(focus.length)lines.push(`كما يركز على ${joinArabicList(focus)}.`);
+  if(/نقض\s+الحكم|نقضه/.test(source))lines.push('المسألة المعروضة تنتهي إلى بحث مدى سلامة الحكم المطعون فيه وإمكان نقضه.');
+  else if(/رفض\s+الطعن|عدم\s+قبول\s+الطعن/.test(source))lines.push('المسألة المعروضة تدور حول مدى قبول الطعن أو كفاية أسبابه.');
+  return truncateJudgmentSubject(lines.join(' '),430);
 }
 function renderJudgmentSubject(doc,mainText){
   const subject=extractJudgmentSubject(mainText,doc);
@@ -1823,7 +1863,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v21',label:'الكاش'}
+    {value:'v26',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
