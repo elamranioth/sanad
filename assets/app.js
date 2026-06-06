@@ -14,7 +14,7 @@ const labels={tijari:'تجاري',madani:'مدني',aqari:'عقاري',omali:'ع
 const typeKeys=['tijari','madani','aqari','omali','jinai','idari','osri'];
 let localJudgments=loadLocalJudgments();
 let docs=[...localJudgments,...baseDocs];
-const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','clients','fees','settings','import','judgmentPage']);
+const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','memory','clients','fees','settings','import','judgmentPage']);
 const collections={
   decrees:{
     title:'مراسيم',
@@ -47,11 +47,13 @@ let currentLawId=null;
 let readerMode='judgment';
 let deferredInstallPrompt=null;
 const savedStorageKey='sanadSavedJudgments';
+const memoryStorageKey='sanadMemoryItems';
 const feeStorageKey='sanadFeeItems';
 const clientStorageKey='sanadClientProfiles';
 const settingsStorageKey='sanadSettings';
 const protectionStorageKey='sanadProtection';
 let savedJudgmentIds=loadSavedJudgments();
+let memoryItems=loadMemoryItems();
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
 let expandedClientIds=new Set();
@@ -665,6 +667,37 @@ function saveSavedJudgments(){
   }
 }
 function isSaved(id){return savedJudgmentIds.has(Number(id))}
+function loadMemoryItems(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(memoryStorageKey)||'[]');
+    if(!Array.isArray(saved))return [];
+    return saved
+      .filter(item=>item&&item.id&&item.text)
+      .map(item=>({
+        id:String(item.id),
+        text:String(item.text||'').trim(),
+        reference:String(item.reference||'').trim(),
+        docId:Number(item.docId)||0,
+        docTitle:String(item.docTitle||'').trim(),
+        docType:String(item.docType||'').trim(),
+        docNumber:String(item.docNumber||'').trim(),
+        court:String(item.court||'').trim(),
+        date:String(item.date||'').trim(),
+        url:String(item.url||'').trim(),
+        createdAt:item.createdAt||new Date().toISOString()
+      }));
+  }catch(_){
+    return [];
+  }
+}
+function saveMemoryItems(){
+  try{
+    localStorage.setItem(memoryStorageKey,JSON.stringify(memoryItems));
+    return true;
+  }catch(_){
+    return false;
+  }
+}
 function loadLocalJudgments(){
   try{
     const saved=JSON.parse(localStorage.getItem(localJudgmentsStorageKey)||'[]');
@@ -1178,6 +1211,9 @@ function setDefaultHeroStats(){
 function setAiAnalysisVisible(visible){
   document.getElementById('aiAnalysis')?.classList.toggle('hidden',!visible);
 }
+function setMemoryVisible(visible){
+  document.getElementById('memoryPage')?.classList.toggle('hidden',!visible);
+}
 function setFeesVisible(visible){
   document.getElementById('feesManager')?.classList.toggle('hidden',!visible);
 }
@@ -1206,6 +1242,7 @@ function hideStandalonePages(){
   setCollectionVisible(false);
   setImportVisible(false);
   setAiAnalysisVisible(false);
+  setMemoryVisible(false);
   setClientsVisible(false);
   setFeesVisible(false);
   setSettingsVisible(false);
@@ -1899,6 +1936,8 @@ function updateSettingsStats(){
   if(local)local.textContent=ar(localJudgments.length);
   if(fee)fee.textContent=ar(feeItems.length);
   if(client)client.textContent=ar(clientProfiles.length);
+  const memory=document.getElementById('settingsMemoryCount');
+  if(memory)memory.textContent=ar(memoryItems.length);
   if(judgment)judgment.textContent=ar(counts.all);
   if(law)law.textContent=ar(laws.length);
 }
@@ -1951,7 +1990,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v31',label:'الكاش'}
+    {value:'v32',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2240,6 +2279,7 @@ function backupPayload(){
     version:1,
     exportedAt:new Date().toISOString(),
     savedJudgmentIds:[...savedJudgmentIds],
+    memoryItems,
     localJudgments,
     feeItems,
     clientProfiles,
@@ -2271,11 +2311,13 @@ async function importSanadBackup(file){
     });
     if(!ok)return;
     savedJudgmentIds=new Set(Array.isArray(payload.savedJudgmentIds)?payload.savedJudgmentIds.map(Number).filter(Number.isFinite):[]);
+    memoryItems=Array.isArray(payload.memoryItems)?payload.memoryItems:[];
     localJudgments=Array.isArray(payload.localJudgments)?payload.localJudgments:[];
     feeItems=Array.isArray(payload.feeItems)?payload.feeItems:[];
     clientProfiles=Array.isArray(payload.clientProfiles)?payload.clientProfiles:[];
     sanadSettings={...sanadSettings,...(payload.sanadSettings||{})};
     saveSavedJudgments();
+    saveMemoryItems();
     saveLocalJudgmentsToStorage();
     saveFeeItems();
     saveClientProfiles();
@@ -2288,6 +2330,7 @@ async function importSanadBackup(file){
     renderDocs(sortDocuments(docs));
     renderFees();
     renderClientProfiles();
+    renderMemoryItems();
     renderLocalJudgments();
     showToast('Backup imported.');
   }catch(error){
@@ -2309,6 +2352,24 @@ async function clearSavedJudgments(){
   updateSettingsStats();
   filterDocs();
   showToast('تم مسح الأحكام المحفوظة.');
+}
+async function clearMemoryItems(){
+  if(memoryItems.length){
+    const ok=await confirmAction({
+      title:'Clear Memory?',
+      message:'Are you sure you want to delete all saved sentences and their references from this device?',
+      confirmLabel:'Clear Memory',
+      icon:'ti-notes-off'
+    });
+    if(!ok)return;
+  }
+  memoryItems=[];
+  saveMemoryItems();
+  renderMemoryItems();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  if(currentView==='memory')showMemoryPage();
+  showToast('Memory cleared.');
 }
 async function clearLocalJudgments(){
   if(localJudgments.length){
@@ -2460,6 +2521,11 @@ function handleNav(event,action,el){
     showToast('تم فتح المحلل القانوني الذكي.');
     return;
   }
+  if(action==='memory'){
+    showMemoryPage();
+    showToast('تم فتح Memory.');
+    return;
+  }
   if(action==='clients'){
     showClientsPage();
     showToast('تم فتح قسم الموكلين.');
@@ -2498,6 +2564,8 @@ function updateDisplayedCounts(){
   if(feeCount)feeCount.textContent=ar(feeItems.length);
   const clientCount=document.querySelector('.client-ct');
   if(clientCount)clientCount.textContent=ar(clientProfiles.length);
+  const memoryCount=document.querySelector('.memory-ct');
+  if(memoryCount)memoryCount.textContent=ar(memoryItems.length);
   const savedCount=document.querySelector('a[href="#saved"] .ct');
   if(savedCount)savedCount.textContent=ar(savedJudgmentIds.size);
   Object.entries(counts).forEach(([type,count])=>{
@@ -2506,6 +2574,185 @@ function updateDisplayedCounts(){
   });
   const total=document.getElementById('totalCount');
   if(total)total.textContent=ar(counts.all);
+}
+
+function normalizeMemoryText(value){
+  return String(value||'').replace(/\s+/g,' ').trim();
+}
+function memoryReferenceForDoc(doc){
+  const parts=[
+    displayDocTitle(doc),
+    doc.num,
+    doc.court,
+    doc.date
+  ].filter(Boolean).map(part=>toEnglishDigits(part));
+  return [...new Set(parts)].join(' | ');
+}
+function memoryUrlForDoc(doc){
+  return judgmentPageHref(doc.id);
+}
+function memoryDateDisplay(value){
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return '';
+  return new Intl.DateTimeFormat('en-AE',{year:'numeric',month:'short',day:'2-digit'}).format(date);
+}
+function buildMemoryItem(text,doc){
+  return {
+    id:`mem-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    text:normalizeMemoryText(text),
+    reference:memoryReferenceForDoc(doc),
+    docId:Number(doc.id)||0,
+    docTitle:displayDocTitle(doc),
+    docType:doc.type||'',
+    docNumber:doc.num||'',
+    court:doc.court||'',
+    date:doc.date||'',
+    url:memoryUrlForDoc(doc),
+    createdAt:new Date().toISOString()
+  };
+}
+function getJudgmentSelectionContext(){
+  if(readerMode!=='judgment'||!currentReaderDoc)return null;
+  const selection=window.getSelection?.();
+  if(!selection||selection.rangeCount===0||selection.isCollapsed)return null;
+  const text=normalizeMemoryText(selection.toString());
+  if(text.length<3)return null;
+  const range=selection.getRangeAt(0);
+  const anchor=range.commonAncestorContainer.nodeType===Node.ELEMENT_NODE?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;
+  const reader=anchor?.closest?.('.judgment-reader');
+  if(!reader)return null;
+  const rect=range.getBoundingClientRect();
+  const fallbackRect=range.getClientRects()[0];
+  const activeRect=rect&&rect.width+rect.height>0?rect:fallbackRect;
+  if(!activeRect)return null;
+  return {text,rect:activeRect,doc:currentReaderDoc};
+}
+function hideMemorySelectionPopover(){
+  document.getElementById('memorySelectionPopover')?.classList.add('hidden');
+}
+function showMemorySelectionPopover(context){
+  const popover=document.getElementById('memorySelectionPopover');
+  if(!popover||!context){
+    hideMemorySelectionPopover();
+    return;
+  }
+  const x=Math.min(window.innerWidth-18,Math.max(18,context.rect.left+(context.rect.width/2)));
+  const y=Math.max(12,context.rect.top-48);
+  popover.style.left=`${x}px`;
+  popover.style.top=`${y}px`;
+  popover.classList.remove('hidden');
+}
+function updateMemorySelectionPopover(){
+  showMemorySelectionPopover(getJudgmentSelectionContext());
+}
+function saveSelectionToMemory(){
+  const context=getJudgmentSelectionContext();
+  if(!context){
+    hideMemorySelectionPopover();
+    showToast('Select a sentence inside a judgment first.');
+    return;
+  }
+  const normalizedText=normalizeSearchText(context.text);
+  const exists=memoryItems.some(item=>Number(item.docId)===Number(context.doc.id)&&normalizeSearchText(item.text)===normalizedText);
+  if(exists){
+    hideMemorySelectionPopover();
+    showToast('This sentence is already in Memory.');
+    return;
+  }
+  memoryItems.unshift(buildMemoryItem(context.text,context.doc));
+  const persisted=saveMemoryItems();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  renderMemoryItems();
+  hideMemorySelectionPopover();
+  window.getSelection?.().removeAllRanges();
+  showToast(persisted?'Sentence saved to Memory with reference.':'Sentence saved for this session only.');
+}
+function matchesMemoryItem(item,query){
+  const q=normalizeSearchText(query).trim();
+  if(!q)return true;
+  return normalizeSearchText([item.text,item.reference,item.docTitle,item.court,item.date,item.docNumber].join(' ')).includes(q);
+}
+function renderMemoryItems(){
+  const list=document.getElementById('memoryList');
+  const empty=document.getElementById('memoryEmpty');
+  const count=document.getElementById('memoryPageCount');
+  const query=document.getElementById('memorySearchInput')?.value||'';
+  const filtered=memoryItems.filter(item=>matchesMemoryItem(item,query));
+  if(count)count.textContent=ar(memoryItems.length);
+  updateDisplayedCounts();
+  if(!list)return;
+  if(!filtered.length){
+    list.innerHTML='';
+    if(empty)empty.querySelector('p').textContent=memoryItems.length?'No memory items match this search.':'No saved sentences yet. Select text inside a judgment and add it to Memory.';
+    empty?.classList.remove('hidden');
+    return;
+  }
+  empty?.classList.add('hidden');
+  list.innerHTML=filtered.map(item=>`
+    <article class="memory-item" data-memory-id="${escapeHtml(item.id)}">
+      <blockquote>${escapeHtml(item.text)}</blockquote>
+      <div class="memory-reference">
+        <i class="ti ti-gavel"></i>
+        <span>${escapeHtml(item.reference||'Judgment reference unavailable')}</span>
+      </div>
+      <div class="memory-meta">
+        <span><i class="ti ti-clock"></i>${escapeHtml(memoryDateDisplay(item.createdAt))}</span>
+        <span><i class="ti ti-hash"></i>${escapeHtml(item.docNumber||item.docId||'')}</span>
+      </div>
+      <div class="memory-actions">
+        <a class="tool-secondary" href="${escapeHtml(item.url||judgmentPageHref(item.docId))}"><i class="ti ti-external-link"></i>Open source</a>
+        <button class="tool-secondary" type="button" onclick="copyMemoryItem('${escapeHtml(item.id)}')"><i class="ti ti-copy"></i>Copy</button>
+        <button class="tool-secondary danger" type="button" onclick="deleteMemoryItem('${escapeHtml(item.id)}')"><i class="ti ti-trash"></i>Delete</button>
+      </div>
+    </article>
+  `).join('');
+}
+function showMemoryPage(){
+  setRouteHash('#memory');
+  currentView='memory';
+  currentType='all';
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
+  hideStandalonePages();
+  setJudgmentWorkspaceVisible(false);
+  setMemoryVisible(true);
+  setCatalogHeader('Memory','الجمل والمقاطع القانونية المحفوظة من الأحكام مع مراجعها التلقائية.','ti-notes');
+  setHeroStats([
+    {value:ar(memoryItems.length),label:'Memory'},
+    {value:ar(new Set(memoryItems.map(item=>item.docId).filter(Boolean)).size),label:'أحكام'},
+    {value:'محلي',label:'الحفظ'}
+  ]);
+  renderMemoryItems();
+  scrollPageTo('#memoryPage');
+}
+function copyMemoryItem(id){
+  const item=memoryItems.find(entry=>entry.id===String(id));
+  if(!item)return;
+  const sourceUrl=new URL(item.url||judgmentPageHref(item.docId),location.href).href;
+  const text=`${item.text}\n\nReference: ${item.reference}\n${sourceUrl}`.trim();
+  const write=navigator.clipboard?.writeText?.(text);
+  if(!write){
+    showToast('Could not copy automatically.');
+    return;
+  }
+  write.then(()=>showToast('Memory item copied with reference.')).catch(()=>showToast('Could not copy automatically.'));
+}
+async function deleteMemoryItem(id){
+  const item=memoryItems.find(entry=>entry.id===String(id));
+  if(!item)return;
+  const ok=await confirmAction({
+    title:'Delete memory item?',
+    message:'This will remove the saved sentence and its reference from this device.',
+    confirmLabel:'Delete',
+    icon:'ti-notes-off'
+  });
+  if(!ok)return;
+  memoryItems=memoryItems.filter(entry=>entry.id!==String(id));
+  saveMemoryItems();
+  renderMemoryItems();
+  updateDisplayedCounts();
+  updateSettingsStats();
+  showToast('Memory item deleted.');
 }
 
 function judgmentPageHash(id){
@@ -2747,11 +2994,15 @@ function toggleSavedFromModal(){
 }
 function closeDoc(){
   const modal=document.getElementById('docModal');
+  const wasOpen=modal&&!modal.classList.contains('hidden');
   modal.classList.add('hidden');
   modal.classList.remove('law-modal');
-  currentReaderDoc=null;
-  currentJudgmentSearchQuery='';
-  currentJudgmentMatchIndex=0;
+  if(wasOpen){
+    currentReaderDoc=null;
+    currentJudgmentSearchQuery='';
+    currentJudgmentMatchIndex=0;
+  }
+  hideMemorySelectionPopover();
   document.body.classList.remove('modal-open');
 }
 
@@ -2795,6 +3046,7 @@ document.getElementById('aiResult')?.addEventListener('click',event=>{
   openDoc(Number(item.dataset.docId));
 });
 document.getElementById('lawSearchInput')?.addEventListener('input',filterLaws);
+document.getElementById('memorySearchInput')?.addEventListener('input',renderMemoryItems);
 document.getElementById('searchInput')?.addEventListener('keydown',event=>{
   if(event.key!=='Enter')return;
   event.preventDefault();
@@ -2881,6 +3133,15 @@ document.getElementById('backupImportInput')?.addEventListener('change',event=>{
   importSanadBackup(event.target.files?.[0]);
   event.target.value='';
 });
+let memorySelectionTimer=null;
+function scheduleMemorySelectionUpdate(){
+  clearTimeout(memorySelectionTimer);
+  memorySelectionTimer=setTimeout(updateMemorySelectionPopover,80);
+}
+document.addEventListener('selectionchange',scheduleMemorySelectionUpdate);
+document.addEventListener('mouseup',scheduleMemorySelectionUpdate);
+document.addEventListener('touchend',scheduleMemorySelectionUpdate);
+document.addEventListener('scroll',hideMemorySelectionPopover,true);
 document.getElementById('appUnlockBtn')?.addEventListener('click',unlockProtectedApp);
 document.getElementById('appUnlockInput')?.addEventListener('keydown',event=>{
   if(event.key==='Enter')unlockProtectedApp();
@@ -2895,6 +3156,7 @@ document.addEventListener('keydown',e=>{
     closeConfirm(false);
     closeClientEdit();
     closeDoc();
+    hideMemorySelectionPopover();
   }
 });
 window.addEventListener('hashchange',()=>{
@@ -2920,6 +3182,9 @@ window.addEventListener('hashchange',()=>{
   }else if(route==='aiAnalysis'){
     activateNavByAction('aiAnalysis');
     showAiAnalysisPage();
+  }else if(route==='memory'){
+    activateNavByAction('memory');
+    showMemoryPage();
   }else if(route==='laws'){
     activateNavByAction('laws');
     showLawCatalog();
@@ -3063,6 +3328,7 @@ renderDocs(sortDocuments(docs));
 renderLaws(laws);
 renderFees();
 renderClientProfiles();
+renderMemoryItems();
 renderLocalJudgments();
 updateSettingsStats();
 startDisplayDigitNormalizer();
@@ -3088,6 +3354,9 @@ if(initialJudgmentId){
 }else if(window.location.hash==='#aiAnalysis'){
   activateNavByAction('aiAnalysis');
   showAiAnalysisPage();
+}else if(window.location.hash==='#memory'){
+  activateNavByAction('memory');
+  showMemoryPage();
 }else if(window.location.hash==='#laws'){
   activateNavByAction('laws');
   showLawCatalog();

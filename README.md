@@ -27,6 +27,7 @@ sanad-local-server.js   Local static server
 
 - `#dashboard`: overview dashboard and quick service links.
 - `#judgments` / `#documents`: judgment catalog with advanced indexed search, filters, relevance sorting, pagination, reader, saved judgments, highlighted legal-principle cues, and a framed operative ruling.
+- `#memory`: saved judgment sentences with automatic judgment references for drafting and research.
 - `#laws`: law catalog and formatted law reader.
 - `#decrees`: independent decrees page, ready for future decree records.
 - `#regulations`: independent regulations page, ready for future regulation records.
@@ -59,6 +60,7 @@ Laws are loaded into `window.SANAD_DATA.laws`; keep original Markdown in `conten
 Local user data is stored in browser `localStorage`:
 
 - `sanadSavedJudgments`
+- `sanadMemoryItems`
 - `sanadFeeItems`
 - `sanadSettings`
 - `sanadLocalJudgments`
