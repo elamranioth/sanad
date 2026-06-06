@@ -191,7 +191,7 @@ body.sidebar-collapsed .avatar{width:34px;height:34px}
 .sort-sel{background:#0a1520;border:1px solid #1e3a52;border-radius:7px;padding:6px 12px;font-size:12px;color:#7a9ab0;font-family:'Tajawal',sans-serif;outline:none;cursor:pointer;direction:rtl}
 
 .doc-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:24px}
-.doc-card{background:#0a1520;border:1px solid #1e3a52;border-radius:11px;padding:16px 18px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:14px;width:100%;font:inherit;color:inherit;text-align:right;direction:rtl;appearance:none;-webkit-appearance:none}
+.doc-card{background:#0a1520;border:1px solid #1e3a52;border-radius:11px;padding:16px 18px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:14px;width:100%;font:inherit;color:inherit;text-align:right;text-decoration:none;direction:rtl;appearance:none;-webkit-appearance:none}
 .doc-card:hover{border-color:#c8a84b44;background:#0d1e2e;transform:translateX(-3px);box-shadow:0 4px 20px #00000033}
 .doc-card:focus-visible{outline:2px solid #c8a84b;outline-offset:2px}
 .doc-card-icon{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
@@ -473,7 +473,7 @@ body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .do
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
 body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .client-service-form input,body.ink-mode .client-edit-field input,body.ink-mode .client-edit-field textarea,body.ink-mode .client-filter-row label{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
-body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .doc-page-link,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit,body.ink-mode .pagination-bar button{background:#fff;color:#111;border-color:#111;box-shadow:none}
+body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit,body.ink-mode .pagination-bar button{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
@@ -564,9 +564,6 @@ body.modal-open{overflow:hidden}
 .doc-action:hover{border-color:#c8a84b55;color:#c8a84b;background:#121f2d}
 .doc-action i{font-size:19px}
 .doc-action.saved{background:#2a1f08;border-color:#c8a84b66;color:#c8a84b}
-.doc-page-link{width:34px;height:34px;border:1px solid #1e3a52;background:#0d1b2a;color:#7a9ab0;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:all .2s}
-.doc-page-link:hover{border-color:#c8a84b66;color:#c8a84b;background:#121f2d}
-.doc-page-link i{font-size:18px}
 .judgment-page{display:flex;flex-direction:column;gap:18px}
 .judgment-page-head{background:#080f18;border:1px solid #2a4a68;border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
 .judgment-page-head>div:first-child{min-width:0}

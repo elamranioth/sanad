@@ -1951,7 +1951,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v30',label:'الكاش'}
+    {value:'v31',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2645,7 +2645,7 @@ function renderDocsPage(){
   }
   nr.classList.add('hidden');
   g.innerHTML=pageItems.map(d=>`
-    <div class="doc-card" role="button" tabindex="0" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
+    <a class="doc-card" href="${escapeHtml(judgmentPageHref(d.id))}" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
       <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i></div>
       <div class="doc-body">
         <div class="doc-title">${escapeHtml(displayDocTitle(d))}</div>
@@ -2659,10 +2659,9 @@ function renderDocsPage(){
       </div>
       <div class="doc-badge">
         <span class="type-tag tt-${d.type}">${labels[d.type]||'حكم'}</span>
-        <a class="doc-page-link" href="${escapeHtml(judgmentPageHref(d.id))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="فتح الحكم في صفحة جديدة"><i class="ti ti-external-link"></i></a>
         <i class="ti ti-chevron-left"></i>
       </div>
-    </div>`).join('');
+    </a>`).join('');
   document.getElementById('shownCount').textContent=`${ar(start+1)}-${ar(start+pageItems.length)}`;
   document.getElementById('totalCount').textContent=ar(total);
   if(pagination){
@@ -2759,11 +2758,12 @@ function closeDoc(){
 document.getElementById('docGrid')?.addEventListener('click',event=>{
   const card=event.target.closest('.doc-card[data-doc-id]');
   if(!card)return;
+  if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
   openDoc(Number(card.dataset.docId));
 });
 document.getElementById('docGrid')?.addEventListener('keydown',event=>{
   if(event.key!=='Enter'&&event.key!==' ')return;
-  if(event.target.closest('.doc-page-link'))return;
   const card=event.target.closest('.doc-card[data-doc-id]');
   if(!card)return;
   event.preventDefault();
