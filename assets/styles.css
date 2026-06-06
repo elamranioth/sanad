@@ -508,6 +508,8 @@ body.ink-mode .advanced-search,body.ink-mode .advanced-search-grid input,body.in
 body.ink-mode .advanced-search summary,body.ink-mode .advanced-search-grid label,body.ink-mode .advanced-search summary small,body.ink-mode .doc-search-score{color:#111}
 body.ink-mode .doc-search-section{background:#f7f2df;border-color:#111;color:#111}
 body.ink-mode .judgment-search-hit{background:#111;color:#fff;box-shadow:none}
+body.ink-mode .legal-principle-cue{background:#111;color:#fff;border-color:#111}
+body.ink-mode .judgment-search-hit .legal-principle-cue{background:#fff;color:#000;border-color:#000}
 body.ink-mode .judgment-search-hit.active{background:#000;color:#fff;outline:2px solid #000;outline-offset:2px}
 body.ink-mode .judgment-tag,body.ink-mode .law-article-head span{background:#f7f2df;color:#111;border-color:#111}
 body.ink-mode .hero::before{display:none}
@@ -599,7 +601,9 @@ body.modal-open{overflow:hidden}
 .judgment-search-tools button{border:1px solid #285577;background:#102638;color:#8bd3ee;border-radius:8px;padding:8px 10px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .judgment-search-tools button:disabled{opacity:.45;cursor:not-allowed}
 .judgment-para.has-search-match{border-color:#c8a84b66;border-right-color:#c8a84b;background:#111b24}
+.legal-principle-cue{display:inline;font-weight:900;color:#f3d779;background:#2a1f08;border:1px solid #c8a84b66;border-radius:6px;padding:1px 5px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .judgment-search-hit{background:#fff176;color:#101010;border-radius:4px;padding:1px 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;box-shadow:0 0 0 1px #c8a84b55}
+.judgment-search-hit .legal-principle-cue{background:#ffe8a0;color:#101010;border-color:#10101055}
 .judgment-search-hit.active{background:#ffbd33;color:#101010;box-shadow:0 0 0 2px #fff3a6,0 0 22px #c8a84b55}
 .judgment-tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;font-size:10px;font-weight:700;padding:3px 9px;margin:0 0 8px 8px}
 .law-modal .doc-dialog-body{background:#08121d}

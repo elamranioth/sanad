@@ -178,9 +178,14 @@ function sentenceLooselyMatchesSearch(sentence,query){
   const haystack=normalizeSearchText(sentence);
   return words.some(word=>haystack.includes(word));
 }
+const legalPrincipleCuePattern=/(?:و)?من\s+المقرر(?:\s*[-–،,]?\s*(?:قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز)|على\s+ما\s+(?:جرى|استقر)\s+به\s+قضاء\s+هذه\s+المحكمة))?|(?:و)?المقرر\s+(?:قضاء|قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز))/g;
+function highlightLegalPrincipleCues(html){
+  return html.replace(legalPrincipleCuePattern,match=>`<strong class="legal-principle-cue">${match}</strong>`);
+}
 function renderSearchMatchedSentence(sentence,query){
-  if(!sentenceMatchesSearch(sentence,query))return escapeHtml(sentence);
-  return `<mark class="judgment-search-hit">${escapeHtml(sentence)}</mark>`;
+  const html=highlightLegalPrincipleCues(escapeHtml(sentence));
+  if(!sentenceMatchesSearch(sentence,query))return html;
+  return `<mark class="judgment-search-hit">${html}</mark>`;
 }
 function trimSearchSnippet(sentence){
   const clean=String(sentence||'').replace(/\s+/g,' ').trim();
