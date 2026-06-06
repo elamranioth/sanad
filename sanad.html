@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=single-operative-ruling-20260607">
+<link rel="stylesheet" href="./assets/styles.css?v=judgment-page-route-20260607">
 </head>
 <body>
 
@@ -244,6 +244,8 @@
       <i class="ti ti-mood-empty"></i>
       <p>لم يتم العثور على أحكام مطابقة لبحثك</p>
     </div>
+
+    <section class="judgment-page hidden" id="judgmentPage"></section>
 
     <section class="dashboard-page hidden" id="dashboardPage">
       <div class="tool-page-head">
@@ -503,7 +505,7 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">0</strong></span>
             <span>القوانين: <strong id="settingsLawCount">0</strong></span>
-            <span>الكاش: <strong>v29</strong></span>
+            <span>الكاش: <strong>v30</strong></span>
           </div>
         </div>
         <div class="tool-panel wide">
@@ -540,6 +542,7 @@
           </div>
           <div class="doc-dialog-actions">
             <button class="doc-action" id="saveJudgmentBtn" type="button" onclick="toggleSavedFromModal()" aria-pressed="false"><i class="ti ti-bookmark"></i><span>حفظ الحكم</span></button>
+            <button class="doc-action" id="openJudgmentPageBtn" type="button" onclick="openCurrentJudgmentPage()" aria-label="فتح الحكم في صفحة جديدة"><i class="ti ti-external-link"></i><span>فتح في صفحة</span></button>
             <button class="doc-action" type="button" onclick="closeDoc()" aria-label="العودة إلى قائمة الأحكام"><i class="ti ti-arrow-right"></i><span>رجوع</span></button>
           </div>
         </div>
@@ -583,6 +586,6 @@
 <script src="./data/search/manifest.js?v=advanced-search-20260527"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=single-operative-ruling-20260607"></script>
+<script src="./assets/app.js?v=judgment-page-route-20260607"></script>
 </body>
 </html>

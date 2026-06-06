@@ -14,7 +14,7 @@ const labels={tijari:'تجاري',madani:'مدني',aqari:'عقاري',omali:'ع
 const typeKeys=['tijari','madani','aqari','omali','jinai','idari','osri'];
 let localJudgments=loadLocalJudgments();
 let docs=[...localJudgments,...baseDocs];
-const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','clients','fees','settings','import']);
+const standaloneViews=new Set(['dashboard','laws','decrees','regulations','contracts','aiAnalysis','clients','fees','settings','import','judgmentPage']);
 const collections={
   decrees:{
     title:'مراسيم',
@@ -1196,6 +1196,9 @@ function setCollectionVisible(visible){
 function setImportVisible(visible){
   document.getElementById('importPage')?.classList.toggle('hidden',!visible);
 }
+function setJudgmentPageVisible(visible){
+  document.getElementById('judgmentPage')?.classList.toggle('hidden',!visible);
+}
 function hideStandalonePages(){
   document.getElementById('sectionEmpty')?.classList.add('hidden');
   document.getElementById('lawCatalog')?.classList.add('hidden');
@@ -1206,6 +1209,7 @@ function hideStandalonePages(){
   setClientsVisible(false);
   setFeesVisible(false);
   setSettingsVisible(false);
+  setJudgmentPageVisible(false);
 }
 function setJudgmentWorkspaceVisible(visible){
   ['.type-cards','.search-bar','.results-bar','#docGrid','#paginationBar'].forEach(selector=>{
@@ -1947,7 +1951,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v29',label:'الكاش'}
+    {value:'v30',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2504,6 +2508,118 @@ function updateDisplayedCounts(){
   if(total)total.textContent=ar(counts.all);
 }
 
+function judgmentPageHash(id){
+  return `#judgment/${Number(id)}`;
+}
+function judgmentPageHref(id){
+  const url=new URL(location.href);
+  url.hash=judgmentPageHash(id);
+  return url.pathname+url.search+url.hash;
+}
+function judgmentRouteId(route){
+  const match=String(route||'').match(/^judgment(?:\/|-)(\d+)$/);
+  return match?Number(match[1]):null;
+}
+function openCurrentJudgmentPage(){
+  if(readerMode!=='judgment'||currentDocId===null)return;
+  const target=judgmentPageHref(currentDocId);
+  const opened=window.open(target,'_blank','noopener');
+  if(!opened)location.href=target;
+}
+function syncJudgmentPageSaveButton(){
+  const btn=document.getElementById('judgmentPageSaveBtn');
+  if(!btn||currentDocId===null)return;
+  const saved=isSaved(currentDocId);
+  btn.classList.toggle('saved',saved);
+  btn.setAttribute('aria-pressed',saved?'true':'false');
+  btn.innerHTML=`<i class="ti ${saved?'ti-bookmark-filled':'ti-bookmark'}"></i>${saved?'Saved':'Save judgment'}`;
+}
+function toggleSavedFromPage(){
+  if(currentView!=='judgmentPage'||currentDocId===null)return;
+  if(isSaved(currentDocId)){
+    savedJudgmentIds.delete(Number(currentDocId));
+    showToast('تمت إزالة الحكم من المحفوظة.');
+  }else{
+    savedJudgmentIds.add(Number(currentDocId));
+    showToast('تم حفظ الحكم في المحفوظة.');
+  }
+  const persisted=saveSavedJudgments();
+  syncJudgmentPageSaveButton();
+  syncSaveButton();
+  updateDisplayedCounts();
+  if(!persisted)showToast('تم حفظ التغيير لهذه الجلسة فقط.');
+}
+function copyCurrentJudgmentLink(){
+  if(currentDocId===null)return;
+  const url=new URL(location.href);
+  url.hash=judgmentPageHash(currentDocId);
+  const write=navigator.clipboard?.writeText?.(url.href);
+  if(!write){
+    showToast('تعذر نسخ الرابط تلقائيًا.');
+    return;
+  }
+  write.then(()=>{
+    showToast('تم نسخ رابط الحكم.');
+  }).catch(()=>showToast('تعذر نسخ الرابط تلقائيًا.'));
+}
+function renderJudgmentPageShell(doc,bodyHtml=''){
+  const saved=isSaved(doc.id);
+  return `<div class="judgment-page-head">
+    <div>
+      <span>${escapeHtml(labels[doc.type]||'حكم قضائي')}</span>
+      <h2>${escapeHtml(displayDocTitle(doc))}</h2>
+      <p>${escapeHtml(doc.court||'محكمة')} ${doc.date?` · ${escapeHtml(doc.date)}`:''}</p>
+    </div>
+    <div class="judgment-page-actions">
+      <button class="tool-secondary" type="button" onclick="showAllJudgments()"><i class="ti ti-arrow-right"></i>Back</button>
+      <button class="tool-secondary ${saved?'saved':''}" id="judgmentPageSaveBtn" type="button" onclick="toggleSavedFromPage()" aria-pressed="${saved?'true':'false'}"><i class="ti ${saved?'ti-bookmark-filled':'ti-bookmark'}"></i>${saved?'Saved':'Save judgment'}</button>
+      <button class="tool-secondary" type="button" onclick="copyCurrentJudgmentLink()"><i class="ti ti-link"></i>Copy link</button>
+      <button class="tool-secondary" type="button" onclick="window.print()"><i class="ti ti-printer"></i>Print</button>
+    </div>
+  </div>
+  <div class="judgment-page-body" id="judgmentPageBody">${bodyHtml}</div>`;
+}
+async function showJudgmentPage(id){
+  const d=docs.find(item=>Number(item.id)===Number(id));
+  if(!d){
+    showAllJudgments();
+    showToast('لم يتم العثور على الحكم المطلوب.');
+    return;
+  }
+  setRouteHash(judgmentPageHash(d.id));
+  currentView='judgmentPage';
+  readerMode='judgment';
+  currentType='all';
+  currentDocId=d.id;
+  currentLawId=null;
+  currentReaderDoc=null;
+  currentJudgmentSearchQuery='';
+  currentJudgmentMatchIndex=0;
+  closeDoc();
+  document.querySelector('.page')?.classList.remove('empty-mode','ai-mode');
+  hideStandalonePages();
+  setJudgmentWorkspaceVisible(false);
+  setJudgmentPageVisible(true);
+  setActiveNav(null);
+  setCatalogHeader('قراءة الحكم',displayDocTitle(d),'ti-file-text');
+  setHeroStats([
+    {value:escapeHtml(d.num||ar(d.id)),label:'رقم'},
+    {value:labels[d.type]||'حكم',label:'التصنيف'},
+    {value:d.date||'غير محدد',label:'التاريخ'}
+  ]);
+  const page=document.getElementById('judgmentPage');
+  if(page)page.innerHTML=renderJudgmentPageShell(d,'<div class="judgment-loading"><div class="spinner"></div>جارٍ تحميل نص الحكم الكامل...</div>');
+  scrollPageTo('#judgmentPage');
+  const fullDoc=await getFullJudgment(d.id);
+  if(currentView!=='judgmentPage'||Number(currentDocId)!==Number(d.id))return;
+  currentReaderDoc={...d,...(fullDoc||{})};
+  const body=document.getElementById('judgmentPageBody');
+  if(body)body.innerHTML=renderJudgmentSearchPanel('',currentReaderDoc.body)+formatJudgmentBody(currentReaderDoc.body,currentReaderDoc,'');
+  syncJudgmentPageSaveButton();
+  updateJudgmentSearchPanelState();
+  document.title=`${displayDocTitle(d)} - سند`;
+}
+
 function renderDocs(list,page=1){
   currentDocResults=[...list];
   currentPage=Number(page)||1;
@@ -2529,7 +2645,7 @@ function renderDocsPage(){
   }
   nr.classList.add('hidden');
   g.innerHTML=pageItems.map(d=>`
-    <button class="doc-card" type="button" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
+    <div class="doc-card" role="button" tabindex="0" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
       <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i></div>
       <div class="doc-body">
         <div class="doc-title">${escapeHtml(displayDocTitle(d))}</div>
@@ -2543,9 +2659,10 @@ function renderDocsPage(){
       </div>
       <div class="doc-badge">
         <span class="type-tag tt-${d.type}">${labels[d.type]||'حكم'}</span>
+        <a class="doc-page-link" href="${escapeHtml(judgmentPageHref(d.id))}" target="_blank" rel="noopener" onclick="event.stopPropagation()" aria-label="فتح الحكم في صفحة جديدة"><i class="ti ti-external-link"></i></a>
         <i class="ti ti-chevron-left"></i>
       </div>
-    </button>`).join('');
+    </div>`).join('');
   document.getElementById('shownCount').textContent=`${ar(start+1)}-${ar(start+pageItems.length)}`;
   document.getElementById('totalCount').textContent=ar(total);
   if(pagination){
@@ -2573,6 +2690,7 @@ async function openDoc(id){
   currentJudgmentMatchIndex=0;
   document.getElementById('docModal').classList.remove('law-modal');
   document.getElementById('saveJudgmentBtn')?.classList.remove('hidden');
+  document.getElementById('openJudgmentPageBtn')?.classList.remove('hidden');
   document.getElementById('modalType').textContent=labels[d.type]||'حكم قضائي';
   document.getElementById('modalTitle').textContent=displayDocTitle(d);
   document.getElementById('modalBody').innerHTML='<div class="judgment-loading"><div class="spinner"></div>جارٍ تحميل نص الحكم الكامل...</div>';
@@ -2597,6 +2715,7 @@ function openLaw(id){
   currentJudgmentMatchIndex=0;
   const modal=document.getElementById('docModal');
   document.getElementById('saveJudgmentBtn')?.classList.add('hidden');
+  document.getElementById('openJudgmentPageBtn')?.classList.add('hidden');
   document.getElementById('modalType').textContent=law.category||'قانون';
   document.getElementById('modalTitle').textContent=law.title;
   document.getElementById('modalBody').innerHTML=renderLawReader(law);
@@ -2640,6 +2759,14 @@ function closeDoc(){
 document.getElementById('docGrid')?.addEventListener('click',event=>{
   const card=event.target.closest('.doc-card[data-doc-id]');
   if(!card)return;
+  openDoc(Number(card.dataset.docId));
+});
+document.getElementById('docGrid')?.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'&&event.key!==' ')return;
+  if(event.target.closest('.doc-page-link'))return;
+  const card=event.target.closest('.doc-card[data-doc-id]');
+  if(!card)return;
+  event.preventDefault();
   openDoc(Number(card.dataset.docId));
 });
 document.getElementById('paginationBar')?.addEventListener('click',event=>{
@@ -2772,7 +2899,10 @@ document.addEventListener('keydown',e=>{
 });
 window.addEventListener('hashchange',()=>{
   const route=window.location.hash.replace('#','');
-  if(route==='dashboard'){
+  const routedJudgmentId=judgmentRouteId(route);
+  if(routedJudgmentId){
+    showJudgmentPage(routedJudgmentId);
+  }else if(route==='dashboard'){
     activateNavByAction('dashboard');
     showDashboardPage();
   }else if(route==='judgments'||route==='documents'||!route){
@@ -2936,7 +3066,11 @@ renderClientProfiles();
 renderLocalJudgments();
 updateSettingsStats();
 startDisplayDigitNormalizer();
-if(window.location.hash==='#dashboard'){
+const initialRoute=window.location.hash.replace('#','');
+const initialJudgmentId=judgmentRouteId(initialRoute);
+if(initialJudgmentId){
+  showJudgmentPage(initialJudgmentId);
+}else if(window.location.hash==='#dashboard'){
   activateNavByAction('dashboard');
   showDashboardPage();
 }else if(window.location.hash==='#judgments'||window.location.hash==='#documents'||!window.location.hash){
