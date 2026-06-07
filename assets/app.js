@@ -1990,7 +1990,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v32',label:'الكاش'}
+    {value:'v33',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2356,9 +2356,9 @@ async function clearSavedJudgments(){
 async function clearMemoryItems(){
   if(memoryItems.length){
     const ok=await confirmAction({
-      title:'Clear Memory?',
-      message:'Are you sure you want to delete all saved sentences and their references from this device?',
-      confirmLabel:'Clear Memory',
+      title:'مسح المقتطفات الهامة؟',
+      message:'سيتم حذف كل الجمل والمراجع المحفوظة في المقتطفات الهامة من هذا الجهاز.',
+      confirmLabel:'مسح المقتطفات',
       icon:'ti-notes-off'
     });
     if(!ok)return;
@@ -2369,7 +2369,7 @@ async function clearMemoryItems(){
   updateDisplayedCounts();
   updateSettingsStats();
   if(currentView==='memory')showMemoryPage();
-  showToast('Memory cleared.');
+  showToast('تم مسح المقتطفات الهامة.');
 }
 async function clearLocalJudgments(){
   if(localJudgments.length){
@@ -2523,7 +2523,7 @@ function handleNav(event,action,el){
   }
   if(action==='memory'){
     showMemoryPage();
-    showToast('تم فتح Memory.');
+    showToast('تم فتح المقتطفات الهامة.');
     return;
   }
   if(action==='clients'){
@@ -2649,14 +2649,14 @@ function saveSelectionToMemory(){
   const context=getJudgmentSelectionContext();
   if(!context){
     hideMemorySelectionPopover();
-    showToast('Select a sentence inside a judgment first.');
+    showToast('حدد جملة داخل الحكم أولًا.');
     return;
   }
   const normalizedText=normalizeSearchText(context.text);
   const exists=memoryItems.some(item=>Number(item.docId)===Number(context.doc.id)&&normalizeSearchText(item.text)===normalizedText);
   if(exists){
     hideMemorySelectionPopover();
-    showToast('This sentence is already in Memory.');
+    showToast('هذا المقتطف محفوظ مسبقًا.');
     return;
   }
   memoryItems.unshift(buildMemoryItem(context.text,context.doc));
@@ -2666,7 +2666,7 @@ function saveSelectionToMemory(){
   renderMemoryItems();
   hideMemorySelectionPopover();
   window.getSelection?.().removeAllRanges();
-  showToast(persisted?'Sentence saved to Memory with reference.':'Sentence saved for this session only.');
+  showToast(persisted?'تم حفظ المقتطف مع مرجعه تلقائيًا.':'تم حفظ المقتطف لهذه الجلسة فقط.');
 }
 function matchesMemoryItem(item,query){
   const q=normalizeSearchText(query).trim();
@@ -2684,7 +2684,7 @@ function renderMemoryItems(){
   if(!list)return;
   if(!filtered.length){
     list.innerHTML='';
-    if(empty)empty.querySelector('p').textContent=memoryItems.length?'No memory items match this search.':'No saved sentences yet. Select text inside a judgment and add it to Memory.';
+    if(empty)empty.querySelector('p').textContent=memoryItems.length?'لا توجد مقتطفات مطابقة لهذا البحث.':'لا توجد مقتطفات محفوظة بعد. حدد نصًا داخل الحكم وأضفه إلى المقتطفات.';
     empty?.classList.remove('hidden');
     return;
   }
@@ -2716,9 +2716,9 @@ function showMemoryPage(){
   hideStandalonePages();
   setJudgmentWorkspaceVisible(false);
   setMemoryVisible(true);
-  setCatalogHeader('Memory','الجمل والمقاطع القانونية المحفوظة من الأحكام مع مراجعها التلقائية.','ti-notes');
+  setCatalogHeader('مقتطفات هامة','الجمل والمقاطع القانونية المحفوظة من الأحكام مع مراجعها التلقائية.','ti-notes');
   setHeroStats([
-    {value:ar(memoryItems.length),label:'Memory'},
+    {value:ar(memoryItems.length),label:'مقتطف'},
     {value:ar(new Set(memoryItems.map(item=>item.docId).filter(Boolean)).size),label:'أحكام'},
     {value:'محلي',label:'الحفظ'}
   ]);
@@ -2735,15 +2735,15 @@ function copyMemoryItem(id){
     showToast('Could not copy automatically.');
     return;
   }
-  write.then(()=>showToast('Memory item copied with reference.')).catch(()=>showToast('Could not copy automatically.'));
+  write.then(()=>showToast('تم نسخ المقتطف مع المرجع.')).catch(()=>showToast('تعذر النسخ تلقائيًا.'));
 }
 async function deleteMemoryItem(id){
   const item=memoryItems.find(entry=>entry.id===String(id));
   if(!item)return;
   const ok=await confirmAction({
-    title:'Delete memory item?',
-    message:'This will remove the saved sentence and its reference from this device.',
-    confirmLabel:'Delete',
+    title:'حذف المقتطف؟',
+    message:'سيتم حذف الجملة المحفوظة ومرجعها من هذا الجهاز.',
+    confirmLabel:'حذف',
     icon:'ti-notes-off'
   });
   if(!ok)return;
@@ -2752,7 +2752,7 @@ async function deleteMemoryItem(id){
   renderMemoryItems();
   updateDisplayedCounts();
   updateSettingsStats();
-  showToast('Memory item deleted.');
+  showToast('تم حذف المقتطف.');
 }
 
 function judgmentPageHash(id){

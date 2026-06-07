@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=sentence-memory-20260607">
+<link rel="stylesheet" href="./assets/styles.css?v=important-excerpts-20260607">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       <span class="nav-lbl">الأدوات</span>
       <a class="ni" href="#search" onclick="handleNav(event,'search',this)"><i class="ti ti-zoom"></i>بحث متقدم</a>
       <a class="ni ni-ai" href="#aiAnalysis" onclick="handleNav(event,'aiAnalysis',this)"><i class="ti ti-brain"></i>المحلل القانوني الذكي<span class="ct ai-ct">ذكي</span></a>
-      <a class="ni" href="#memory" onclick="handleNav(event,'memory',this)"><i class="ti ti-notes"></i>Memory<span class="ct memory-ct">0</span></a>
+      <a class="ni" href="#memory" onclick="handleNav(event,'memory',this)"><i class="ti ti-notes"></i>مقتطفات هامة<span class="ct memory-ct">0</span></a>
       <a class="ni" href="#clients" onclick="handleNav(event,'clients',this)"><i class="ti ti-users"></i>الموكلين<span class="ct client-ct">0</span></a>
       <a class="ni" href="#fees" onclick="handleNav(event,'fees',this)"><i class="ti ti-receipt"></i>إدارة الرسوم<span class="ct fee-ct">0</span></a>
       <a class="ni" href="#settings" onclick="handleNav(event,'settings',this)"><i class="ti ti-adjustments-horizontal"></i>الإعدادات</a>
@@ -70,7 +70,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="memory-selection-popover hidden" id="memorySelectionPopover" dir="ltr">
-  <button type="button" onmousedown="event.preventDefault()" onclick="saveSelectionToMemory()"><i class="ti ti-notes"></i>Add to Memory</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="saveSelectionToMemory()"><i class="ti ti-notes"></i>إضافة إلى المقتطفات</button>
 </div>
 <div class="confirm-modal hidden" id="confirmModal" role="presentation" aria-hidden="true" dir="ltr">
   <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
@@ -254,17 +254,17 @@
     <section class="memory-page hidden" id="memoryPage">
       <div class="tool-page-head">
         <div>
-          <h2>Memory</h2>
-          <p>Saved judgment sentences with automatic source references for drafting and research.</p>
+          <h2>مقتطفات هامة</h2>
+          <p>الجمل والمقاطع المحفوظة من الأحكام مع المراجع التلقائية للبحث والصياغة.</p>
         </div>
-        <div class="tool-counter"><strong id="memoryPageCount">0</strong><span>items</span></div>
+        <div class="tool-counter"><strong id="memoryPageCount">0</strong><span>مقتطف</span></div>
       </div>
       <div class="memory-toolbar">
-        <label><i class="ti ti-search"></i><input id="memorySearchInput" type="text" placeholder="Search memory, sentence, reference..."></label>
-        <button class="tool-secondary danger" type="button" onclick="clearMemoryItems()"><i class="ti ti-trash"></i>Clear Memory</button>
+        <label><i class="ti ti-search"></i><input id="memorySearchInput" type="text" placeholder="ابحث في المقتطفات أو المراجع..."></label>
+        <button class="tool-secondary danger" type="button" onclick="clearMemoryItems()"><i class="ti ti-trash"></i>مسح المقتطفات</button>
       </div>
       <div class="memory-list" id="memoryList"></div>
-      <div class="tool-empty hidden" id="memoryEmpty"><i class="ti ti-notes-off"></i><p>No saved sentences yet. Select text inside a judgment and add it to Memory.</p></div>
+      <div class="tool-empty hidden" id="memoryEmpty"><i class="ti ti-notes-off"></i><p>لا توجد مقتطفات محفوظة بعد. حدد نصًا داخل الحكم وأضفه إلى المقتطفات.</p></div>
     </section>
 
     <section class="dashboard-page hidden" id="dashboardPage">
@@ -512,11 +512,11 @@
             <span><strong id="settingsLocalJudgmentCount">0</strong> أحكام مضافة محليًا</span>
             <span><strong id="settingsFeeCount">0</strong> رسوم محفوظة</span>
             <span><strong id="settingsClientCount">0</strong> عملاء محفوظون</span>
-            <span><strong id="settingsMemoryCount">0</strong> Memory items</span>
+            <span><strong id="settingsMemoryCount">0</strong> مقتطفات هامة</span>
           </div>
           <div class="settings-actions">
             <button class="tool-secondary" type="button" onclick="clearSavedJudgments()"><i class="ti ti-bookmark-off"></i>مسح المحفوظات</button>
-            <button class="tool-secondary danger" type="button" onclick="clearMemoryItems()"><i class="ti ti-notes-off"></i>Clear Memory</button>
+            <button class="tool-secondary danger" type="button" onclick="clearMemoryItems()"><i class="ti ti-notes-off"></i>مسح المقتطفات</button>
             <button class="tool-secondary danger" type="button" onclick="clearLocalJudgments()"><i class="ti ti-file-x"></i>مسح الأحكام المحلية</button>
             <button class="tool-secondary danger" type="button" onclick="clearFeeItems()"><i class="ti ti-trash"></i>مسح الرسوم</button>
             <button class="tool-secondary danger" type="button" onclick="clearClientProfiles()"><i class="ti ti-user-x"></i>مسح العملاء</button>
@@ -527,14 +527,14 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">0</strong></span>
             <span>القوانين: <strong id="settingsLawCount">0</strong></span>
-            <span>الكاش: <strong>v32</strong></span>
+            <span>الكاش: <strong>v33</strong></span>
           </div>
         </div>
         <div class="tool-panel wide">
           <div class="tool-panel-head"><i class="ti ti-shield-lock"></i><span>Backup and protection</span></div>
           <div class="backup-grid english-panel" dir="ltr">
             <div>
-              <p class="settings-note">Export or import your local clients, invoices, memory, saved judgments, local judgments, fees, and settings.</p>
+              <p class="settings-note">Export or import your local clients, invoices, important excerpts, saved judgments, local judgments, fees, and settings.</p>
               <div class="settings-actions">
                 <button class="tool-primary" type="button" onclick="exportSanadBackup()"><i class="ti ti-download"></i>Export backup</button>
                 <button class="tool-secondary" type="button" onclick="document.getElementById('backupImportInput').click()"><i class="ti ti-upload"></i>Import backup</button>
@@ -608,6 +608,6 @@
 <script src="./data/search/manifest.js?v=advanced-search-20260527"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=sentence-memory-20260607"></script>
+<script src="./assets/app.js?v=important-excerpts-20260607"></script>
 </body>
 </html>
