@@ -27,7 +27,7 @@ sanad-local-server.js   Local static server
 
 - `#dashboard`: overview dashboard and quick service links.
 - `#judgments` / `#documents`: judgment catalog with advanced indexed search, filters, relevance sorting, pagination, reader, saved judgments, highlighted legal-principle cues, and a framed operative ruling.
-- `#memory`: مقتطفات هامة, saved judgment sentences with automatic judgment references for drafting and research.
+- `#memory`: مقتطفات هامة, saved judgment sentences with automatic judgment references for drafting and research. This page can download all saved excerpts into one `.docx` Word file with their source references.
 - `#laws`: law catalog and formatted law reader.
 - `#decrees`: independent decrees page, ready for future decree records.
 - `#regulations`: independent regulations page, ready for future regulation records.

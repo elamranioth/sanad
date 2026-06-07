@@ -1990,7 +1990,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v33',label:'الكاش'}
+    {value:'v34',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -2736,6 +2736,161 @@ function copyMemoryItem(id){
     return;
   }
   write.then(()=>showToast('تم نسخ المقتطف مع المرجع.')).catch(()=>showToast('تعذر النسخ تلقائيًا.'));
+}
+function escapeXml(value){
+  return toEnglishDigits(value)
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'')
+    .replace(/[<>&'"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[ch]));
+}
+function wordRun(text,options={}){
+  const bold=options.bold?'<w:b/><w:bCs/>':'';
+  const rtl=options.rtl===false?'':'<w:rtl/>';
+  const size=options.size||24;
+  const color=options.color?`<w:color w:val="${options.color}"/>`:'';
+  return `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>${rtl}${bold}<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>${color}<w:lang w:val="en-US" w:bidi="ar-AE"/></w:rPr><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r>`;
+}
+function wordParagraph(text,options={}){
+  const rtl=options.rtl!==false;
+  const align=options.align||(rtl?'right':'left');
+  const bidi=rtl?'<w:bidi/>':'';
+  const spacing=options.spacing===false?'':'<w:spacing w:after="160" w:line="360" w:lineRule="auto"/>';
+  return `<w:p><w:pPr>${bidi}<w:jc w:val="${align}"/>${spacing}</w:pPr>${wordRun(text,options)}</w:p>`;
+}
+function wordTextBlock(text,options={}){
+  const lines=String(text||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  return (lines.length?lines:['']).map(line=>wordParagraph(line,options));
+}
+function memoryWordDocumentXml(items){
+  const paragraphs=[
+    wordParagraph('مقتطفات هامة',{bold:true,size:36,color:'C8A84B',align:'center'}),
+    wordParagraph(`تاريخ التنزيل: ${new Date().toLocaleString('ar-AE')}`,{size:20,color:'5F8198',align:'center'}),
+    wordParagraph(`عدد المقتطفات: ${items.length}`,{size:20,color:'5F8198',align:'center'}),
+    wordParagraph('',{spacing:false})
+  ];
+  items.forEach((item,index)=>{
+    const sourceUrl=new URL(item.url||judgmentPageHref(item.docId),location.href).href;
+    paragraphs.push(wordParagraph(`مقتطف رقم ${index+1}`,{bold:true,size:28,color:'C8A84B'}));
+    paragraphs.push(...wordTextBlock(item.text,{size:25,color:'111111'}));
+    paragraphs.push(wordParagraph(`المرجع: ${item.reference||'غير متوفر'}`,{bold:true,size:22,color:'2A5D7F'}));
+    paragraphs.push(wordParagraph(`تاريخ الحفظ: ${memoryDateDisplay(item.createdAt)}`,{size:20,color:'5F8198'}));
+    paragraphs.push(wordParagraph(`Source: ${sourceUrl}`,{rtl:false,align:'left',size:18,color:'5F8198'}));
+    paragraphs.push(wordParagraph('____________________________',{rtl:false,align:'center',size:18,color:'C8A84B'}));
+  });
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${paragraphs.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+}
+function writeZipUint16(target,value){
+  target.push(value&255,(value>>>8)&255);
+}
+function writeZipUint32(target,value){
+  target.push(value&255,(value>>>8)&255,(value>>>16)&255,(value>>>24)&255);
+}
+let zipCrcTable=null;
+function getZipCrcTable(){
+  if(zipCrcTable)return zipCrcTable;
+  zipCrcTable=Array.from({length:256},(_,n)=>{
+    let c=n;
+    for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);
+    return c>>>0;
+  });
+  return zipCrcTable;
+}
+function zipCrc32(bytes){
+  const table=getZipCrcTable();
+  let crc=0xffffffff;
+  for(let i=0;i<bytes.length;i++)crc=table[(crc^bytes[i])&255]^(crc>>>8);
+  return (crc^0xffffffff)>>>0;
+}
+function zipDosStamp(date=new Date()){
+  const year=Math.max(1980,date.getFullYear());
+  return {
+    time:(date.getHours()<<11)|(date.getMinutes()<<5)|(Math.floor(date.getSeconds()/2)),
+    date:((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate()
+  };
+}
+function createStoredZipBlob(files,type){
+  const encoder=new TextEncoder();
+  const localParts=[];
+  const centralParts=[];
+  const stamp=zipDosStamp();
+  let offset=0;
+  files.forEach(file=>{
+    const nameBytes=encoder.encode(file.name.replace(/\\/g,'/'));
+    const data=file.bytes||encoder.encode(file.content||'');
+    const crc=zipCrc32(data);
+    const local=[];
+    writeZipUint32(local,0x04034b50);
+    writeZipUint16(local,20);
+    writeZipUint16(local,0);
+    writeZipUint16(local,0);
+    writeZipUint16(local,stamp.time);
+    writeZipUint16(local,stamp.date);
+    writeZipUint32(local,crc);
+    writeZipUint32(local,data.length);
+    writeZipUint32(local,data.length);
+    writeZipUint16(local,nameBytes.length);
+    writeZipUint16(local,0);
+    localParts.push(new Uint8Array(local),nameBytes,data);
+    const central=[];
+    writeZipUint32(central,0x02014b50);
+    writeZipUint16(central,20);
+    writeZipUint16(central,20);
+    writeZipUint16(central,0);
+    writeZipUint16(central,0);
+    writeZipUint16(central,stamp.time);
+    writeZipUint16(central,stamp.date);
+    writeZipUint32(central,crc);
+    writeZipUint32(central,data.length);
+    writeZipUint32(central,data.length);
+    writeZipUint16(central,nameBytes.length);
+    writeZipUint16(central,0);
+    writeZipUint16(central,0);
+    writeZipUint16(central,0);
+    writeZipUint16(central,0);
+    writeZipUint32(central,0);
+    writeZipUint32(central,offset);
+    centralParts.push(new Uint8Array(central),nameBytes);
+    offset+=local.length+nameBytes.length+data.length;
+  });
+  const centralStart=offset;
+  const centralSize=centralParts.reduce((sum,part)=>sum+part.length,0);
+  const end=[];
+  writeZipUint32(end,0x06054b50);
+  writeZipUint16(end,0);
+  writeZipUint16(end,0);
+  writeZipUint16(end,files.length);
+  writeZipUint16(end,files.length);
+  writeZipUint32(end,centralSize);
+  writeZipUint32(end,centralStart);
+  writeZipUint16(end,0);
+  return new Blob([...localParts,...centralParts,new Uint8Array(end)],{type});
+}
+function createMemoryWordBlob(items){
+  const contentTypes='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+  const packageRels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+  return createStoredZipBlob([
+    {name:'[Content_Types].xml',content:contentTypes},
+    {name:'_rels/.rels',content:packageRels},
+    {name:'word/document.xml',content:memoryWordDocumentXml(items)}
+  ],'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+}
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+function downloadMemoryWordFile(){
+  const items=memoryItems.filter(item=>String(item.text||'').trim());
+  if(!items.length){
+    showToast('لا توجد مقتطفات لتنزيلها.');
+    return;
+  }
+  downloadBlob(createMemoryWordBlob(items),`sanad-important-excerpts-${todayIsoDate()}.docx`);
+  showToast('تم تنزيل ملف Word للمقتطفات الهامة.');
 }
 async function deleteMemoryItem(id){
   const item=memoryItems.find(entry=>entry.id===String(id));

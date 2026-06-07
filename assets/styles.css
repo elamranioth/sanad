@@ -333,7 +333,7 @@ body.locked-app .main,body.locked-app .sidebar,body.locked-app .sidebar-overlay{
 .dashboard-recent-item span,.collection-card h3{font-family:'Amiri',serif;color:#e8dcc8;font-size:18px;line-height:1.35}
 .dashboard-recent-item small,.collection-card p{color:#6f91a8;font-size:12px;line-height:1.6}
 .collection-card-icon{width:46px;height:46px;border-radius:12px;background:#2a1f08;border:1px solid #c8a84b44;color:#c8a84b;display:flex;align-items:center;justify-content:center;font-size:24px}
-.memory-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-bottom:16px}
+.memory-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;margin-bottom:16px}
 .memory-toolbar label{min-height:46px;background:#0a1520;border:1px solid #1e3a52;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 12px;direction:ltr}
 .memory-toolbar i{color:#c8a84b;font-size:18px}
 .memory-toolbar input{width:100%;background:transparent;border:0;outline:0;color:#c8d8e0;font-family:'Brookley','Georgia','Times New Roman',serif;font-size:14px;direction:ltr;text-align:left}
