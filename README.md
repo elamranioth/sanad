@@ -10,6 +10,7 @@ assets/styles.css       Responsive visual design
 assets/app.js           Navigation, routing, search, readers, local storage services
 assets/search-worker.js Background judgment search worker
 assets/vendor/tabler/   Local Tabler icon font used by the app UI
+functions/_middleware.js Cloudflare Pages private-access middleware
 data/judgments/index.js Lightweight judgment manifest used for lists
 data/judgments/chunks/  Full judgment bodies split by year/type/page
 data/search/manifest.js Lightweight search shard manifest
@@ -103,3 +104,18 @@ Then open:
 ```text
 http://localhost:8787/sanad.html
 ```
+
+## Private Cloudflare Deployment
+
+The Cloudflare Pages deployment is protected by `functions/_middleware.js`. It requires HTTP Basic Auth before serving any app file, including judgment data files.
+
+Set these Cloudflare Pages production secrets before deploying:
+
+```powershell
+npx.cmd --yes wrangler pages secret put SANAD_BASIC_USER --project-name sanad
+npx.cmd --yes wrangler pages secret put SANAD_BASIC_PASSWORD --project-name sanad
+```
+
+Deploy from a clean static bundle that includes `functions/`, `assets/`, `data/`, `content/`, `icons/`, `index.html`, `sanad.html`, `manifest.json`, and `sw.js`.
+
+For privacy, do not leave the GitHub Pages deployment public. A public GitHub Pages site can still expose the static judgment text files.
