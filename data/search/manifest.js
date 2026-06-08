@@ -1,8 +1,8 @@
 window.SANAD_DATA=window.SANAD_DATA||{};
 window.SANAD_DATA.searchManifest={
-  "version": "search-shards-20260527",
-  "generatedAt": "2026-05-27T13:52:54.286Z",
-  "totalDocs": 4214,
+  "version": "judgment-data-fix-20260609",
+  "generatedAt": "2026-06-08T22:02:44.625Z",
+  "totalDocs": 4207,
   "stopwords": [
     "اذا",
     "الاسباب",
@@ -242,6 +242,7 @@ window.SANAD_DATA.searchManifest={
     "الطعن،",
     "الطعن.",
     "الطعنين",
+    "الطعون",
     "الطلب",
     "الطلبات",
     "العام",
@@ -578,6 +579,7 @@ window.SANAD_DATA.searchManifest={
     "علاقه",
     "عليه،",
     "عليها،",
+    "عليهما",
     "عما",
     "عمل",
     "عملا",
@@ -824,11 +826,7 @@ window.SANAD_DATA.searchManifest={
     "يوم"
   ],
   "shards": {
-    "2024-idari": "./data/search/shards/2024-idari.js",
-    "2024-jinai": "./data/search/shards/2024-jinai.js",
     "2024-madani": "./data/search/shards/2024-madani.js",
-    "2024-omali": "./data/search/shards/2024-omali.js",
-    "2024-osri": "./data/search/shards/2024-osri.js",
     "2025-aqari": "./data/search/shards/2025-aqari.js",
     "2025-madani": "./data/search/shards/2025-madani.js",
     "2025-omali": "./data/search/shards/2025-omali.js",

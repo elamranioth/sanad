@@ -976,7 +976,7 @@ function ensureJudgmentSearchWorker(){
   if(judgmentSearchWorker)return judgmentSearchWorker;
   if(!('Worker' in window))return null;
   try{
-    judgmentSearchWorker=new Worker(new URL('./assets/search-worker.js?v=advanced-search-20260527',location.href).href);
+    judgmentSearchWorker=new Worker(new URL('./assets/search-worker.js?v=judgment-data-fix-20260609',location.href).href);
     judgmentSearchWorker.onmessage=event=>{
       const data=event.data||{};
       const pending=pendingSearchRequests.get(data.token);
@@ -1990,7 +1990,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v35',label:'الكاش'}
+    {value:'v36',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();

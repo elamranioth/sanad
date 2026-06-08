@@ -1,13 +1,9 @@
 window.SANAD_DATA=window.SANAD_DATA||{};
 window.SANAD_DATA.judgmentCatalog={
-  "total": 4214,
+  "total": 4207,
   "generatedAt": "2026-05-26T23:45:37.277141Z",
   "chunkSize": 50,
   "chunks": {
-    "2024-idari-001": "./data/judgments/chunks/2024-idari-001.js",
-    "2024-jinai-001": "./data/judgments/chunks/2024-jinai-001.js",
-    "2024-omali-001": "./data/judgments/chunks/2024-omali-001.js",
-    "2024-osri-001": "./data/judgments/chunks/2024-osri-001.js",
     "2025-madani-001": "./data/judgments/chunks/2025-madani-001.js",
     "2025-madani-002": "./data/judgments/chunks/2025-madani-002.js",
     "2025-madani-003": "./data/judgments/chunks/2025-madani-003.js",
@@ -99,90 +95,6 @@ window.SANAD_DATA.judgmentCatalog={
   }
 };
 window.SANAD_DATA.judgmentIndex=[
-  {
-    "id": 3,
-    "type": "omali",
-    "title": "حكم في دعوى فصل تعسفي وإلزام صاحب العمل بمكافأة نهاية الخدمة",
-    "court": "محكمة العمل",
-    "date": "٢٨ فبراير ٢٠٢٤",
-    "num": "2024/1905",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-omali-001",
-    "excerpt": ""
-  },
-  {
-    "id": 4,
-    "type": "jinai",
-    "title": "حكم بالبراءة في قضية تزوير مستندات رسمية لانتفاء القصد الجنائي",
-    "court": "المحكمة الجزائية",
-    "date": "٢٠ فبراير ٢٠٢٤",
-    "num": "2024/0887",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-jinai-001",
-    "excerpt": ""
-  },
-  {
-    "id": 5,
-    "type": "idari",
-    "title": "حكم بإلغاء قرار إداري تعسفي صادر بحق موظف في الجهاز الحكومي",
-    "court": "المحكمة الإدارية",
-    "date": "١٤ فبراير ٢٠٢٤",
-    "num": "2024/0541",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-idari-001",
-    "excerpt": ""
-  },
-  {
-    "id": 7,
-    "type": "osri",
-    "title": "حكم في دعوى حضانة أطفال واجب النفقة بعد الطلاق",
-    "court": "محكمة الأسرة",
-    "date": "٣ فبراير ٢٠٢٤",
-    "num": "2024/0318",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-osri-001",
-    "excerpt": ""
-  },
-  {
-    "id": 9,
-    "type": "omali",
-    "title": "حكم بإلزام صاحب العمل بصرف الأجور المتأخرة وتعويض العامل",
-    "court": "محكمة العمل",
-    "date": "٢٢ يناير ٢٠٢٤",
-    "num": "2024/0155",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-omali-001",
-    "excerpt": ""
-  },
-  {
-    "id": 11,
-    "type": "jinai",
-    "title": "حكم بالإدانة في قضية احتيال مالي وإلزام المتهم بالتعويض",
-    "court": "المحكمة الجزائية",
-    "date": "٨ يناير ٢٠٢٤",
-    "num": "2024/0044",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-jinai-001",
-    "excerpt": ""
-  },
-  {
-    "id": 12,
-    "type": "idari",
-    "title": "حكم بإبطال مناقصة حكومية لمخالفتها أحكام نظام المشتريات العامة",
-    "court": "المحكمة الإدارية",
-    "date": "٢ يناير ٢٠٢٤",
-    "num": "2024/0011",
-    "appeal": "",
-    "source": "",
-    "chunk": "2024-idari-001",
-    "excerpt": ""
-  },
   {
     "id": 13,
     "type": "tijari",
