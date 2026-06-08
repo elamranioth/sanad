@@ -227,7 +227,7 @@ function sentenceLooselyMatchesSearch(sentence,query){
   const haystack=normalizeSearchText(sentence);
   return words.some(word=>haystack.includes(word));
 }
-const legalPrincipleCuePattern=/(?:و)?من\s+المقرر(?:\s*[-–،,]?\s*(?:قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز)|على\s+ما\s+(?:جرى|استقر)\s+به\s+قضاء\s+هذه\s+المحكمة))?|(?:و)?المقرر\s+(?:قضاء|قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز))/g;
+const legalPrincipleCuePattern=/(?:و)?من\s+المقرر(?:\s*[-–،,]?\s*(?:قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز)|على\s+ما\s+(?:جرى|استقر)\s+به\s+قضاء\s+هذه\s+المحكمة))?|(?:و)?المقرر\s+(?:قضاء|قانون(?:ا|اً)|في\s+قضاء\s+(?:هذه\s+المحكمة|محكمة\s+التمييز))|هذا\s+النعي\s+(?:غير\s+)?سديد/g;
 function highlightLegalPrincipleCues(html){
   return html.replace(legalPrincipleCuePattern,match=>`<strong class="legal-principle-cue">${match}</strong>`);
 }
@@ -1990,7 +1990,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v34',label:'الكاش'}
+    {value:'v35',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
