@@ -107,13 +107,14 @@ http://localhost:8787/sanad.html
 
 ## Private Cloudflare Deployment
 
-The Cloudflare Pages deployment is protected by `functions/_middleware.js`. It requires HTTP Basic Auth before serving any app file, including judgment data files.
+The Cloudflare Pages deployment is protected by `functions/_middleware.js`. It serves a private SANAD login page and requires a signed session cookie before serving any app file, including judgment data files.
 
 Set these Cloudflare Pages production secrets before deploying:
 
 ```powershell
 npx.cmd --yes wrangler pages secret put SANAD_BASIC_USER --project-name sanad
 npx.cmd --yes wrangler pages secret put SANAD_BASIC_PASSWORD --project-name sanad
+npx.cmd --yes wrangler pages secret put SANAD_SESSION_SECRET --project-name sanad
 ```
 
 Deploy from a clean static bundle that includes `functions/`, `assets/`, `data/`, `content/`, `icons/`, `index.html`, `sanad.html`, `manifest.json`, and `sw.js`.
