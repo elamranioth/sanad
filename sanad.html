@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=objection-cues-20260608">
+<link rel="stylesheet" href="./assets/styles.css?v=logout-20260609">
 </head>
 <body>
 
@@ -65,6 +65,7 @@
         <div class="urole">مدير المنصة</div>
       </div>
     </div>
+    <button class="logout-btn" type="button" onclick="logoutSanad()"><i class="ti ti-logout"></i><span>تسجيل الخروج</span></button>
   </div>
 </div>
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -529,7 +530,10 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">0</strong></span>
             <span>القوانين: <strong id="settingsLawCount">0</strong></span>
-            <span>الكاش: <strong>v36</strong></span>
+            <span>الكاش: <strong>v38</strong></span>
+          </div>
+          <div class="settings-actions">
+            <button class="tool-secondary danger" type="button" onclick="logoutSanad()"><i class="ti ti-logout"></i>تسجيل الخروج</button>
           </div>
         </div>
         <div class="tool-panel wide">
@@ -610,6 +614,6 @@
 <script src="./data/search/manifest.js?v=judgment-data-fix-20260609"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=memory-sync-20260609"></script>
+<script src="./assets/app.js?v=logout-20260609"></script>
 </body>
 </html>

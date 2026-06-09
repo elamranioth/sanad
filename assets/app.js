@@ -1237,6 +1237,29 @@ async function installApp(){
   }
   showToast(isIOSDevice()?'من سفاري: مشاركة ثم إضافة إلى الشاشة الرئيسية.':'من قائمة المتصفح اختر إضافة إلى الشاشة الرئيسية.');
 }
+async function clearSanadRuntimeCache(){
+  try{
+    if(navigator.serviceWorker?.controller){
+      navigator.serviceWorker.controller.postMessage({type:'SANAD_CLEAR_CACHE'});
+    }
+    if(window.caches){
+      const keys=await caches.keys();
+      await Promise.all(keys.filter(key=>key.startsWith('sanad-pwa-')).map(key=>caches.delete(key)));
+    }
+  }catch(_){}
+}
+async function logoutSanad(){
+  const ok=await confirmAction({
+    title:'تسجيل الخروج؟',
+    message:'سيتم إنهاء الجلسة الخاصة والعودة إلى صفحة الدخول. ستبقى بياناتك المحلية والمقتطفات المتزامنة محفوظة.',
+    confirmLabel:'تسجيل الخروج',
+    icon:'ti-logout'
+  });
+  if(!ok)return;
+  showToast('جارٍ تسجيل الخروج...');
+  await clearSanadRuntimeCache();
+  location.assign(new URL('/logout',location.origin).href);
+}
 function syncSidebarToggle(){
   const btn=document.getElementById('menuToggle');
   if(!btn)return;
@@ -2133,7 +2156,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v36',label:'الكاش'}
+    {value:'v38',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();

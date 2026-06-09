@@ -1,8 +1,5 @@
-const CACHE_NAME = "sanad-pwa-v37";
+const CACHE_NAME = "sanad-pwa-v38";
 const APP_ASSETS = [
-  "./",
-  "./index.html",
-  "./sanad.html",
   "./assets/styles.css",
   "./assets/app.js",
   "./assets/search-worker.js",
@@ -11,11 +8,6 @@ const APP_ASSETS = [
   "./assets/vendor/tabler/fonts/tabler-icons.woff2",
   "./assets/vendor/tabler/fonts/tabler-icons.woff",
   "./assets/vendor/tabler/fonts/tabler-icons.ttf",
-  "./data/judgments/index.js",
-  "./data/search/manifest.js",
-  "./data/laws.js",
-  "./data/legal-forms.js",
-  "./content/laws/qanoon_al_ijraat_al_madaniya_uae_42_2022.md",
   "./manifest.json",
   "./icons/favicon.svg",
   "./icons/apple-touch-icon.png",
@@ -40,6 +32,15 @@ self.addEventListener("activate", event => {
   );
 });
 
+function isProtectedRequest(request, url) {
+  return request.mode === "navigate" ||
+    url.pathname === "/" ||
+    url.pathname.endsWith(".html") ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/data/") ||
+    url.pathname.startsWith("/content/");
+}
+
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -47,15 +48,12 @@ self.addEventListener("fetch", event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === "navigate") {
+  if (isProtectedRequest(request, url)) {
     event.respondWith(
-      fetch(request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put("./sanad.html", copy));
-          return response;
-        })
-        .catch(() => caches.match("./sanad.html"))
+      fetch(request).catch(() => new Response("SANAD needs an active connection for protected content.", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=UTF-8" }
+      }))
     );
     return;
   }
@@ -66,5 +64,12 @@ self.addEventListener("fetch", event => {
       caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
       return response;
     }))
+  );
+});
+
+self.addEventListener("message", event => {
+  if (event.data?.type !== "SANAD_CLEAR_CACHE") return;
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("sanad-pwa-")).map(key => caches.delete(key))))
   );
 });

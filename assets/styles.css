@@ -26,6 +26,9 @@ button,a,.tc,.doc-card,.law-card,.tool-primary,.tool-secondary{touch-action:mani
 .divider{height:1px;background:#1e3a52;margin:8px 10px}
 .nav-footer{padding:10px;border-top:1px solid #1e3a52}
 .user-row{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;background:#162535}
+.logout-btn{width:100%;margin-top:8px;border:1px solid #6b2a2a;background:#251212;color:#e07070;border-radius:8px;padding:9px 10px;font-family:'Tajawal',sans-serif;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .2s}
+.logout-btn:hover{background:#35141b;color:#ff8a80;transform:translateY(-1px)}
+.logout-btn i{font-size:17px}
 .avatar{width:32px;height:32px;border-radius:50%;background:#1e3a52;border:1.5px solid #c8a84b55;display:flex;align-items:center;justify-content:center;font-size:13px;color:#c8a84b;flex-shrink:0;font-family:'Amiri',serif;font-weight:700}
 .uname{font-size:12px;color:#9ab5c8;font-weight:500}
 .urole{font-size:10px;color:#3d6070}
@@ -85,12 +88,13 @@ button,a,.tc,.doc-card,.law-card,.tool-primary,.tool-secondary{touch-action:mani
 .client-edit-actions .tool-primary,.client-edit-actions .tool-secondary{min-height:44px;font-family:'Brookley','Georgia','Times New Roman',serif}
 body.sidebar-collapsed .sidebar{width:72px}
 body.sidebar-collapsed .brand{justify-content:center;padding-inline:10px}
-body.sidebar-collapsed .brand>div:not(.brand-icon),body.sidebar-collapsed .nav-lbl,body.sidebar-collapsed .ni .ct,body.sidebar-collapsed .user-row>div:not(.avatar){display:none}
+body.sidebar-collapsed .brand>div:not(.brand-icon),body.sidebar-collapsed .nav-lbl,body.sidebar-collapsed .ni .ct,body.sidebar-collapsed .user-row>div:not(.avatar),body.sidebar-collapsed .logout-btn span{display:none}
 body.sidebar-collapsed .ni{justify-content:center;font-size:0;gap:0;padding-inline:8px}
 body.sidebar-collapsed .ni i{font-size:18px;margin:0}
 body.sidebar-collapsed .nav-sec{padding-inline:8px}
 body.sidebar-collapsed .user-row{justify-content:center;padding-inline:8px}
 body.sidebar-collapsed .avatar{width:34px;height:34px}
+body.sidebar-collapsed .logout-btn{padding-inline:8px}
 
 /* ─── HERO HEADER ─── */
 .hero{background:#0a1520;border:1px solid #1e3a52;border-radius:14px;padding:28px 28px 24px;margin-bottom:20px;position:relative;overflow:hidden}
@@ -490,7 +494,7 @@ body.ink-mode .user-row,body.ink-mode .hstat,body.ink-mode .tc,body.ink-mode .do
 body.ink-mode .doc-card:hover,body.ink-mode .law-card:hover,body.ink-mode .collection-card:hover,body.ink-mode .dashboard-recent-item:hover{background:#f0ead8;border-color:#000}
 body.ink-mode .search-input-wrap,body.ink-mode .type-select-wrap,body.ink-mode .field input,body.ink-mode .field select,body.ink-mode .field textarea,body.ink-mode .setting-row select,body.ink-mode .sort-sel,body.ink-mode .fee-result,body.ink-mode .ai-textarea,body.ink-mode .memory-toolbar label,body.ink-mode .memory-reference,body.ink-mode .client-service-form input,body.ink-mode .client-edit-field input,body.ink-mode .client-edit-field textarea,body.ink-mode .client-filter-row label{background:#fff;border-color:#1b1b1b;color:#111}
 body.ink-mode input::placeholder,body.ink-mode textarea::placeholder{color:#777}
-body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit,body.ink-mode .pagination-bar button{background:#fff;color:#111;border-color:#111;box-shadow:none}
+body.ink-mode .install-btn,body.ink-mode .tool-secondary,body.ink-mode .doc-action,body.ink-mode .ink-btn,body.ink-mode .logout-btn,body.ink-mode .client-edit-close,body.ink-mode .client-profile-edit,body.ink-mode .pagination-bar button{background:#fff;color:#111;border-color:#111;box-shadow:none}
 body.ink-mode .ink-btn.active{background:#111;color:#fff}
 body.ink-mode .type-tag,body.ink-mode .law-card-top span,body.ink-mode .law-num,body.ink-mode .prec-num,body.ink-mode .ai-badge{background:#fff;color:#111;border-color:#111}
 body.ink-mode .doc-card-icon,body.ink-mode .tc-icon,body.ink-mode .law-card-mark,body.ink-mode .law-reader-mark,body.ink-mode .collection-card-icon,body.ink-mode .dashboard-stat i,body.ink-mode .section-empty-icon,body.ink-mode .client-avatar,body.ink-mode .client-card-meta span,body.ink-mode .client-service-type{background:#f0ead8;color:#111;border:1px solid #111}
@@ -666,7 +670,7 @@ body.sidebar-open .sidebar{transform:translateX(0)}
 .brand{padding-top:calc(18px + env(safe-area-inset-top))}
 .ni{min-height:44px;font-size:14px}
 body.sidebar-collapsed .sidebar{width:min(312px,88vw)}
-body.sidebar-collapsed .brand>div:not(.brand-icon),body.sidebar-collapsed .nav-lbl,body.sidebar-collapsed .ni .ct,body.sidebar-collapsed .user-row>div:not(.avatar){display:block}
+body.sidebar-collapsed .brand>div:not(.brand-icon),body.sidebar-collapsed .nav-lbl,body.sidebar-collapsed .ni .ct,body.sidebar-collapsed .user-row>div:not(.avatar),body.sidebar-collapsed .logout-btn span{display:block}
 body.sidebar-collapsed .ni{justify-content:flex-start;font-size:14px;gap:10px;padding:9px 10px}
 body.sidebar-collapsed .nav-lbl{display:block}
 body.sidebar-collapsed .user-row{justify-content:flex-start}
