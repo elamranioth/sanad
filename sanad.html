@@ -261,6 +261,7 @@
       </div>
       <div class="memory-toolbar">
         <label><i class="ti ti-search"></i><input id="memorySearchInput" type="text" placeholder="ابحث في المقتطفات أو المراجع..."></label>
+        <button class="tool-secondary" type="button" onclick="syncMemoryItemsFromServer({force:true})"><i class="ti ti-refresh"></i>مزامنة</button>
         <button class="tool-secondary" type="button" onclick="downloadMemoryWordFile()"><i class="ti ti-file-download"></i>&#1578;&#1606;&#1586;&#1610;&#1604; Word</button>
         <button class="tool-secondary danger" type="button" onclick="clearMemoryItems()"><i class="ti ti-trash"></i>مسح المقتطفات</button>
       </div>
@@ -609,6 +610,6 @@
 <script src="./data/search/manifest.js?v=judgment-data-fix-20260609"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=judgment-data-fix-20260609"></script>
+<script src="./assets/app.js?v=memory-sync-20260609"></script>
 </body>
 </html>

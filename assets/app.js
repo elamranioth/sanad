@@ -48,12 +48,17 @@ let readerMode='judgment';
 let deferredInstallPrompt=null;
 const savedStorageKey='sanadSavedJudgments';
 const memoryStorageKey='sanadMemoryItems';
+const memorySyncEndpoint='./api/memory';
 const feeStorageKey='sanadFeeItems';
 const clientStorageKey='sanadClientProfiles';
 const settingsStorageKey='sanadSettings';
 const protectionStorageKey='sanadProtection';
 let savedJudgmentIds=loadSavedJudgments();
 let memoryItems=loadMemoryItems();
+let memorySyncState='local';
+let memorySyncTimer=null;
+let memorySyncBusy=false;
+let memorySyncLastError='';
 let feeItems=loadFeeItems();
 let clientProfiles=loadClientProfiles();
 let expandedClientIds=new Set();
@@ -690,12 +695,150 @@ function loadMemoryItems(){
     return [];
   }
 }
-function saveMemoryItems(){
+function saveMemoryItems(options={}){
+  const shouldSync=options.sync!==false;
+  let persisted=false;
   try{
     localStorage.setItem(memoryStorageKey,JSON.stringify(memoryItems));
-    return true;
+    persisted=true;
   }catch(_){
+    persisted=false;
+  }
+  if(shouldSync)queueMemorySync();
+  return persisted;
+}
+function sanitizeMemoryItems(items){
+  return (Array.isArray(items)?items:[])
+    .filter(item=>item&&item.id&&item.text)
+    .map(item=>({
+      id:String(item.id),
+      text:String(item.text||'').replace(/\s+/g,' ').trim(),
+      reference:String(item.reference||'').trim(),
+      docId:Number(item.docId)||0,
+      docTitle:String(item.docTitle||'').trim(),
+      docType:String(item.docType||'').trim(),
+      docNumber:String(item.docNumber||'').trim(),
+      court:String(item.court||'').trim(),
+      date:String(item.date||'').trim(),
+      url:String(item.url||'').trim(),
+      createdAt:item.createdAt||new Date().toISOString()
+    }))
+    .filter(item=>item.text);
+}
+function memoryFingerprint(item){
+  return `${Number(item.docId)||0}:${String(item.text||'').replace(/\s+/g,' ').trim().toLowerCase()}`;
+}
+function mergeMemoryItemLists(primary,secondary){
+  const merged=[];
+  const seen=new Set();
+  [...sanitizeMemoryItems(primary),...sanitizeMemoryItems(secondary)].forEach(item=>{
+    const byId=`id:${item.id}`;
+    const byText=`text:${memoryFingerprint(item)}`;
+    if(seen.has(byId)||seen.has(byText))return;
+    seen.add(byId);
+    seen.add(byText);
+    merged.push(item);
+  });
+  return merged.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+}
+function memoryItemsSignature(items){
+  return JSON.stringify(sanitizeMemoryItems(items).map(item=>[
+    item.id,
+    item.text,
+    item.reference,
+    item.docId,
+    item.docTitle,
+    item.docNumber,
+    item.createdAt
+  ]));
+}
+function memorySyncDisplay(){
+  if(memorySyncState==='synced')return 'متزامن';
+  if(memorySyncState==='syncing')return 'جاري';
+  if(memorySyncState==='error')return 'محلي';
+  return 'محلي';
+}
+function refreshMemorySyncUi(){
+  if(currentView==='memory'){
+    setHeroStats([
+      {value:ar(memoryItems.length),label:'مقتطف'},
+      {value:ar(new Set(memoryItems.map(item=>item.docId).filter(Boolean)).size),label:'أحكام'},
+      {value:memorySyncDisplay(),label:'الحفظ'}
+    ]);
+  }
+}
+function queueMemorySync(){
+  if(!window.fetch)return;
+  clearTimeout(memorySyncTimer);
+  memorySyncTimer=setTimeout(()=>{void pushMemoryItemsToServer();},450);
+}
+async function pushMemoryItemsToServer(){
+  if(memorySyncBusy||!window.fetch)return false;
+  memorySyncBusy=true;
+  memorySyncState='syncing';
+  refreshMemorySyncUi();
+  try{
+    const response=await fetch(memorySyncEndpoint,{
+      method:'PUT',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({items:memoryItems})
+    });
+    if(!response.ok)throw new Error(`Sync failed: ${response.status}`);
+    const payload=await response.json();
+    const remote=sanitizeMemoryItems(payload.items);
+    if(memoryItemsSignature(remote)!==memoryItemsSignature(memoryItems)){
+      memoryItems=mergeMemoryItemLists(remote,memoryItems);
+      saveMemoryItems({sync:false});
+      renderMemoryItems();
+      updateDisplayedCounts();
+      updateSettingsStats();
+    }
+    memorySyncState='synced';
+    memorySyncLastError='';
+    refreshMemorySyncUi();
+    return true;
+  }catch(error){
+    memorySyncState='error';
+    memorySyncLastError=error?.message||'Sync unavailable';
+    refreshMemorySyncUi();
     return false;
+  }finally{
+    memorySyncBusy=false;
+  }
+}
+async function syncMemoryItemsFromServer(options={}){
+  if(memorySyncBusy||!window.fetch)return false;
+  memorySyncBusy=true;
+  memorySyncState='syncing';
+  refreshMemorySyncUi();
+  try{
+    const response=await fetch(memorySyncEndpoint,{credentials:'same-origin'});
+    if(!response.ok)throw new Error(`Sync failed: ${response.status}`);
+    const payload=await response.json();
+    const remote=sanitizeMemoryItems(payload.items);
+    const beforeLocal=memoryItemsSignature(memoryItems);
+    const beforeRemote=memoryItemsSignature(remote);
+    const merged=mergeMemoryItemLists(remote,memoryItems);
+    memoryItems=merged;
+    saveMemoryItems({sync:false});
+    renderMemoryItems();
+    updateDisplayedCounts();
+    updateSettingsStats();
+    memorySyncState='synced';
+    memorySyncLastError='';
+    refreshMemorySyncUi();
+    if(beforeRemote!==memoryItemsSignature(merged))queueMemorySync();
+    if(options.force)showToast(beforeLocal===memoryItemsSignature(merged)?'المقتطفات متزامنة بالفعل.':'تمت مزامنة المقتطفات.');
+    return true;
+  }catch(error){
+    memorySyncState='error';
+    memorySyncLastError=error?.message||'Sync unavailable';
+    refreshMemorySyncUi();
+    if(options.force)showToast('تعذرت المزامنة الآن، سيتم الاحتفاظ بالمقتطفات محليا.');
+    return false;
+  }finally{
+    memorySyncBusy=false;
   }
 }
 function loadLocalJudgments(){
@@ -2720,9 +2863,10 @@ function showMemoryPage(){
   setHeroStats([
     {value:ar(memoryItems.length),label:'مقتطف'},
     {value:ar(new Set(memoryItems.map(item=>item.docId).filter(Boolean)).size),label:'أحكام'},
-    {value:'محلي',label:'الحفظ'}
+    {value:memorySyncDisplay(),label:'الحفظ'}
   ]);
   renderMemoryItems();
+  void syncMemoryItemsFromServer({silent:true});
   scrollPageTo('#memoryPage');
 }
 function copyMemoryItem(id){
@@ -3484,6 +3628,7 @@ renderLaws(laws);
 renderFees();
 renderClientProfiles();
 renderMemoryItems();
+void syncMemoryItemsFromServer({silent:true});
 renderLocalJudgments();
 updateSettingsStats();
 startDisplayDigitNormalizer();
@@ -3536,4 +3681,4 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   });
 }
-
+window.addEventListener('focus',()=>{void syncMemoryItemsFromServer({silent:true});});

@@ -1,4 +1,4 @@
-const CACHE_NAME = "sanad-pwa-v36";
+const CACHE_NAME = "sanad-pwa-v37";
 const APP_ASSETS = [
   "./",
   "./index.html",
