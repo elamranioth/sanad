@@ -58,7 +58,7 @@ Judgments are loaded into `window.SANAD_DATA.judgments`:
 
 Laws are loaded into `window.SANAD_DATA.laws`; keep original Markdown in `content/laws/` and mirror searchable display data in `data/laws.js`.
 
-Local user data is stored in browser `localStorage`:
+Most local user data is stored in browser `localStorage`:
 
 - `sanadSavedJudgments`
 - `sanadMemoryItems`
@@ -67,6 +67,8 @@ Local user data is stored in browser `localStorage`:
 - `sanadLocalJudgments`
 - `sanadClientProfiles`
 - `sanadProtection`
+
+Important excerpts (`#memory`) also sync to Cloudflare KV through `functions/api/memory.js` when the `SANAD_SYNC` binding is available.
 
 The settings page includes JSON backup/export/import and an optional local passcode lock. This protects casual access on the same device, but it is not a substitute for encrypted server-side storage.
 
@@ -116,6 +118,14 @@ npx.cmd --yes wrangler pages secret put SANAD_BASIC_USER --project-name sanad
 npx.cmd --yes wrangler pages secret put SANAD_BASIC_PASSWORD --project-name sanad
 npx.cmd --yes wrangler pages secret put SANAD_SESSION_SECRET --project-name sanad
 ```
+
+To enable the 7-day Google trial login, create a Google OAuth Web Client ID for the Cloudflare Pages domain, then set:
+
+```powershell
+npx.cmd --yes wrangler pages secret put GOOGLE_CLIENT_ID --project-name sanad
+```
+
+Google trial users are recorded in the `SANAD_SYNC` KV namespace and may access the app for 7 days from first Google login.
 
 Deploy from a clean static bundle that includes `functions/`, `assets/`, `data/`, `content/`, `icons/`, `index.html`, `sanad.html`, `manifest.json`, and `sw.js`.
 

@@ -1,9 +1,12 @@
 const SESSION_COOKIE = 'sanad_session';
 const SESSION_SECONDS = 60 * 60 * 10;
+const TRIAL_DAYS = 7;
+const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
+const GOOGLE_CERTS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 
 const securityHeaders = {
   'Cache-Control': 'no-store',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://www.googleapis.com; frame-src https://accounts.google.com; worker-src 'self'; manifest-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
   'Referrer-Policy': 'no-referrer',
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -66,6 +69,13 @@ function base64UrlDecode(value) {
   return atob(padded);
 }
 
+function base64UrlToBytes(value) {
+  const binary = base64UrlDecode(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 async function sign(value, secret) {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -82,10 +92,16 @@ function sessionSecret(env) {
   return env.SANAD_SESSION_SECRET || `${env.SANAD_BASIC_USER}:${env.SANAD_BASIC_PASSWORD}`;
 }
 
-async function createSession(username, env) {
+async function createSession(username, env, options = {}) {
+  const maxExp = Date.now() + SESSION_SECONDS * 1000;
+  const requestedExp = Number(options.exp) || maxExp;
   const payload = base64UrlEncode(JSON.stringify({
     user: username,
-    exp: Date.now() + SESSION_SECONDS * 1000
+    provider: options.provider || 'password',
+    email: options.email || '',
+    name: options.name || username,
+    trialExpiresAt: options.trialExpiresAt || '',
+    exp: Math.min(requestedExp, maxExp)
   }));
   const signature = await sign(payload, sessionSecret(env));
   return `${payload}.${signature}`;
@@ -93,14 +109,14 @@ async function createSession(username, env) {
 
 async function verifySession(token, env) {
   const [payload, signature] = String(token || '').split('.');
-  if (!payload || !signature) return false;
+  if (!payload || !signature) return null;
   const expected = await sign(payload, sessionSecret(env));
-  if (!timingSafeEqual(signature, expected)) return false;
+  if (!timingSafeEqual(signature, expected)) return null;
   try {
     const data = JSON.parse(base64UrlDecode(payload));
-    return Number(data.exp) > Date.now();
+    return Number(data.exp) > Date.now() ? data : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -130,9 +146,114 @@ function wantsHtml(request, url) {
   );
 }
 
-function loginPage({ error = '', redirect = '/sanad.html' } = {}, status = 200) {
+function googleClientId(env) {
+  return String(env.GOOGLE_CLIENT_ID || '').trim();
+}
+
+function trialKey(profile) {
+  return `trial:google:${profile.sub}`;
+}
+
+async function verifyGoogleIdToken(credential, clientId) {
+  const token = String(credential || '');
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Invalid Google credential.');
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  const header = JSON.parse(base64UrlDecode(encodedHeader));
+  const payload = JSON.parse(base64UrlDecode(encodedPayload));
+  if (header.alg !== 'RS256' || !header.kid) throw new Error('Unsupported Google token.');
+
+  const certsResponse = await fetch(GOOGLE_CERTS_URL, {
+    headers: { Accept: 'application/json' }
+  });
+  if (!certsResponse.ok) throw new Error('Could not fetch Google public keys.');
+  const certs = await certsResponse.json();
+  const jwk = certs.keys?.find(key => key.kid === header.kid);
+  if (!jwk) throw new Error('Google public key not found.');
+
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+  const valid = await crypto.subtle.verify(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    base64UrlToBytes(encodedSignature),
+    encoder.encode(`${encodedHeader}.${encodedPayload}`)
+  );
+  if (!valid) throw new Error('Invalid Google signature.');
+  if (payload.aud !== clientId) throw new Error('Google token audience mismatch.');
+  if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') throw new Error('Invalid Google issuer.');
+  if (Number(payload.exp) * 1000 <= Date.now()) throw new Error('Google token expired.');
+  if (!payload.sub || !payload.email) throw new Error('Google profile is incomplete.');
+  if (payload.email_verified === false || payload.email_verified === 'false') throw new Error('Google email is not verified.');
+  return {
+    sub: String(payload.sub),
+    email: String(payload.email),
+    name: String(payload.name || payload.email),
+    picture: String(payload.picture || '')
+  };
+}
+
+async function googleTrialForProfile(env, profile) {
+  if (!env.SANAD_SYNC) throw new Error('Trial storage is not configured.');
+  const key = trialKey(profile);
+  const now = Date.now();
+  const saved = await env.SANAD_SYNC.get(key, { type: 'json' });
+  const firstLogin = Number(saved?.firstLogin) || now;
+  const expiresAt = Number(saved?.expiresAt) || firstLogin + TRIAL_MS;
+  const trial = {
+    provider: 'google',
+    sub: profile.sub,
+    email: profile.email,
+    name: profile.name,
+    picture: profile.picture,
+    firstLogin,
+    expiresAt,
+    lastLogin: now
+  };
+  await env.SANAD_SYNC.put(key, JSON.stringify(trial));
+  return trial;
+}
+
+function csrfMatches(request, form) {
+  const cookieToken = getCookie(request, 'g_csrf_token');
+  const formToken = String(form.get('g_csrf_token') || '');
+  return cookieToken && formToken && timingSafeEqual(cookieToken, formToken);
+}
+
+function loginPage({ error = '', redirect = '/sanad.html', googleId = '' } = {}, status = 200) {
   const safeTarget = safeRedirect(redirect);
   const errorHtml = error ? `<div class="error">${escapeHtml(error)}</div>` : '';
+  const googleHtml = googleId ? `
+      <div class="or-line"><span>or</span></div>
+      <div class="google-trial">
+        <div>
+          <strong>7-day Google trial</strong>
+          <span>Any Google account can try SANAD for 7 days.</span>
+        </div>
+        <div id="g_id_onload"
+          data-client_id="${escapeHtml(googleId)}"
+          data-login_uri="/login/google?redirect=${encodeURIComponent(safeTarget)}"
+          data-auto_prompt="false"
+          data-use_fedcm_for_prompt="true"></div>
+        <div class="g_id_signin"
+          data-type="standard"
+          data-theme="outline"
+          data-size="large"
+          data-text="continue_with"
+          data-shape="rectangular"
+          data-logo_alignment="left"></div>
+      </div>
+      <script src="https://accounts.google.com/gsi/client" async defer></script>` : `
+      <div class="or-line"><span>or</span></div>
+      <div class="google-trial muted">
+        <strong>Google trial login</strong>
+        <span>Set GOOGLE_CLIENT_ID in Cloudflare to enable 7-day Google trials.</span>
+      </div>`;
   const html = `<!doctype html>
 <html lang="en" dir="ltr">
 <head>
@@ -152,7 +273,7 @@ body:after{content:'';position:fixed;inset:0;background-image:linear-gradient(#f
 h1{font-size:54px;line-height:1.06;margin:26px 0 18px;color:#fff;letter-spacing:.3px;position:relative;z-index:1}p{font-size:18px;line-height:1.8;color:#a9c2d2;margin:0;max-width:590px;position:relative;z-index:1}.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px;position:relative;z-index:1}.chips span{border:1px solid #2b5674;border-radius:999px;padding:10px 14px;color:#d8c06e;background:#07111c99;font-size:13px}
 .note{border-top:1px solid #2b5674;margin-top:38px;padding-top:20px;color:#779bb2;font-size:13px;line-height:1.7;position:relative;z-index:1}.panel{padding:54px 48px;display:flex;align-items:center;background:#081420}.card{width:100%;background:#0b1d2e;border:1px solid #2b5674;border-radius:20px;padding:34px;box-shadow:inset 0 1px 0 #ffffff0d}.card-badge{width:58px;height:58px;border-radius:18px;border:1px solid #c8a84b66;background:#2a1f082e;color:#d8c06e;display:grid;place-items:center;font-size:28px;margin-bottom:18px}.card h2{margin:0 0 8px;color:#f7e7bc;font-size:32px}.card p{font-size:14px;color:#8cb0c5;margin-bottom:26px}
 label{display:block;color:#b9ccda;font-size:13px;margin:16px 0 8px}input{width:100%;height:52px;border-radius:12px;border:1px solid #2b5674;background:#06111d;color:#fff;padding:0 15px;font:inherit;font-size:16px;outline:none}input:focus{border-color:#c8a84b;box-shadow:0 0 0 4px #c8a84b1f}
-button{width:100%;height:54px;border:0;border-radius:12px;background:#c8a84b;color:#06111d;font:inherit;font-weight:800;font-size:16px;margin-top:22px;cursor:pointer;box-shadow:0 14px 30px #c8a84b22}button:hover{filter:brightness(1.08)}.error{border:1px solid #d95c5c88;background:#3a1117;color:#ffd0d0;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6}.meta{display:flex;justify-content:space-between;gap:14px;margin-top:18px;color:#648ba3;font-size:12px}.arabic-line{direction:rtl;color:#d8c06e!important;font-size:15px!important;margin-top:10px!important}
+button{width:100%;height:54px;border:0;border-radius:12px;background:#c8a84b;color:#06111d;font:inherit;font-weight:800;font-size:16px;margin-top:22px;cursor:pointer;box-shadow:0 14px 30px #c8a84b22}button:hover{filter:brightness(1.08)}.error{border:1px solid #d95c5c88;background:#3a1117;color:#ffd0d0;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6}.meta{display:flex;justify-content:space-between;gap:14px;margin-top:18px;color:#648ba3;font-size:12px}.arabic-line{direction:rtl;color:#d8c06e!important;font-size:15px!important;margin-top:10px!important}.or-line{display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:#648ba3;font-size:12px;text-transform:uppercase;letter-spacing:2px}.or-line:before,.or-line:after{content:'';height:1px;background:#2b5674;flex:1}.google-trial{border:1px solid #2b5674;border-radius:16px;background:#07111c;padding:16px;display:flex;flex-direction:column;gap:14px}.google-trial strong{display:block;color:#f7e7bc;font-size:15px;margin-bottom:5px}.google-trial span{display:block;color:#8cb0c5;font-size:12px;line-height:1.6}.google-trial.muted{opacity:.75}
 @media(max-width:820px){body{padding:14px}.arabic-ornament{font-size:88px}.shell{grid-template-columns:1fr;border-radius:18px}.intro{min-height:auto;border-right:0;border-bottom:1px solid #2b5674;padding:34px 24px}.intro:after{font-size:118px;right:16px;bottom:18px}.panel{padding:24px}.card{padding:24px}.legal-icons{grid-template-columns:repeat(3,1fr)}.legal-icons span{height:64px}h1{font-size:38px;margin:22px 0 14px}.brand strong{font-size:24px}.kufi{font-size:21px}.meta{flex-direction:column}}
 </style>
 </head>
@@ -187,6 +308,7 @@ button{width:100%;height:54px;border:0;border-radius:12px;background:#c8a84b;col
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" required>
       <button type="submit">Open Web App</button>
+      ${googleHtml}
       <div class="meta"><span>Secure private session</span><span>No public indexing</span></div>
     </form>
   </section>
@@ -221,7 +343,9 @@ export async function onRequest(context) {
 
   const url = new URL(request.url);
   const session = getCookie(request, SESSION_COOKIE);
-  const authenticated = await verifySession(session, env);
+  const sessionData = await verifySession(session, env);
+  const authenticated = !!sessionData;
+  const googleId = googleClientId(env);
 
   if (url.pathname === '/logout') {
     return redirectResponse('/login', {
@@ -232,7 +356,7 @@ export async function onRequest(context) {
   if (url.pathname === '/login' && request.method === 'GET') {
     return authenticated
       ? redirectResponse(safeRedirect(url.searchParams.get('redirect')))
-      : loginPage({ redirect: url.searchParams.get('redirect') || '/sanad.html' });
+      : loginPage({ redirect: url.searchParams.get('redirect') || '/sanad.html', googleId });
   }
 
   if (url.pathname === '/login' && request.method === 'POST') {
@@ -241,16 +365,46 @@ export async function onRequest(context) {
     const password = String(form.get('password') || '');
     const redirect = safeRedirect(form.get('redirect'));
     const allowed = timingSafeEqual(username, expectedUser) && timingSafeEqual(password, expectedPassword);
-    if (!allowed) return loginPage({ error: 'Invalid username or password.', redirect }, 401);
+    if (!allowed) return loginPage({ error: 'Invalid username or password.', redirect, googleId }, 401);
     const token = await createSession(username, env);
     return redirectResponse(redirect, {
       'Set-Cookie': `${SESSION_COOKIE}=${token}; Path=/; Max-Age=${SESSION_SECONDS}; HttpOnly; Secure; SameSite=Lax`
     });
   }
 
+  if (url.pathname === '/login/google' && request.method === 'POST') {
+    const redirect = safeRedirect(url.searchParams.get('redirect') || '/sanad.html');
+    if (!googleId) return loginPage({ error: 'Google trial login is not configured yet.', redirect, googleId }, 503);
+    try {
+      const form = await request.formData();
+      if (!csrfMatches(request, form)) throw new Error('Google login CSRF check failed.');
+      const profile = await verifyGoogleIdToken(form.get('credential'), googleId);
+      const trial = await googleTrialForProfile(env, profile);
+      if (Date.now() > trial.expiresAt) {
+        return loginPage({
+          error: `Your 7-day trial expired on ${new Date(trial.expiresAt).toLocaleDateString('en-AE')}.`,
+          redirect,
+          googleId
+        }, 403);
+      }
+      const token = await createSession(profile.email, env, {
+        provider: 'google',
+        email: profile.email,
+        name: profile.name,
+        trialExpiresAt: new Date(trial.expiresAt).toISOString(),
+        exp: trial.expiresAt
+      });
+      return redirectResponse(redirect, {
+        'Set-Cookie': `${SESSION_COOKIE}=${token}; Path=/; Max-Age=${Math.min(SESSION_SECONDS, Math.max(60, Math.floor((trial.expiresAt - Date.now()) / 1000)))}; HttpOnly; Secure; SameSite=Lax`
+      });
+    } catch (error) {
+      return loginPage({ error: error.message || 'Google login failed.', redirect, googleId }, 401);
+    }
+  }
+
   if (!authenticated) {
     const target = safeRedirect(`${url.pathname}${url.search}`);
-    return wantsHtml(request, url) ? loginPage({ redirect: target }) : forbidden();
+    return wantsHtml(request, url) ? loginPage({ redirect: target, googleId }) : forbidden();
   }
 
   const response = await context.next();
