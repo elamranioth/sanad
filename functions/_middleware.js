@@ -262,56 +262,42 @@ function loginPage({ error = '', redirect = '/sanad.html', googleId = '' } = {},
 <title>SANAD Legal Access</title>
 <style>
 *{box-sizing:border-box}html,body{min-height:100%}body{margin:0;font-family:Georgia,'Times New Roman',serif;color:#eef4f8;background:#07111c;display:grid;place-items:center;padding:28px;overflow-x:hidden}
-body:before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 17% 14%,#244d70 0,#07111c 29%),linear-gradient(135deg,#07111c 0,#10243a 50%,#050b12 100%);z-index:-3}
-body:after{content:'';position:fixed;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff07 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(120deg,#000 0,#0008 48%,transparent 100%);z-index:-2}
-.arabic-ornament{position:fixed;inset:auto -40px 14px auto;color:#c8a84b10;font-size:168px;font-weight:800;line-height:1;font-family:'Times New Roman',serif;z-index:-1;pointer-events:none}.arabic-ornament.top{inset:14px auto auto -36px;font-size:138px;transform:rotate(180deg)}
-.shell{width:min(1120px,100%);display:grid;grid-template-columns:1.08fr .92fr;border:1px solid #2b5674;border-radius:24px;overflow:hidden;background:#081827e6;box-shadow:0 28px 90px #0009}
-.intro{position:relative;padding:54px 50px;background:linear-gradient(145deg,#0b2033,#081320);border-right:1px solid #2b5674;min-height:640px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
-.intro:after{content:'⚖';position:absolute;right:34px;bottom:40px;font-size:180px;color:#c8a84b0f;line-height:1;transform:rotate(-8deg)}
-.brand{display:flex;align-items:center;gap:16px;position:relative;z-index:1}.mark{width:62px;height:62px;border:1px solid #c8a84b88;border-radius:18px;display:grid;place-items:center;color:#c8a84b;font-size:31px;background:#2a1f082e;box-shadow:inset 0 0 24px #c8a84b12}.brand span{display:block;color:#7fb7d8;font-size:12px;letter-spacing:3px;text-transform:uppercase}.brand strong{display:block;color:#f7e7bc;font-size:30px;letter-spacing:2px;margin-top:4px}
-.kufi{margin:38px 0 0;color:#d8c06e;font-size:26px;letter-spacing:.5px;direction:rtl;font-weight:700}.legal-icons{display:grid;grid-template-columns:repeat(3,86px);gap:14px;margin:34px 0}.legal-icons span{height:78px;border:1px solid #2b5674;border-radius:18px;background:#06111d99;color:#d8c06e;display:grid;place-items:center;font-size:34px;box-shadow:inset 0 1px 0 #ffffff0d}
-h1{font-size:54px;line-height:1.06;margin:26px 0 18px;color:#fff;letter-spacing:.3px;position:relative;z-index:1}p{font-size:18px;line-height:1.8;color:#a9c2d2;margin:0;max-width:590px;position:relative;z-index:1}.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px;position:relative;z-index:1}.chips span{border:1px solid #2b5674;border-radius:999px;padding:10px 14px;color:#d8c06e;background:#07111c99;font-size:13px}
-.note{border-top:1px solid #2b5674;margin-top:38px;padding-top:20px;color:#779bb2;font-size:13px;line-height:1.7;position:relative;z-index:1}.panel{padding:54px 48px;display:flex;align-items:center;background:#081420}.card{width:100%;background:#0b1d2e;border:1px solid #2b5674;border-radius:20px;padding:34px;box-shadow:inset 0 1px 0 #ffffff0d}.card-badge{width:58px;height:58px;border-radius:18px;border:1px solid #c8a84b66;background:#2a1f082e;color:#d8c06e;display:grid;place-items:center;font-size:28px;margin-bottom:18px}.card h2{margin:0 0 8px;color:#f7e7bc;font-size:32px}.card p{font-size:14px;color:#8cb0c5;margin-bottom:26px}
-label{display:block;color:#b9ccda;font-size:13px;margin:16px 0 8px}input{width:100%;height:52px;border-radius:12px;border:1px solid #2b5674;background:#06111d;color:#fff;padding:0 15px;font:inherit;font-size:16px;outline:none}input:focus{border-color:#c8a84b;box-shadow:0 0 0 4px #c8a84b1f}
-button{width:100%;height:54px;border:0;border-radius:12px;background:#c8a84b;color:#06111d;font:inherit;font-weight:800;font-size:16px;margin-top:22px;cursor:pointer;box-shadow:0 14px 30px #c8a84b22}button:hover{filter:brightness(1.08)}.error{border:1px solid #d95c5c88;background:#3a1117;color:#ffd0d0;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6}.meta{display:flex;justify-content:space-between;gap:14px;margin-top:18px;color:#648ba3;font-size:12px}.arabic-line{direction:rtl;color:#d8c06e!important;font-size:15px!important;margin-top:10px!important}.or-line{display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:#648ba3;font-size:12px;text-transform:uppercase;letter-spacing:2px}.or-line:before,.or-line:after{content:'';height:1px;background:#2b5674;flex:1}.google-trial{border:1px solid #2b5674;border-radius:16px;background:#07111c;padding:16px;display:flex;flex-direction:column;gap:14px}.google-trial strong{display:block;color:#f7e7bc;font-size:15px;margin-bottom:5px}.google-trial span{display:block;color:#8cb0c5;font-size:12px;line-height:1.6}.google-trial.muted{opacity:.75}
-@media(max-width:820px){body{padding:14px}.arabic-ornament{font-size:88px}.shell{grid-template-columns:1fr;border-radius:18px}.intro{min-height:auto;border-right:0;border-bottom:1px solid #2b5674;padding:34px 24px}.intro:after{font-size:118px;right:16px;bottom:18px}.panel{padding:24px}.card{padding:24px}.legal-icons{grid-template-columns:repeat(3,1fr)}.legal-icons span{height:64px}h1{font-size:38px;margin:22px 0 14px}.brand strong{font-size:24px}.kufi{font-size:21px}.meta{flex-direction:column}}
+body:before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 18% 12%,#214868 0,#07111c 30%),radial-gradient(circle at 84% 86%,#1e3d57 0,#07111c 34%),linear-gradient(135deg,#07111c 0,#10243a 52%,#050b12 100%);z-index:-3}
+body:after{content:'';position:fixed;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff06 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(120deg,#000 0,#0009 52%,transparent 100%);z-index:-2}
+.arabic-ornament{position:fixed;inset:auto -36px 12px auto;color:#c8a84b12;font-size:160px;font-weight:800;line-height:1;font-family:'Times New Roman',serif;z-index:-1;pointer-events:none}.arabic-ornament.top{inset:12px auto auto -36px;font-size:132px;transform:rotate(180deg)}
+.login-card{position:relative;width:min(560px,100%);border:1px solid #2b5674;border-radius:24px;background:linear-gradient(155deg,#0d2236 0,#081827 52%,#07111c 100%);padding:38px;box-shadow:0 28px 90px #0009,inset 0 1px 0 #ffffff12;overflow:hidden}
+.login-card:before{content:'⚖';position:absolute;right:-28px;top:-18px;color:#c8a84b10;font-size:168px;line-height:1;transform:rotate(-10deg);pointer-events:none}.login-card:after{content:'';position:absolute;inset:18px;border:1px solid #c8a84b18;border-radius:18px;pointer-events:none}
+.brand{display:flex;align-items:center;justify-content:center;gap:16px;text-align:left;position:relative;z-index:1}.mark{width:68px;height:68px;border:1px solid #c8a84b88;border-radius:20px;display:grid;place-items:center;color:#d8c06e;font-size:34px;background:#2a1f082e;box-shadow:inset 0 0 24px #c8a84b12}.brand span{display:block;color:#7fb7d8;font-size:12px;letter-spacing:3px;text-transform:uppercase}.brand strong{display:block;color:#f7e7bc;font-size:32px;letter-spacing:2px;margin-top:4px}
+.kufi{margin:22px 0 0;color:#d8c06e;font-size:25px;letter-spacing:.5px;direction:rtl;text-align:center;font-weight:700;position:relative;z-index:1}.legal-icons{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0;position:relative;z-index:1}.legal-icons span{height:68px;border:1px solid #2b5674;border-radius:18px;background:#06111d99;color:#d8c06e;display:grid;place-items:center;font-size:30px;box-shadow:inset 0 1px 0 #ffffff0d}
+.lead{font-size:15px;line-height:1.8;color:#a9c2d2;margin:0 auto 8px;max-width:430px;text-align:center;position:relative;z-index:1}.arabic-line{direction:rtl;color:#d8c06e!important;font-size:14px!important;margin:0 auto 24px!important;text-align:center}.access-form{position:relative;z-index:1;border-top:1px solid #2b5674;padding-top:22px;margin-top:22px}
+label{display:block;color:#b9ccda;font-size:13px;margin:15px 0 8px}input{width:100%;height:52px;border-radius:12px;border:1px solid #2b5674;background:#06111d;color:#fff;padding:0 15px;font:inherit;font-size:16px;outline:none}input:focus{border-color:#c8a84b;box-shadow:0 0 0 4px #c8a84b1f}
+button{width:100%;height:54px;border:0;border-radius:12px;background:#c8a84b;color:#06111d;font:inherit;font-weight:800;font-size:16px;margin-top:22px;cursor:pointer;box-shadow:0 14px 30px #c8a84b22}button:hover{filter:brightness(1.08)}.error{border:1px solid #d95c5c88;background:#3a1117;color:#ffd0d0;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6}.meta{display:flex;justify-content:space-between;gap:14px;margin-top:18px;color:#648ba3;font-size:12px}.or-line{display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:#648ba3;font-size:12px;text-transform:uppercase;letter-spacing:2px}.or-line:before,.or-line:after{content:'';height:1px;background:#2b5674;flex:1}.google-trial{border:1px solid #2b5674;border-radius:16px;background:#07111c;padding:16px;display:flex;flex-direction:column;gap:14px}.google-trial strong{display:block;color:#f7e7bc;font-size:15px;margin-bottom:5px}.google-trial span{display:block;color:#8cb0c5;font-size:12px;line-height:1.6}.google-trial.muted{opacity:.75}
+@media(max-width:620px){body{padding:14px}.arabic-ornament{font-size:86px}.login-card{padding:26px 22px;border-radius:20px}.login-card:before{font-size:118px}.login-card:after{inset:12px;border-radius:16px}.brand{gap:12px}.mark{width:58px;height:58px;border-radius:17px;font-size:29px}.brand strong{font-size:26px}.kufi{font-size:21px}.legal-icons{gap:9px}.legal-icons span{height:58px;font-size:26px}.meta{flex-direction:column;gap:8px}}
 </style>
 </head>
 <body>
 <div class="arabic-ornament top">۞</div>
 <div class="arabic-ornament">۞</div>
-<main class="shell">
-  <section class="intro">
-    <div>
-      <div class="brand">
-        <div class="mark">⚖</div>
-        <div><span>Private legal research</span><strong>SANAD</strong></div>
-      </div>
-      <div class="kufi">العدل أساس الملك</div>
-      <div class="legal-icons" aria-hidden="true"><span>⚖</span><span>⚒</span><span>✒</span></div>
-      <h1>Private legal intelligence for judgments and laws.</h1>
-      <p>SANAD is your protected legal workspace for court judgments, legislation, clients, invoices, and important legal excerpts.</p>
-      <p class="arabic-line">منصة خاصة للبحث القانوني، الأحكام، القوانين، وإدارة الملفات.</p>
-      <div class="chips"><span>Court judgments</span><span>Laws</span><span>Legal excerpts</span><span>Client matters</span></div>
-    </div>
-    <div class="note">Access is limited to the account owner. Direct downloads of legal text files are blocked until a valid private session is created.</div>
-  </section>
-  <section class="panel">
-    <form class="card" method="POST" action="/login">
-      <div class="card-badge">⚖</div>
-      <h2>Enter SANAD</h2>
-      <p>Sign in to open the protected legal web app.</p>
-      ${errorHtml}
-      <input type="hidden" name="redirect" value="${escapeHtml(safeTarget)}">
-      <label for="username">Username</label>
-      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="current-password" required>
-      <button type="submit">Open Web App</button>
-      ${googleHtml}
-      <div class="meta"><span>Secure private session</span><span>No public indexing</span></div>
-    </form>
-  </section>
+<main class="login-card">
+  <div class="brand">
+    <div class="mark">⚖</div>
+    <div><span>Protected legal access</span><strong>SANAD</strong></div>
+  </div>
+  <div class="kufi">العدل أساس الملك</div>
+  <div class="legal-icons" aria-hidden="true"><span>⚖</span><span>⚒</span><span>✒</span></div>
+  <p class="lead">A secure workspace for court judgments, legislation, clients, invoices, and important legal excerpts.</p>
+  <p class="arabic-line">منصة خاصة للبحث القانوني وإدارة الملفات.</p>
+  <form class="access-form" method="POST" action="/login">
+    ${errorHtml}
+    <input type="hidden" name="redirect" value="${escapeHtml(safeTarget)}">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Open Web App</button>
+    ${googleHtml}
+    <div class="meta"><span>Secure private session</span><span>No public indexing</span></div>
+  </form>
 </main>
 </body>
 </html>`;
