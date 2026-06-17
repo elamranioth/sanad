@@ -43,7 +43,7 @@ function searchWords(value, stopSet, commonSet, keepCommon = false) {
 }
 
 function textMatchesWords(text, words, mode = 'all') {
-  if (!words.length) return true;
+  if (!words.length) return false;
   const normalized = normalizeSearchText(text);
   return mode === 'any'
     ? words.some(word => normalized.includes(word))
@@ -142,6 +142,9 @@ function pickSnippet(snippet, words, phrase, section) {
   if (!words.length && !phraseNeedle && (!section || section === 'all')) {
     return { section: 'meta', text: '', reason: 'metadata' };
   }
+  if (!words.length && !phraseNeedle && section && section !== 'all' && snippet[section]) {
+    return { section, text: trimSnippet(snippet[section]), reason: 'section' };
+  }
   for (const key of order) {
     const value = snippet[key] || '';
     if (!value) continue;
@@ -233,11 +236,14 @@ function search(payload) {
   });
   const allowedIds = new Set(allowedDocs.map(doc => Number(doc.id)));
 
-  let candidates = new Set(allowedIds);
+  const hasTextQuery = !!(query || exactPhrase);
+  let candidates = new Set(hasTextQuery ? [] : allowedIds);
   const tokenSets = shardTokenSets(shards, words);
+  let indexedCandidates = new Set();
   if (words.length && tokenSets.length) {
-    candidates = mode === 'any' ? setUnion(tokenSets) : setIntersection(tokenSets);
-    candidates = new Set([...candidates].filter(id => allowedIds.has(Number(id))));
+    indexedCandidates = mode === 'any' ? setUnion(tokenSets) : setIntersection(tokenSets);
+    indexedCandidates = new Set([...indexedCandidates].filter(id => allowedIds.has(Number(id))));
+    candidates = new Set([...candidates, ...indexedCandidates]);
   }
 
   const tokenHits = new Map();
@@ -246,7 +252,7 @@ function search(payload) {
   const metadataCandidates = allowedDocs.filter(doc => {
     const haystack = normalizeSearchText(metaText(doc));
     const phraseNeedle = normalizeSearchText(phrase).trim();
-    return (phraseNeedle && haystack.includes(phraseNeedle)) || textMatchesWords(haystack, words, mode);
+    return (phraseNeedle && haystack.includes(phraseNeedle)) || (words.length && textMatchesWords(haystack, words, mode));
   });
   metadataCandidates.forEach(doc => candidates.add(Number(doc.id)));
 
@@ -257,12 +263,16 @@ function search(payload) {
     if (!doc) continue;
     const snippet = allShardSnippets(shards, String(id));
     const combined = normalizeSearchText([metaText(doc), snippetText(snippet), doc.body].join(' '));
-    if (query && !textMatchesWords(combined, words, mode) && !(phraseNeedle && combined.includes(phraseNeedle))) continue;
-    if (exactPhrase && !combined.includes(normalizeSearchText(exactPhrase).trim()) && !textMatchesWords(combined, words, 'all')) continue;
+    const indexedMatch = indexedCandidates.has(Number(id));
+    const combinedWordMatch = words.length && textMatchesWords(combined, words, mode);
+    const combinedPhraseMatch = phraseNeedle && combined.includes(phraseNeedle);
+    if (query && !indexedMatch && !combinedWordMatch && !combinedPhraseMatch) continue;
+    if (exactPhrase && !indexedMatch && !combined.includes(normalizeSearchText(exactPhrase).trim()) && !(words.length && textMatchesWords(combined, words, 'all'))) continue;
     if (excludeWords.length && excludeWords.some(word => combined.includes(word))) continue;
     if (filters.section && filters.section !== 'all') {
       const sectionText = normalizeSearchText(snippet[filters.section] || '');
-      if (!sectionText || (!textMatchesWords(sectionText, words, mode) && !(phraseNeedle && sectionText.includes(phraseNeedle)))) continue;
+      if (!sectionText) continue;
+      if (hasTextQuery && !textMatchesWords(sectionText, words, mode) && !(phraseNeedle && sectionText.includes(phraseNeedle))) continue;
     }
     const picked = pickSnippet(snippet, words, phrase, filters.section);
     const score = scoreDoc(doc, snippet, words, phrase, tokenHits, filters, shardDocCount);

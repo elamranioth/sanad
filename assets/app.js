@@ -336,6 +336,13 @@ function renderDocSearchSnippetContent(doc,query,loaded=false){
     const score=Number(meta.score||0);
     return `<i class="ti ti-quote"></i><span><span class="doc-search-section">${escapeHtml(label)}</span>${score?`<span class="doc-search-score">${escapeHtml(Math.round(score))}</span>`:''}${renderTextWithSearchHighlights(meta.snippet,q)}</span>`;
   }
+  if(meta&&loaded){
+    const sentence=findSearchSnippet(doc.body||'',q)||findSearchSnippet(doc.excerpt||'',q)||findSearchSnippet([doc.title,doc.appeal].join(' '),q);
+    if(sentence){
+      const label=searchSectionLabels.body||'نص الحكم';
+      return `<i class="ti ti-quote"></i><span><span class="doc-search-section">${escapeHtml(label)}</span>${renderTextWithSearchHighlights(sentence,q)}</span>`;
+    }
+  }
   if(meta){
     const label=searchSectionLabels[meta.section]||'نص الحكم';
     return `<i class="ti ti-file-search"></i><span><span class="doc-search-section">${escapeHtml(label)}</span><span class="snippet-muted">توجد مطابقة في فهرس الحكم. افتح الحكم للانتقال إلى الموضع المظلل.</span></span>`;
@@ -1086,12 +1093,16 @@ function getLoadedJudgmentForSnippet(indexed){
 async function hydrateVisibleSearchSnippets(pageItems,query){
   const q=String(query||'').trim();
   if(!q)return;
-  if(searchResultMeta.size)return;
   const token=++snippetHydrationToken;
-  const chunkIds=[...new Set(pageItems.map(item=>item.chunk).filter(Boolean))];
+  const needsHydration=pageItems.filter(item=>{
+    const meta=searchResultMeta.get(Number(item.id));
+    return !meta||!meta.snippet||meta.reason==='indexed';
+  });
+  if(!needsHydration.length)return;
+  const chunkIds=[...new Set(needsHydration.map(item=>item.chunk).filter(Boolean))];
   await Promise.all(chunkIds.map(loadJudgmentChunk));
   if(token!==snippetHydrationToken)return;
-  pageItems.forEach(item=>{
+  needsHydration.forEach(item=>{
     const el=document.querySelector(`[data-doc-snippet="${Number(item.id)}"]`);
     if(!el)return;
     el.innerHTML=renderDocSearchSnippetContent(getLoadedJudgmentForSnippet(item),q,true);
@@ -1119,7 +1130,7 @@ function ensureJudgmentSearchWorker(){
   if(judgmentSearchWorker)return judgmentSearchWorker;
   if(!('Worker' in window))return null;
   try{
-    judgmentSearchWorker=new Worker(new URL('./assets/search-worker.js?v=judgment-data-fix-20260609',location.href).href);
+    judgmentSearchWorker=new Worker(new URL('./assets/search-worker.js?v=search-fix-20260617',location.href).href);
     judgmentSearchWorker.onmessage=event=>{
       const data=event.data||{};
       const pending=pendingSearchRequests.get(data.token);
@@ -1179,12 +1190,88 @@ function fallbackSearchDocs(list,filters){
   });
   return {results};
 }
+function fullTextSearchShouldRun(result,filters){
+  const phrase=comparableSearchText(filters.exactPhrase||filters.query||'');
+  if(phrase.length<3)return false;
+  const words=searchWords([filters.query,filters.exactPhrase].filter(Boolean).join(' '));
+  return !result?.results?.length||phrase.includes(' ')||!!filters.exactPhrase||!words.length;
+}
+function fullTextMatches(normalized,words,phrase,mode='all'){
+  if(phrase&&normalized.includes(phrase))return true;
+  if(!words.length)return false;
+  return mode==='any'
+    ? words.some(word=>normalized.includes(word))
+    : words.every(word=>normalized.includes(word));
+}
+async function fullTextSearchDocs(list,filters){
+  const query=filters.exactPhrase||filters.query||'';
+  const words=searchWords([filters.query,filters.exactPhrase].filter(Boolean).join(' '));
+  const phrase=comparableSearchText(query);
+  const exclude=searchWords(filters.exclude||'');
+  const mode=filters.mode==='any'?'any':'all';
+  const chunkIds=[...new Set(list.map(doc=>doc.chunk).filter(Boolean))];
+  await Promise.all(chunkIds.map(loadJudgmentChunk));
+  const results=[];
+  list.forEach(doc=>{
+    const fullDoc=getLoadedJudgmentForSnippet(doc);
+    const meta=[fullDoc.title,fullDoc.court,fullDoc.date,fullDoc.num,fullDoc.appeal,fullDoc.source,fullDoc.excerpt].join(' ');
+    const body=fullDoc.body||'';
+    if(filters.court&&!normalizeSearchText(fullDoc.court).includes(normalizeSearchText(filters.court)))return;
+    if(filters.number&&!numberFilterMatches([fullDoc.num,fullDoc.title,fullDoc.appeal].join(' '),filters.number))return;
+    const normalized=comparableSearchText([meta,body].join(' '));
+    if((filters.query||filters.exactPhrase)&&!fullTextMatches(normalized,words,phrase,mode))return;
+    if(exclude.length&&exclude.some(word=>normalized.includes(word)))return;
+    const snippet=findSearchSnippet(body||fullDoc.excerpt||meta,query);
+    results.push({
+      id:Number(fullDoc.id),
+      score:50+scoreDocSearch(fullDoc,query)+(snippet?25:0),
+      snippet,
+      section:snippet?'body':'meta',
+      reason:snippet?'full-text':'full-text-meta'
+    });
+  });
+  results.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.id)-Number(a.id));
+  return {results,loadedShards:[],fullText:true};
+}
+function mergeSearchResults(primary={},fullText={}){
+  const byId=new Map();
+  (primary.results||[]).forEach(item=>byId.set(Number(item.id),{...item}));
+  (fullText.results||[]).forEach(item=>{
+    const id=Number(item.id);
+    const existing=byId.get(id);
+    if(existing){
+      byId.set(id,{
+        ...existing,
+        score:Math.max(Number(existing.score||0),Number(item.score||0)),
+        snippet:existing.snippet||item.snippet,
+        section:existing.snippet?existing.section:item.section,
+        reason:existing.snippet?existing.reason:item.reason
+      });
+    }else{
+      byId.set(id,{...item});
+    }
+  });
+  return {
+    ...primary,
+    results:[...byId.values()].sort((a,b)=>Number(b.score||0)-Number(a.score||0)||Number(b.id)-Number(a.id)),
+    loadedShards:primary.loadedShards||[],
+    fullText:!!fullText.fullText,
+    ignoredCommon:primary.ignoredCommon||[]
+  };
+}
 async function searchJudgmentList(list,filters,token){
   try{
-    return await runWorkerJudgmentSearch(list,filters,token);
+    const result=await runWorkerJudgmentSearch(list,filters,token);
+    if(fullTextSearchShouldRun(result,filters)){
+      const fullText=await fullTextSearchDocs(list,filters);
+      return mergeSearchResults(result,fullText);
+    }
+    return result;
   }catch(error){
     console.warn(error);
-    return fallbackSearchDocs(list,filters);
+    const fallback=fallbackSearchDocs(list,filters);
+    if(fullTextSearchShouldRun(fallback,filters))return mergeSearchResults(fallback,await fullTextSearchDocs(list,filters));
+    return fallback;
   }
 }
 function applySettings(){
