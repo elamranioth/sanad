@@ -46,6 +46,7 @@ let currentDocId=null;
 let currentLawId=null;
 let readerMode='judgment';
 let deferredInstallPrompt=null;
+const offlineCacheVersion='sanad-pwa-v40';
 const savedStorageKey='sanadSavedJudgments';
 const memoryStorageKey='sanadMemoryItems';
 const memorySyncEndpoint='./api/memory';
@@ -1324,6 +1325,54 @@ async function installApp(){
   }
   showToast(isIOSDevice()?'من سفاري: مشاركة ثم إضافة إلى الشاشة الرئيسية.':'من قائمة المتصفح اختر إضافة إلى الشاشة الرئيسية.');
 }
+function setOfflineStatus(message,busy=false){
+  const el=document.getElementById('settingsOfflineStatus');
+  if(!el)return;
+  el.textContent=message;
+  el.classList.toggle('offline-busy',!!busy);
+}
+function offlinePrepared(){
+  return localStorage.getItem('sanadOfflineCacheVersion')===offlineCacheVersion;
+}
+function handleOfflineWorkerMessage(event){
+  const data=event.data||{};
+  if(data.type==='SANAD_OFFLINE_PROGRESS'){
+    const done=Number(data.done||data.cached||0);
+    const total=Number(data.total||0);
+    const percent=Number(data.percent||0)||(total?Math.round((done/total)*100):0);
+    setOfflineStatus(total?`${ar(done)}/${ar(total)} - ${ar(percent)}%`:`${ar(percent)}%`,true);
+  }
+  if(data.type==='SANAD_OFFLINE_READY'){
+    const done=Number(data.done||data.cached||0);
+    const total=Number(data.total||0);
+    localStorage.setItem('sanadOfflineCacheVersion',offlineCacheVersion);
+    setOfflineStatus(total?`جاهز (${ar(done)}/${ar(total)})`:'جاهز',false);
+    showToast('تم تجهيز محتوى سند للعمل بدون إنترنت.');
+  }
+}
+async function prepareOfflineContent({silent=false}={}){
+  if(!('serviceWorker' in navigator)){
+    if(!silent)showToast('هذا المتصفح لا يدعم التخزين دون إنترنت.');
+    return;
+  }
+  try{
+    setOfflineStatus('جارٍ التجهيز...',true);
+    if(navigator.storage?.persist)await navigator.storage.persist().catch(()=>false);
+    const registration=await navigator.serviceWorker.ready;
+    const worker=registration.active||navigator.serviceWorker.controller;
+    if(!worker){
+      if(!silent)showToast('أعد فتح التطبيق مرة واحدة لتفعيل التخزين دون إنترنت.');
+      setOfflineStatus('بانتظار التفعيل',true);
+      return;
+    }
+    worker.postMessage({type:'SANAD_CACHE_ALL'});
+    if(!silent)showToast('بدأ تجهيز الأحكام والقوانين للعمل بدون إنترنت.');
+  }catch(error){
+    console.warn(error);
+    setOfflineStatus('غير جاهز',false);
+    if(!silent)showToast('تعذر تجهيز المحتوى دون إنترنت الآن.');
+  }
+}
 async function clearSanadRuntimeCache(){
   try{
     if(navigator.serviceWorker?.controller){
@@ -1333,6 +1382,7 @@ async function clearSanadRuntimeCache(){
       const keys=await caches.keys();
       await Promise.all(keys.filter(key=>key.startsWith('sanad-pwa-')).map(key=>caches.delete(key)));
     }
+    localStorage.removeItem('sanadOfflineCacheVersion');
   }catch(_){}
 }
 async function logoutSanad(){
@@ -2193,6 +2243,7 @@ function updateSettingsStats(){
   if(memory)memory.textContent=ar(memoryItems.length);
   if(judgment)judgment.textContent=ar(counts.all);
   if(law)law.textContent=ar(laws.length);
+  setOfflineStatus(offlinePrepared()?'جاهز':'غير جاهز',false);
 }
 function showFeesManagerPage(){
   setRouteHash('#fees');
@@ -2243,7 +2294,7 @@ function showSettingsPage(){
   setHeroStats([
     {value:ar(savedJudgmentIds.size),label:'محفوظ'},
     {value:ar(feeItems.length),label:'رسوم'},
-    {value:'v38',label:'الكاش'}
+    {value:'v40',label:'الكاش'}
   ]);
   syncSettingsControls();
   updateSettingsStats();
@@ -3281,6 +3332,27 @@ function renderDocs(list,page=1){
   currentPage=Number(page)||1;
   renderDocsPage();
 }
+function judgmentTypeOrderMap(list){
+  const grouped=new Map();
+  [...docs].sort((a,b)=>sortableDateValue(a)-sortableDateValue(b)||Number(a.id)-Number(b.id)).forEach(doc=>{
+    const type=doc.type||'other';
+    if(!grouped.has(type))grouped.set(type,new Map());
+    const map=grouped.get(type);
+    if(!map.has(Number(doc.id)))map.set(Number(doc.id),map.size+1);
+  });
+  const visible=new Map();
+  (list||[]).forEach(doc=>{
+    const type=doc.type||'other';
+    const globalNumber=grouped.get(type)?.get(Number(doc.id));
+    visible.set(Number(doc.id),globalNumber||0);
+  });
+  return visible;
+}
+function judgmentDisplayOrder(doc,orderMap){
+  const value=orderMap?.get(Number(doc.id));
+  return Number.isFinite(value)&&value>0?value:Number(doc.id)||0;
+}
+
 function renderDocsPage(){
   const g=document.getElementById('docGrid'),nr=document.getElementById('noResults');
   const pagination=document.getElementById('paginationBar');
@@ -3290,6 +3362,7 @@ function renderDocsPage(){
   currentPage=Math.min(Math.max(1,currentPage),totalPages);
   const start=(currentPage-1)*docPageSize;
   const pageItems=currentDocResults.slice(start,start+docPageSize);
+  const orderMap=judgmentTypeOrderMap(currentDocResults);
   if(!searchQuery&&!searchResultMeta.size)snippetHydrationToken++;
   if(!total){
     g.innerHTML='';
@@ -3302,7 +3375,7 @@ function renderDocsPage(){
   nr.classList.add('hidden');
   g.innerHTML=pageItems.map(d=>`
     <a class="doc-card" href="${escapeHtml(judgmentPageHref(d.id))}" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
-      <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i></div>
+      <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i><span class="doc-order-num">${ar(judgmentDisplayOrder(d,orderMap))}</span></div>
       <div class="doc-body">
         <div class="doc-title">${escapeHtml(displayDocTitle(d))}</div>
         <div class="doc-meta">
@@ -3314,6 +3387,7 @@ function renderDocsPage(){
         ${renderDocSearchSnippet(d,searchQuery)}
       </div>
       <div class="doc-badge">
+        <span class="doc-type-order">${labels[d.type]||'حكم'} ${ar(judgmentDisplayOrder(d,orderMap))}</span>
         <span class="type-tag tt-${d.type}">${labels[d.type]||'حكم'}</span>
         <i class="ti ti-chevron-left"></i>
       </div>
@@ -3787,8 +3861,12 @@ if(initialJudgmentId){
   showSettingsPage();
 }
 if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',handleOfflineWorkerMessage);
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=offline-packs-20260906').then(()=>{
+      updateSettingsStats();
+    }).catch(()=>{});
   });
 }
 window.addEventListener('focus',()=>{void syncMemoryItemsFromServer({silent:true});});
+

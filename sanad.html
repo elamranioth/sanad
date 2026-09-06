@@ -16,7 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=logout-20260609">
+<link rel="stylesheet" href="./assets/styles.css?v=offline-20260629">
+<link rel="stylesheet" href="./assets/improvements.css?v=20260906">
 </head>
 <body>
 
@@ -530,9 +531,11 @@
           <div class="settings-info">
             <span>الأحكام: <strong id="settingsJudgmentCount">0</strong></span>
             <span>القوانين: <strong id="settingsLawCount">0</strong></span>
-            <span>الكاش: <strong>v38</strong></span>
+            <span>الكاش: <strong>v40</strong></span>
+            <span>Offline: <strong id="settingsOfflineStatus">غير جاهز</strong></span>
           </div>
           <div class="settings-actions">
+            <button class="tool-secondary" type="button" onclick="prepareOfflineContent()"><i class="ti ti-cloud-download"></i>تجهيز المحتوى Offline</button>
             <button class="tool-secondary danger" type="button" onclick="logoutSanad()"><i class="ti ti-logout"></i>تسجيل الخروج</button>
           </div>
         </div>
@@ -614,6 +617,7 @@
 <script src="./data/search/manifest.js?v=judgment-data-fix-20260609"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=search-fix-20260617"></script>
+<script src="./assets/app.js?v=offline-20260629"></script>
+<script src="./assets/improvements.js?v=20260906"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-﻿*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}
 html{background:#0d1b2a}
 body{direction:rtl;font-family:'Tajawal',sans-serif;background:#0d1b2a;color:#e8dcc8;min-height:100vh;display:flex;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 button,a,.tc,.doc-card,.law-card,.tool-primary,.tool-secondary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -303,6 +303,7 @@ body.locked-app .main,body.locked-app .sidebar,body.locked-app .sidebar-overlay{
 .tool-counter{min-width:92px;border:1px solid #2a4a68;background:#0d1b2a;border-radius:12px;padding:10px 12px;text-align:center}
 .tool-counter strong{display:block;font-family:'Amiri',serif;font-size:24px;color:#c8a84b;line-height:1.1}
 .tool-counter span{font-size:11px;color:#5f8198}
+.offline-busy{color:#8bd3ee!important}
 .tool-grid,.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -840,3 +841,10 @@ body.sidebar-open .menu-toggle{position:fixed;left:16px;right:auto;top:calc(8px 
 .doc-card-icon{width:40px;height:40px}
 .doc-title{font-size:14px}
 }
+
+.doc-card-icon{position:relative}
+.doc-order-num{position:absolute;inset:auto -7px -7px auto;min-width:24px;height:24px;border-radius:999px;background:#c8a84b;color:#07111c;border:2px solid #07111c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;line-height:1;box-shadow:0 8px 18px #00000055}
+.doc-type-order{display:inline-flex;align-items:center;justify-content:center;border:1px solid #c8a84b66;background:#2a1f082e;color:#f1d178;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+body.ink-mode .doc-order-num{background:#111;color:#fff;border-color:#fff}
+body.ink-mode .doc-type-order{background:#fff;color:#111;border-color:#111}
+@media(max-width:640px){.doc-order-num{min-width:22px;height:22px;font-size:11px}.doc-type-order{font-size:10px;padding:3px 7px}}
