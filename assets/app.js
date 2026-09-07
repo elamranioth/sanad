@@ -421,12 +421,35 @@ function sortableDateValue(doc){
   if(words&&months[words[2]]!==undefined)return new Date(Number(words[3]),months[words[2]],Number(words[1])).getTime();
   return Number(doc.id)||0;
 }
+function appealParts(doc){
+  const text=normalizeDigits([doc.num,doc.title,doc.appeal].filter(Boolean).join(' '));
+  const yearFirst=text.match(/((?:19|20)\d{2})\s*[\/-]\s*(\d{1,6})/);
+  if(yearFirst)return {year:Number(yearFirst[1]),number:Number(yearFirst[2])};
+  const numberFirst=text.match(/(\d{1,6})\s*[\/-]\s*((?:19|20)\d{2})/);
+  if(numberFirst)return {year:Number(numberFirst[2]),number:Number(numberFirst[1])};
+  const arabicTitle=text.match(/الطعن\s+رقم\s+(\d{1,6})\s+لسنة\s*((?:19|20)\d{2})/);
+  if(arabicTitle)return {year:Number(arabicTitle[2]),number:Number(arabicTitle[1])};
+  return {year:Number(docYear(doc))||9999,number:Number(doc.id)||999999};
+}
+function appealSortValue(doc){
+  const appeal=appealParts(doc);
+  return (appeal.year*1000000)+appeal.number;
+}
+function appealDisplayTitle(doc){
+  const appeal=appealParts(doc);
+  const typeLabel=labels[doc.type]||'قضائي';
+  if(Number.isFinite(appeal.year)&&Number.isFinite(appeal.number))return `الطعن رقم ${ar(appeal.number)}/${ar(appeal.year)} ${typeLabel}`;
+  return displayDocTitle(doc);
+}
 function sortDocuments(list,mode=document.getElementById('sortSelect')?.value||'newest'){
   const sorted=[...list];
+  const shouldUseAppealOrder=currentType&&currentType!=='all'&&(mode==='relevance'||mode==='newest'||mode==='appeal');
+  if(shouldUseAppealOrder)return sorted.sort((a,b)=>appealSortValue(a)-appealSortValue(b)||Number(a.id)-Number(b.id));
   if(mode==='relevance'){
     if(currentListSearchQuery()||searchResultMeta.size)return sorted;
     mode='newest';
   }
+  if(mode==='appeal')return sorted.sort((a,b)=>String(labels[a.type]||a.type||'').localeCompare(String(labels[b.type]||b.type||''),'ar')||appealSortValue(a)-appealSortValue(b)||Number(a.id)-Number(b.id));
   if(mode==='oldest')return sorted.sort((a,b)=>sortableDateValue(a)-sortableDateValue(b));
   if(mode==='court')return sorted.sort((a,b)=>String(a.court||'').localeCompare(String(b.court||''),'ar')||sortableDateValue(b)-sortableDateValue(a));
   return sorted.sort((a,b)=>sortableDateValue(b)-sortableDateValue(a));
@@ -3347,11 +3370,7 @@ function judgmentDisplayOrder(doc,orderMap){
   return Number.isFinite(value)&&value>0?value:Number(doc.id)||0;
 }
 function orderedJudgmentListTitle(doc,orderMap){
-  const order=judgmentDisplayOrder(doc,orderMap);
-  const year=docYear(doc)||'';
-  const typeLabel=labels[doc.type]||'قضائي';
-  const suffix=year?` لسنة ${ar(year)} طعن ${typeLabel}`:` طعن ${typeLabel}`;
-  return `الطعن رقم ${ar(order)}${suffix}`;
+  return appealDisplayTitle(doc);
 }
 
 function renderDocsPage(){
