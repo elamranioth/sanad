@@ -3346,6 +3346,13 @@ function judgmentDisplayOrder(doc,orderMap){
   const value=orderMap?.get(doc.type||'other')?.get(Number(doc.id));
   return Number.isFinite(value)&&value>0?value:Number(doc.id)||0;
 }
+function orderedJudgmentListTitle(doc,orderMap){
+  const order=judgmentDisplayOrder(doc,orderMap);
+  const year=docYear(doc)||'';
+  const typeLabel=labels[doc.type]||'قضائي';
+  const suffix=year?` لسنة ${ar(year)} طعن ${typeLabel}`:` طعن ${typeLabel}`;
+  return `الطعن رقم ${ar(order)}${suffix}`;
+}
 
 function renderDocsPage(){
   const g=document.getElementById('docGrid'),nr=document.getElementById('noResults');
@@ -3368,10 +3375,10 @@ function renderDocsPage(){
   }
   nr.classList.add('hidden');
   g.innerHTML=pageItems.map(d=>`
-    <a class="doc-card" href="${escapeHtml(judgmentPageHref(d.id))}" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(displayDocTitle(d))}">
+    <a class="doc-card" href="${escapeHtml(judgmentPageHref(d.id))}" data-doc-id="${Number(d.id)}" aria-label="فتح ${escapeHtml(orderedJudgmentListTitle(d,orderMap))}">
       <div class="doc-card-icon dci-${d.type}"><i class="ti ${icons[d.type]||'ti-file-text'}"></i><span class="doc-order-num">${ar(judgmentDisplayOrder(d,orderMap))}</span></div>
       <div class="doc-body">
-        <div class="doc-title">${escapeHtml(displayDocTitle(d))}</div>
+        <div class="doc-title">${escapeHtml(orderedJudgmentListTitle(d,orderMap))}</div>
         <div class="doc-meta">
           <span class="meta-chip"><i class="ti ti-calendar-event"></i>${escapeHtml(d.date)}</span>
           <span class="meta-chip"><i class="ti ti-building"></i>${escapeHtml(d.court)}</span>
