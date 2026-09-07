@@ -367,6 +367,16 @@ function countJudgmentSentenceMatches(body,query){
   const mainLines=introEnd>=0?lines.slice(introEnd+1):lines;
   return mainLines.reduce((sum,line)=>sum+splitSentenceSegments(line).filter(sentence=>searchHighlightRanges(sentence,q).length).length,0);
 }
+function renderReaderToolStrip(){
+  return `<div class="reader-tool-strip" role="toolbar" aria-label="Judgment reader tools">
+    <button type="button" onclick="printCurrentJudgment()"><i class="ti ti-printer"></i><span>Print</span></button>
+    <button type="button" onclick="toggleReaderFocusMode()"><i class="ti ti-focus-2"></i><span>Focus</span></button>
+    <button type="button" onclick="copySelectedJudgmentText()"><i class="ti ti-copy"></i><span>Copy selected</span></button>
+    <button type="button" onclick="copyCurrentJudgmentReference()"><i class="ti ti-link"></i><span>Copy reference</span></button>
+    <button type="button" onclick="increaseReaderFont()"><i class="ti ti-text-increase"></i><span>A+</span></button>
+    <button type="button" onclick="decreaseReaderFont()"><i class="ti ti-text-decrease"></i><span>A-</span></button>
+  </div>`;
+}
 function renderJudgmentSearchPanel(query='',body=''){
   const count=countJudgmentSentenceMatches(body,query);
   return `<section class="judgment-search-panel" id="judgmentSearchPanel">
@@ -379,6 +389,7 @@ function renderJudgmentSearchPanel(query='',body=''){
       <button type="button" onclick="jumpJudgmentSearchMatch(-1)" ${count?'':'disabled'}><i class="ti ti-chevron-right"></i>السابق</button>
       <button type="button" onclick="jumpJudgmentSearchMatch(1)" ${count?'':'disabled'}>التالي<i class="ti ti-chevron-left"></i></button>
     </div>
+    ${renderReaderToolStrip()}
   </section>`;
 }
 function matchesDoc(d,q){
@@ -573,7 +584,7 @@ function updateJudgmentSearchPanelState(){
   const count=countJudgmentSentenceMatches(body,currentJudgmentSearchQuery);
   const countEl=document.getElementById('judgmentSearchCount');
   if(countEl)countEl.textContent=currentJudgmentSearchQuery?`${ar(count)} نتيجة`:'اكتب للبحث داخل الحكم';
-  document.querySelectorAll('#judgmentSearchPanel button').forEach(button=>{button.disabled=!count;});
+  document.querySelectorAll('#judgmentSearchPanel .judgment-search-tools button').forEach(button=>{button.disabled=!count;});
   return count;
 }
 function focusJudgmentSearchMatch(index=0){
@@ -601,6 +612,66 @@ function jumpJudgmentSearchMatch(step=1){
   const matches=[...document.querySelectorAll('.judgment-search-hit')];
   if(!matches.length)return;
   focusJudgmentSearchMatch(currentJudgmentMatchIndex+Number(step||1));
+}
+async function copyReaderText(value,successMessage){
+  const text=String(value||'').trim();
+  if(!text){showToast('لا يوجد نص للنسخ.');return false;}
+  try{
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(text);
+    }else{
+      const area=document.createElement('textarea');
+      area.value=text;
+      area.style.position='fixed';
+      area.style.opacity='0';
+      document.body.appendChild(area);
+      area.focus();
+      area.select();
+      document.execCommand('copy');
+      area.remove();
+    }
+    showToast(successMessage);
+    return true;
+  }catch(error){
+    showToast('تعذر النسخ تلقائيًا.');
+    return false;
+  }
+}
+function setReaderSize(size){
+  sanadSettings={...sanadSettings,readerSize:size};
+  applySettings();
+  syncSettingsControls();
+  saveSanadSettings();
+}
+function increaseReaderFont(){
+  const order=['normal','large','xlarge'];
+  const index=Math.max(0,order.indexOf(sanadSettings.readerSize||'normal'));
+  setReaderSize(order[Math.min(index+1,order.length-1)]);
+  showToast('تم تكبير خط القارئ.');
+}
+function decreaseReaderFont(){
+  const order=['normal','large','xlarge'];
+  const index=Math.max(0,order.indexOf(sanadSettings.readerSize||'normal'));
+  setReaderSize(order[Math.max(index-1,0)]);
+  showToast('تم تصغير خط القارئ.');
+}
+function copyCurrentJudgmentReference(){
+  if(!currentReaderDoc){showToast('افتح الحكم أولًا.');return;}
+  const ref=memoryReferenceForDoc(currentReaderDoc);
+  const href=new URL(judgmentPageHref(currentReaderDoc.id),location.href).href;
+  copyReaderText(`${ref}\n${href}`,'تم نسخ مرجع الحكم.');
+}
+function copySelectedJudgmentText(){
+  const selection=window.getSelection?.().toString().replace(/\s+/g,' ').trim()||'';
+  if(!selection){showToast('حدد نصًا داخل الحكم أولًا.');return;}
+  copyReaderText(selection,'تم نسخ النص المحدد.');
+}
+function toggleReaderFocusMode(){
+  document.body.classList.toggle('reader-focus-mode');
+  showToast(document.body.classList.contains('reader-focus-mode')?'تم تفعيل وضع التركيز.':'تم إيقاف وضع التركيز.');
+}
+function printCurrentJudgment(){
+  window.print();
 }
 function renderLawMarkdown(markdown){
   const lines=String(markdown||'').replace(/\r/g,'').split('\n');

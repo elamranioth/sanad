@@ -217,6 +217,7 @@
   if(originalJudgmentSearchPanel){
     const improvedPanel=function(query='',body=''){
       const html=originalJudgmentSearchPanel(query,body);
+      if(html.includes('reader-tool-strip'))return html;
       const tools=`<div class="reader-tool-strip" role="toolbar" aria-label="Judgment reader tools">
         <button type="button" onclick="decreaseReaderFont()"><i class="ti ti-text-decrease"></i><span>A-</span></button>
         <button type="button" onclick="increaseReaderFont()"><i class="ti ti-text-increase"></i><span>A+</span></button>
@@ -237,31 +238,31 @@
     if(typeof syncSettingsControls==='function')syncSettingsControls();
     if(typeof saveSanadSettings==='function')saveSanadSettings();
   }
-  window.increaseReaderFont=function(){
+  if(typeof window.increaseReaderFont!=='function')window.increaseReaderFont=function(){
     const order=['normal','large','xlarge'];
     const current=typeof sanadSettings!=='undefined'?sanadSettings.readerSize||'normal':'normal';
     setReaderSize(order[Math.min(order.indexOf(current)+1,order.length-1)]||'large');
     notify('تم تكبير خط القارئ.');
   };
-  window.decreaseReaderFont=function(){
+  if(typeof window.decreaseReaderFont!=='function')window.decreaseReaderFont=function(){
     const order=['normal','large','xlarge'];
     const current=typeof sanadSettings!=='undefined'?sanadSettings.readerSize||'normal':'normal';
     setReaderSize(order[Math.max(order.indexOf(current)-1,0)]||'normal');
     notify('تم تصغير خط القارئ.');
   };
-  window.copyCurrentJudgmentReference=function(){
+  if(typeof window.copyCurrentJudgmentReference!=='function')window.copyCurrentJudgmentReference=function(){
     const doc=typeof currentReaderDoc!=='undefined'&&currentReaderDoc?currentReaderDoc:null;
     if(!doc){notify('افتح الحكم أولا.');return;}
     const ref=typeof memoryReferenceForDoc==='function'?memoryReferenceForDoc(doc):[doc.title,doc.num,doc.court,doc.date].filter(Boolean).join(' | ');
     const href=typeof judgmentPageHref==='function'?new URL(judgmentPageHref(doc.id),location.href).href:location.href;
     navigator.clipboard?.writeText(`${ref}\n${href}`).then(()=>notify('تم نسخ مرجع الحكم.')).catch(()=>notify('تعذر النسخ تلقائيا.'));
   };
-  window.copySelectedJudgmentText=function(){
+  if(typeof window.copySelectedJudgmentText!=='function')window.copySelectedJudgmentText=function(){
     const text=window.getSelection?.().toString().replace(/\s+/g,' ').trim()||'';
     if(!text){notify('حدد نصا داخل الحكم أولا.');return;}
     navigator.clipboard?.writeText(text).then(()=>notify('تم نسخ النص المحدد.')).catch(()=>notify('تعذر النسخ تلقائيا.'));
   };
-  window.toggleReaderFocusMode=function(){
+  if(typeof window.toggleReaderFocusMode!=='function')window.toggleReaderFocusMode=function(){
     document.body.classList.toggle('reader-focus-mode');
     notify(document.body.classList.contains('reader-focus-mode')?'تم تفعيل وضع التركيز.':'تم إيقاف وضع التركيز.');
   };
@@ -306,7 +307,7 @@
       if(!options.silent)notify('تعذر تجهيز المحتوى Offline الآن.');
     }
   }
-  window.prepareOfflineContent=prepareOfflineContent;
+  if(typeof window.prepareOfflineContent!=='function')window.prepareOfflineContent=prepareOfflineContent;
 
   function handleOfflineWorkerMessage(event){
     const data=event.data||{};
