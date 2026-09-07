@@ -46,7 +46,7 @@ let currentDocId=null;
 let currentLawId=null;
 let readerMode='judgment';
 let deferredInstallPrompt=null;
-const offlineCacheVersion='sanad-pwa-v40';
+const offlineCacheVersion='sanad-pwa-v41';
 const savedStorageKey='sanadSavedJudgments';
 const memoryStorageKey='sanadMemoryItems';
 const memorySyncEndpoint='./api/memory';
@@ -1442,6 +1442,14 @@ function handleOfflineWorkerMessage(event){
     localStorage.setItem('sanadOfflineCacheVersion',offlineCacheVersion);
     setOfflineStatus(total?`جاهز (${ar(done)}/${ar(total)})`:'جاهز',false);
     showToast('تم تجهيز محتوى سند للعمل بدون إنترنت.');
+  }
+  if(data.type==='SANAD_APP_UPDATED'){
+    localStorage.setItem('sanadOfflineCacheVersion',offlineCacheVersion);
+    if(!sessionStorage.getItem('sanadReloadedForUpdate')){
+      sessionStorage.setItem('sanadReloadedForUpdate','1');
+      showToast('تم تحميل آخر تحديث لسند.');
+      setTimeout(()=>location.reload(),700);
+    }
   }
 }
 async function prepareOfflineContent({silent=false}={}){
@@ -3952,9 +3960,29 @@ if(initialJudgmentId){
   showSettingsPage();
 }
 if('serviceWorker' in navigator){
+  let refreshingForNewWorker=false;
   navigator.serviceWorker.addEventListener('message',handleOfflineWorkerMessage);
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(refreshingForNewWorker)return;
+    refreshingForNewWorker=true;
+    if(!sessionStorage.getItem('sanadReloadedForController')){
+      sessionStorage.setItem('sanadReloadedForController','1');
+      location.reload();
+    }
+  });
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js?v=offline-packs-20260906').then(()=>{
+    navigator.serviceWorker.register('./sw.js?v=offline-packs-20260908-v41').then(registration=>{
+      registration.update().catch(()=>{});
+      if(registration.waiting)registration.waiting.postMessage({type:'SANAD_SKIP_WAITING'});
+      registration.addEventListener('updatefound',()=>{
+        const worker=registration.installing;
+        if(!worker)return;
+        worker.addEventListener('statechange',()=>{
+          if(worker.state==='installed'&&navigator.serviceWorker.controller){
+            worker.postMessage({type:'SANAD_SKIP_WAITING'});
+          }
+        });
+      });
       updateSettingsStats();
     }).catch(()=>{});
   });

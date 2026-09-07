@@ -1,9 +1,11 @@
-const CACHE_NAME = "sanad-pwa-v40";
+const CACHE_NAME = "sanad-pwa-v41";
 const CORE_ASSETS = [
   "./",
   "./sanad.html",
   "./assets/styles.css",
   "./assets/app.js",
+  "./assets/improvements.css",
+  "./assets/improvements.js",
   "./assets/search-worker.js",
   "./assets/el-amrani-logo.png",
   "./assets/vendor/tabler/tabler-icons.min.css",
@@ -57,7 +59,7 @@ function isCacheableLocalAsset(url) {
 
 async function notifyClients(type, payload = {}) {
   const clients = await self.clients.matchAll({ includeUncontrolled: true, type: "window" });
-  clients.forEach(client => client.postMessage({ type, ...payload }));
+  clients.forEach(client => client.postMessage({ type, cacheName: CACHE_NAME, ...payload }));
 }
 
 async function cacheOne(cache, url) {
@@ -91,31 +93,28 @@ async function cacheUrls(urls, notify = false) {
   return { cached, total };
 }
 
-async function cacheFirst(request) {
+async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   const key = normalizedRequest(request);
-  const cached = await cache.match(key, { ignoreSearch: true });
-  const network = fetch(request).then(response => {
+  try {
+    const response = await fetch(request, { cache: "no-store" });
     if (response && (response.ok || response.type === "opaque")) {
-      cache.put(key, response.clone()).catch(() => {});
+      await cache.put(key, response.clone());
     }
     return response;
-  }).catch(() => null);
-  if (cached) {
-    network.catch(() => {});
-    return cached;
+  } catch (_) {
+    const cached = await cache.match(key, { ignoreSearch: true });
+    return cached || new Response("SANAD content is not cached on this device yet.", {
+      status: 503,
+      headers: { "Content-Type": "text/plain; charset=UTF-8" }
+    });
   }
-  const response = await network;
-  return response || new Response("SANAD content is not cached on this device yet.", {
-    status: 503,
-    headers: { "Content-Type": "text/plain; charset=UTF-8" }
-  });
 }
 
 async function navigationResponse(request) {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: "no-store" });
     if (response && response.ok) {
       await cache.put(normalizedRequest("./sanad.html"), response.clone());
     }
@@ -131,10 +130,7 @@ async function navigationResponse(request) {
 }
 
 self.addEventListener("install", event => {
-  event.waitUntil(
-    cacheUrls(ALL_ASSETS)
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(cacheUrls(ALL_ASSETS).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", event => {
@@ -143,7 +139,7 @@ self.addEventListener("activate", event => {
       .then(keys => Promise.all(keys.filter(key => key.startsWith("sanad-pwa-") && key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
       .then(() => cacheUrls(ALL_ASSETS, true))
-      .then(result => notifyClients("SANAD_OFFLINE_READY", result))
+      .then(result => notifyClients("SANAD_APP_UPDATED", result))
   );
 });
 
@@ -160,12 +156,16 @@ self.addEventListener("fetch", event => {
   }
 
   if (isCacheableLocalAsset(url)) {
-    event.respondWith(cacheFirst(request));
+    event.respondWith(networkFirst(request));
   }
 });
 
 self.addEventListener("message", event => {
   const type = event.data?.type;
+  if (type === "SANAD_SKIP_WAITING") {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   if (type === "SANAD_CLEAR_CACHE") {
     event.waitUntil(
       caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("sanad-pwa-")).map(key => caches.delete(key))))

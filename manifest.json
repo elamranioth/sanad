@@ -4,7 +4,7 @@
   "description": "تطبيق للبحث في الأحكام القضائية وحفظها على الهاتف.",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "./sanad.html?source=pwa",
+  "start_url": "./sanad.html?source=pwa&v=20260908-v41",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

@@ -1,6 +1,6 @@
 (function(){
-  const IMPROVEMENT_VERSION='sanad-improvements-20260906';
-  const OFFLINE_VERSION='sanad-pwa-v40';
+  const IMPROVEMENT_VERSION='sanad-improvements-20260908-v41';
+  const OFFLINE_VERSION='sanad-pwa-v41';
   const privateDataEndpoint='./api/private-data';
   const vaultKeys={
     savedJudgmentIds:'sanadSavedJudgments',
@@ -291,7 +291,9 @@
   }
   async function ensureServiceWorker(){
     if(!('serviceWorker' in navigator))throw new Error('Service worker is not available');
-    await navigator.serviceWorker.register('./sw.js?v=offline-packs-20260906');
+    const registration=await navigator.serviceWorker.register('./sw.js?v=offline-packs-20260908-v41');
+    registration.update().catch(()=>{});
+    if(registration.waiting)registration.waiting.postMessage({type:'SANAD_SKIP_WAITING'});
     return navigator.serviceWorker.ready;
   }
   async function prepareOfflineContent(options={}){
