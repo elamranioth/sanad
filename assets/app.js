@@ -3334,22 +3334,16 @@ function renderDocs(list,page=1){
 }
 function judgmentTypeOrderMap(list){
   const grouped=new Map();
-  [...docs].sort((a,b)=>sortableDateValue(a)-sortableDateValue(b)||Number(a.id)-Number(b.id)).forEach(doc=>{
+  (list||[]).forEach(doc=>{
     const type=doc.type||'other';
     if(!grouped.has(type))grouped.set(type,new Map());
     const map=grouped.get(type);
     if(!map.has(Number(doc.id)))map.set(Number(doc.id),map.size+1);
   });
-  const visible=new Map();
-  (list||[]).forEach(doc=>{
-    const type=doc.type||'other';
-    const globalNumber=grouped.get(type)?.get(Number(doc.id));
-    visible.set(Number(doc.id),globalNumber||0);
-  });
-  return visible;
+  return grouped;
 }
 function judgmentDisplayOrder(doc,orderMap){
-  const value=orderMap?.get(Number(doc.id));
+  const value=orderMap?.get(doc.type||'other')?.get(Number(doc.id));
   return Number.isFinite(value)&&value>0?value:Number(doc.id)||0;
 }
 
