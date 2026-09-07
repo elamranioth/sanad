@@ -5,10 +5,10 @@ pages_build_output_dir = "./tmp/cloudflare-pages-deploy"
 
 [[kv_namespaces]]
 binding = "SANAD_SYNC"
-id = "92a2b773d417436ca88d98eb34eb8b44"
+id = "b689793cf50845148642849f6d9f4c1b"
 
 [env.production]
 
 [[env.production.kv_namespaces]]
 binding = "SANAD_SYNC"
-id = "92a2b773d417436ca88d98eb34eb8b44"
+id = "b689793cf50845148642849f6d9f4c1b"
