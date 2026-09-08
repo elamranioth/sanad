@@ -33,6 +33,7 @@ function cleanItem(item) {
   return {
     id,
     text,
+    title: cleanText(item.title, 180),
     reference: cleanText(item.reference),
     docId: Number(item.docId) || 0,
     docTitle: cleanText(item.docTitle),

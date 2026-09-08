@@ -16,8 +16,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./assets/vendor/tabler/tabler-icons.min.css?v=2.47.0">
-<link rel="stylesheet" href="./assets/styles.css?v=offline-20260629">
-<link rel="stylesheet" href="./assets/improvements.css?v=20260908-v41">
+<link rel="stylesheet" href="./assets/styles.css?v=memory-title-20260908">
+<link rel="stylesheet" href="./assets/improvements.css?v=20260908-v42">
 </head>
 <body>
 
@@ -84,6 +84,26 @@
     <div class="confirm-actions">
       <button class="tool-secondary" id="confirmCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
       <button class="tool-secondary danger" id="confirmAcceptBtn" type="button"><i class="ti ti-trash"></i>Delete</button>
+    </div>
+  </div>
+</div>
+<div class="memory-title-modal hidden" id="memoryTitleModal" role="presentation" aria-hidden="true" dir="ltr">
+  <div class="memory-title-dialog" role="dialog" aria-modal="true" aria-labelledby="memoryTitleDialogTitle">
+    <div class="memory-title-head">
+      <div class="memory-title-icon"><i class="ti ti-notes"></i></div>
+      <div>
+        <span>Important excerpt</span>
+        <h2 id="memoryTitleDialogTitle">Add excerpt title</h2>
+      </div>
+    </div>
+    <label class="memory-title-field">
+      <span>Title</span>
+      <input id="memoryTitleInput" type="text" maxlength="180" placeholder="Example: Res judicata principle">
+    </label>
+    <div class="memory-title-preview" id="memoryTitlePreview"></div>
+    <div class="memory-title-actions">
+      <button class="tool-secondary" id="memoryTitleCancelBtn" type="button"><i class="ti ti-x"></i>Cancel</button>
+      <button class="tool-primary" id="memoryTitleSaveBtn" type="button"><i class="ti ti-device-floppy"></i>Save excerpt</button>
     </div>
   </div>
 </div>
@@ -617,7 +637,7 @@
 <script src="./data/search/manifest.js?v=judgment-data-fix-20260609"></script>
 <script src="./data/laws.js?v=law-reader-20260523"></script>
 <script src="./data/legal-forms.js?v=law-reader-20260523"></script>
-<script src="./assets/app.js?v=reader-tools-20260908-v41"></script>
-<script src="./assets/improvements.js?v=20260908-v41"></script>
+<script src="./assets/app.js?v=reader-tools-20260908-v42"></script>
+<script src="./assets/improvements.js?v=20260908-v42"></script>
 </body>
 </html>

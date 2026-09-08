@@ -46,7 +46,7 @@ let currentDocId=null;
 let currentLawId=null;
 let readerMode='judgment';
 let deferredInstallPrompt=null;
-const offlineCacheVersion='sanad-pwa-v41';
+const offlineCacheVersion='sanad-pwa-v42';
 const savedStorageKey='sanadSavedJudgments';
 const memoryStorageKey='sanadMemoryItems';
 const memorySyncEndpoint='./api/memory';
@@ -783,6 +783,7 @@ function loadMemoryItems(){
       .map(item=>({
         id:String(item.id),
         text:String(item.text||'').trim(),
+        title:String(item.title||'').trim(),
         reference:String(item.reference||'').trim(),
         docId:Number(item.docId)||0,
         docTitle:String(item.docTitle||'').trim(),
@@ -815,6 +816,7 @@ function sanitizeMemoryItems(items){
     .map(item=>({
       id:String(item.id),
       text:String(item.text||'').replace(/\s+/g,' ').trim(),
+      title:String(item.title||'').replace(/\s+/g,' ').trim().slice(0,180),
       reference:String(item.reference||'').trim(),
       docId:Number(item.docId)||0,
       docTitle:String(item.docTitle||'').trim(),
@@ -847,6 +849,7 @@ function memoryItemsSignature(items){
   return JSON.stringify(sanitizeMemoryItems(items).map(item=>[
     item.id,
     item.text,
+    item.title,
     item.reference,
     item.docId,
     item.docTitle,
@@ -1564,6 +1567,50 @@ function closeConfirm(result=false){
   const resolver=confirmResolver;
   confirmResolver=null;
   if(resolver)resolver(!!result);
+}
+let memoryTitleResolver=null;
+function closeMemoryTitleDialog(value=null){
+  const modal=document.getElementById('memoryTitleModal');
+  if(modal){
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden','true');
+  }
+  if(document.getElementById('docModal')?.classList.contains('hidden')&&document.getElementById('confirmModal')?.classList.contains('hidden'))document.body.classList.remove('modal-open');
+  const resolver=memoryTitleResolver;
+  memoryTitleResolver=null;
+  if(resolver)resolver(value);
+}
+function memoryTitleAction({suggestedTitle='',excerpt='',mode='add'}={}){
+  const modal=document.getElementById('memoryTitleModal');
+  const input=document.getElementById('memoryTitleInput');
+  const preview=document.getElementById('memoryTitlePreview');
+  const heading=document.getElementById('memoryTitleDialogTitle');
+  const save=document.getElementById('memoryTitleSaveBtn');
+  const cancel=document.getElementById('memoryTitleCancelBtn');
+  if(!modal||!input||!save){
+    return Promise.resolve(suggestedTitle||'');
+  }
+  const excerptText=normalizeMemoryText(excerpt);
+  input.value=suggestedTitle||'';
+  if(heading)heading.textContent=mode==='edit'?'Edit excerpt title':'Add excerpt title';
+  if(save)save.innerHTML=mode==='edit'?'<i class="ti ti-device-floppy"></i>Save title':'<i class="ti ti-device-floppy"></i>Save excerpt';
+  if(preview)preview.textContent=excerptText.length>240?`${excerptText.slice(0,240)}...`:excerptText;
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden','false');
+  document.body.classList.add('modal-open');
+  return new Promise(resolve=>{
+    memoryTitleResolver=resolve;
+    const accept=()=>closeMemoryTitleDialog(normalizeMemoryText(input.value)||suggestedTitle||suggestMemoryTitle(excerptText));
+    const reject=()=>closeMemoryTitleDialog(null);
+    save.onclick=accept;
+    cancel.onclick=reject;
+    modal.onclick=event=>{if(event.target===modal)reject();};
+    input.onkeydown=event=>{
+      if(event.key==='Enter'){event.preventDefault();accept();}
+      if(event.key==='Escape'){event.preventDefault();reject();}
+    };
+    setTimeout(()=>{input.focus();input.select();},80);
+  });
 }
 function setActiveNav(el){
   document.querySelectorAll('.ni').forEach(item=>item.classList.remove('on'));
@@ -3002,10 +3049,16 @@ function memoryDateDisplay(value){
   if(Number.isNaN(date.getTime()))return '';
   return new Intl.DateTimeFormat('en-AE',{year:'numeric',month:'short',day:'2-digit'}).format(date);
 }
-function buildMemoryItem(text,doc){
+function suggestMemoryTitle(text){
+  const clean=normalizeMemoryText(text);
+  const sentence=clean.split(/(?<=[.!؟؛])\s+/).find(Boolean)||clean;
+  return sentence.slice(0,86)+(sentence.length>86?'...':'');
+}
+function buildMemoryItem(text,doc,title=''){
   return {
     id:`mem-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
     text:normalizeMemoryText(text),
+    title:normalizeMemoryText(title)||suggestMemoryTitle(text),
     reference:memoryReferenceForDoc(doc),
     docId:Number(doc.id)||0,
     docTitle:displayDocTitle(doc),
@@ -3051,7 +3104,7 @@ function showMemorySelectionPopover(context){
 function updateMemorySelectionPopover(){
   showMemorySelectionPopover(getJudgmentSelectionContext());
 }
-function saveSelectionToMemory(){
+async function saveSelectionToMemory(){
   const context=getJudgmentSelectionContext();
   if(!context){
     hideMemorySelectionPopover();
@@ -3065,7 +3118,12 @@ function saveSelectionToMemory(){
     showToast('هذا المقتطف محفوظ مسبقًا.');
     return;
   }
-  memoryItems.unshift(buildMemoryItem(context.text,context.doc));
+  const title=await memoryTitleAction({suggestedTitle:suggestMemoryTitle(context.text),excerpt:context.text});
+  if(title===null){
+    hideMemorySelectionPopover();
+    return;
+  }
+  memoryItems.unshift(buildMemoryItem(context.text,context.doc,title));
   const persisted=saveMemoryItems();
   updateDisplayedCounts();
   updateSettingsStats();
@@ -3077,7 +3135,7 @@ function saveSelectionToMemory(){
 function matchesMemoryItem(item,query){
   const q=normalizeSearchText(query).trim();
   if(!q)return true;
-  return normalizeSearchText([item.text,item.reference,item.docTitle,item.court,item.date,item.docNumber].join(' ')).includes(q);
+  return normalizeSearchText([item.title,item.text,item.reference,item.docTitle,item.court,item.date,item.docNumber].join(' ')).includes(q);
 }
 function renderMemoryItems(){
   const list=document.getElementById('memoryList');
@@ -3097,6 +3155,10 @@ function renderMemoryItems(){
   empty?.classList.add('hidden');
   list.innerHTML=filtered.map(item=>`
     <article class="memory-item" data-memory-id="${escapeHtml(item.id)}">
+      <header class="memory-item-head">
+        <h3>${escapeHtml(item.title||suggestMemoryTitle(item.text)||'Untitled excerpt')}</h3>
+        <button class="memory-title-edit" type="button" onclick="editMemoryTitle('${escapeHtml(item.id)}')" aria-label="Edit excerpt title"><i class="ti ti-pencil"></i></button>
+      </header>
       <blockquote>${escapeHtml(item.text)}</blockquote>
       <div class="memory-reference">
         <i class="ti ti-gavel"></i>
@@ -3108,6 +3170,7 @@ function renderMemoryItems(){
       </div>
       <div class="memory-actions">
         <a class="tool-secondary" href="${escapeHtml(item.url||judgmentPageHref(item.docId))}"><i class="ti ti-external-link"></i>Open source</a>
+        <button class="tool-secondary" type="button" onclick="editMemoryTitle('${escapeHtml(item.id)}')"><i class="ti ti-pencil"></i>Edit title</button>
         <button class="tool-secondary" type="button" onclick="copyMemoryItem('${escapeHtml(item.id)}')"><i class="ti ti-copy"></i>Copy</button>
         <button class="tool-secondary danger" type="button" onclick="deleteMemoryItem('${escapeHtml(item.id)}')"><i class="ti ti-trash"></i>Delete</button>
       </div>
@@ -3132,11 +3195,21 @@ function showMemoryPage(){
   void syncMemoryItemsFromServer({silent:true});
   scrollPageTo('#memoryPage');
 }
+async function editMemoryTitle(id){
+  const item=memoryItems.find(entry=>entry.id===String(id));
+  if(!item)return;
+  const title=await memoryTitleAction({suggestedTitle:item.title||suggestMemoryTitle(item.text),excerpt:item.text,mode:'edit'});
+  if(title===null)return;
+  item.title=normalizeMemoryText(title)||suggestMemoryTitle(item.text);
+  saveMemoryItems();
+  renderMemoryItems();
+  showToast('تم تحديث عنوان المقتطف.');
+}
 function copyMemoryItem(id){
   const item=memoryItems.find(entry=>entry.id===String(id));
   if(!item)return;
   const sourceUrl=new URL(item.url||judgmentPageHref(item.docId),location.href).href;
-  const text=`${item.text}\n\nReference: ${item.reference}\n${sourceUrl}`.trim();
+  const text=`${item.title||suggestMemoryTitle(item.text)}\n\n${item.text}\n\nReference: ${item.reference}\n${sourceUrl}`.trim();
   const write=navigator.clipboard?.writeText?.(text);
   if(!write){
     showToast('Could not copy automatically.');
@@ -3176,7 +3249,7 @@ function memoryWordDocumentXml(items){
   ];
   items.forEach((item,index)=>{
     const sourceUrl=new URL(item.url||judgmentPageHref(item.docId),location.href).href;
-    paragraphs.push(wordParagraph(`مقتطف رقم ${index+1}`,{bold:true,size:28,color:'C8A84B'}));
+    paragraphs.push(wordParagraph(item.title||`مقتطف رقم ${index+1}`,{bold:true,size:28,color:'C8A84B'}));
     paragraphs.push(...wordTextBlock(item.text,{size:25,color:'111111'}));
     paragraphs.push(wordParagraph(`المرجع: ${item.reference||'غير متوفر'}`,{bold:true,size:22,color:'2A5D7F'}));
     paragraphs.push(wordParagraph(`تاريخ الحفظ: ${memoryDateDisplay(item.createdAt)}`,{size:20,color:'5F8198'}));
@@ -3971,7 +4044,7 @@ if('serviceWorker' in navigator){
     }
   });
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js?v=offline-packs-20260908-v41').then(registration=>{
+    navigator.serviceWorker.register('./sw.js?v=offline-packs-20260908-v42').then(registration=>{
       registration.update().catch(()=>{});
       if(registration.waiting)registration.waiting.postMessage({type:'SANAD_SKIP_WAITING'});
       registration.addEventListener('updatefound',()=>{
